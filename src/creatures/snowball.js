@@ -11,14 +11,7 @@
         this.turnedAroundLeft = false;
         this.turnedAroundRight = false;
         this.slideKill = false;
-    }
-
-    create() {
-        this.createWalkAnimation();
-    }
-
-    createWalkAnimation() {
-
+        this.killFalling = false;
     }
 
     update(time, delta) {
@@ -31,20 +24,21 @@
             this.activateStartMoving();
         }
 
-        this.scene.physics.world.collide(this, this.scene.groundLayer);
+        if (!this.killFalling) {
+            this.scene.physics.world.collide(this, this.scene.groundLayer);
 
-        if (!this.player.isDead()) {
-            this.scene.physics.world.collide(this, this.player, this.playerHit);
+            if (!this.player.isDead()) {
+                this.scene.physics.world.collide(this, this.player, this.playerHit);
+            }
         }
 
         if (this.killAt !== 0) {
             this.body.setVelocityX(0);
 
-            if (this.doSlideKill) {
-                this.body.velocity.y = 20;
-                this.anims.play("snowball-walk");
-            } else {
+            if (!this.killFalling) {
                 this.anims.play("snowball-squished");
+            } else {
+                this.setTexture("snowball-walk-1");
             }
 
             this.killAt -= delta;
@@ -121,10 +115,19 @@
             player.enemyBounce(enemy);
             enemy.getFlat(enemy, player);
         } else if (player.invincible) { 
-            enemy.getFlat();
+            enemy.killNoFlat(enemy, player);
         } else {
             enemy.hurtPlayer(enemy, player);
         }
+    }
+
+    killNoFlat(enemy, player) {
+        this.setTexture("snowball-walk-0");
+        this.body.setVelocityX(0);
+        this.body.setVelocityY(-200);
+        this.killAt = 1500;
+        this.killFalling = true;
+        this.groundLayerCollider.destroy();
     }
 
     getFlat(enemy, player) {
@@ -137,7 +140,8 @@
 
     slideKill() {
         this.anims.play("snowball-walk");
-        this.doSlideKill = true;
-        this.killAt = 500;
+        this.killAt = 1500;
+        this.killFalling = true;
+        this.groundLayerCollider.destroy();
     }
 }

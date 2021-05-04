@@ -1,10 +1,27 @@
+class LevelFactory {
+    makeLevel (levelData, scene) {
+        switch (levelData.landscape) {
+            case 'snow':
+                return new SnowLevel(levelData, scene);
+            case 'castle':
+                return null;
+        }
+    }
+}
+
+var Levels = {
+    getLevel1: function (scene) {
+        var levelFactory = new LevelFactory();
+
+        return levelFactory.makeLevel(new Level1Data(), scene);
+    }
+}
+
 class GameScene extends Phaser.Scene {
     constructor() {
         super({
             key: 'GameScene' 
         });
-
-        this.MIN_DELTA = 80;
     }
 
     generateKeyController() {
@@ -39,7 +56,7 @@ class GameScene extends Phaser.Scene {
     preload() {
         this.loadImages();
         this.generateKeyController();
-        this.level1 = new Level1({ scene: this });
+        this.level1 = Levels.getLevel1(this);
         this.level1.preload();
     }
 
@@ -56,6 +73,7 @@ class GameScene extends Phaser.Scene {
         this.loadCoinImages();
         this.loadBlockImages();
         this.loadPowerupImages();
+        this.loadSnowImages();
     }
 
     loadUIImages() {
@@ -93,6 +111,8 @@ class GameScene extends Phaser.Scene {
     loadEnemyImages() {
         this.loadSnowBallImages();
         this.loadMrIceBlockImages();
+        this.loadKroshImages();
+        this.loadFishImages();
     }
 
     loadCoinImages() {
@@ -111,11 +131,45 @@ class GameScene extends Phaser.Scene {
         this.load.image('bonus-block-empty', blockPath + 'block-empty.png');
     }
 
+    loadKroshImages() {
+        var kroshPath = './assets/images/creatures/krosh/';
+
+        this.load.image('krosh', kroshPath + 'krosh.png'); 
+    }
+
+    loadFishImages() {
+        var fishPath = './assets/images/creatures/fish/';
+
+        for (var i = 0; i < 2; i++) {
+            this.load.image('fish-up-' + i, fishPath + 'up-' + i + '.png');
+        }
+        //this.load.image('fish-up-0', fishPath + 'up-0.png');
+        //this.load.image('fish-up-1', fishPath + 'up-1.png');
+        this.load.image('fish-down', fishPath + 'down.png');
+    }
+
     loadPowerupImages() {
         var powerupPath = './assets/images/powerups/';
 
         this.load.spritesheet('star', powerupPath + 'star.png', { frameWidth: 32, frameHeight: 32 }, 8); 
         this.load.image('egg', powerupPath + 'egg-shade.png');
+    }
+
+    loadSnowImages() {
+        var snowSpritesPath = './assets/images/level/snow/';
+
+        this.load.image('igloo-fg', snowSpritesPath + 'exitfg.png');
+        this.load.image('igloo-bg', snowSpritesPath + 'exitbg.png');
+        this.load.image('antarctic-water', snowSpritesPath + 'antarctic.png');
+        this.load.spritesheet('icebridge', snowSpritesPath + 'icebridge.png', { frameWidth: 32, frameHeight: 32 }, 4);
+
+        this.N_ANTARCTIC_WATER = 8;
+
+        for (var i = 0; i < this.N_ANTARCTIC_WATER; i++) {
+            this.load.image('antarctic-water-' + (i + 1), snowSpritesPath + 'antarctic-' + (i + 1) + '.png');
+        }
+
+        
     }
 
     loadSnowBallImages() {
@@ -141,6 +195,15 @@ class GameScene extends Phaser.Scene {
     }
 
     makeAnimations() {
+        this.anims.create(
+            {
+                key: "fish-up",
+                frames: [{ key: 'fish-up-0' }, { key: 'fish-up-1' }],
+                frameRate: 8,
+                repeat: -1
+            }
+        );
+
         this.anims.create({
             key: 'coin-moving',
             frames: this.anims.generateFrameNumbers('coin'),
@@ -213,13 +276,27 @@ class GameScene extends Phaser.Scene {
             });
         }
 
-
-
         this.anims.create(
             {
                 key: 'tux-run',
                 frames: tuxRunFrames,
                 frameRate: 12,
+                repeat: -1
+            }
+        );
+
+        var antarcticWaterFrames = [];
+        for (var i = 0; i < this.N_ANTARCTIC_WATER; i++) {
+            antarcticWaterFrames.push({
+                key: 'antarctic-water-' + (i + 1)
+            });
+        }
+
+        this.anims.create(
+            {
+                key: 'antarctic-water',
+                frames: antarcticWaterFrames,
+                frameRate: 5,
                 repeat: -1
             }
         );
@@ -250,8 +327,8 @@ class GameScene extends Phaser.Scene {
         );
 
         var mrIceBlockWalkFrames = [];
-        var i;
-        for (i = 0; i < this.N_SNOWBALL_RUN; i++) {
+
+        for (var i = 0; i < this.N_SNOWBALL_RUN; i++) {
             mrIceBlockWalkFrames.push({
                 key: 'mriceblock-walk-' + (i + 1)
             });
@@ -273,6 +350,8 @@ class GameScene extends Phaser.Scene {
                 frameRate: 24
             }
         );
+
+
     }
 
 

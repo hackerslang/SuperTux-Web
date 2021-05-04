@@ -8,12 +8,14 @@
         this.id = config.id
 
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
-        this.body.allowGravity = false;
+        this.body.allowGravity = true;
         this.hasBeenSeen = false;
 
         this.player = config.player;
         this.DIRECTION_LEFT = -1;
         this.DIRECTION_RIGHT = 1;
+
+        this.groundLayerCollider = this.scene.physics.add.collider(this, this.level.groundLayer);
     }
 
     activated() {
@@ -21,7 +23,7 @@
             if (this.x < this.scene.cameras.main.scrollX + this.scene.sys.game.canvas.width + 32) {
                 this.hasBeenSeen = true;
                 this.body.velocity.x = this.direction;
-                this.body.allowGravity = true;
+                
                 //alert("adzdazkpoazd");
                 return true;
             }
@@ -43,6 +45,15 @@
         }
 
         return player.body.velocity.y >= 0 && (player.body.y + player.body.height) - enemy.body.y < 10;
+    }
+
+    downHit(enemy, player) {
+        if (!player.isActiveAndAlive()) {
+
+            return false;
+        }
+
+        return enemy.body.y + enemy.body.height <= player.body.y && player.body.x >= enemy.body.x - 30 && player.body.x < enemy.body.x + (enemy.body.width);
     }
 
     hurtPlayer(enemy, player) {

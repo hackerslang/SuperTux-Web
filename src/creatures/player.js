@@ -9,6 +9,7 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.anims.play("tux-stand");
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
         this.body.setSize(48, 90, true);
+        this.setDepth(999);
         this.health = 3;
 
         this.x = config.x;
@@ -71,6 +72,8 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.invincible = false;
         this.invincibleStep = 0;
         this.invincibleIndex = 0;
+
+        this.falling = false;
     }
 
     getOriginalLevel() {
@@ -227,6 +230,7 @@ class Tux extends Phaser.GameObjects.Sprite {
     die() {
         this.scene.setHealthBar(0);
         this.killed = true;
+        this.tint = 0xFFFFFF;
         this.alpha = 1;
         this.playAnimation("tux-gameover");
         this.setVelocityX(0);
@@ -489,7 +493,7 @@ class Tux extends Phaser.GameObjects.Sprite {
             this.drawDuck();
         } else if (this.skiddingTimer > 0) {
             this.drawSkid();
-        } else if (!this.onGround() || this.fallMode != this.ON_GROUND) {
+        } else if ((!this.onGround() || this.fallMode != this.ON_GROUND)) {
             if (this.getVelocityX() != 0 || this.fallMode != this.ON_GROUND) {
                 if (this.getVelocityY() > 0) {
                     this.drawFalling();
@@ -529,6 +533,10 @@ class Tux extends Phaser.GameObjects.Sprite {
 
     drawStanding() {
         this.playAnimation("tux-stand");
+    }
+
+    removeFalling() {
+        this.falling = false;
     }
 
     drawDuck() {
