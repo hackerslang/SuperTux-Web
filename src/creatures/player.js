@@ -236,8 +236,15 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.setVelocityX(0);
         this.setVelocityY(-550);
         this.setAccelerationX(0);
-        this.level.playerGroundCollider.destroy();
-        this.level.woodCollider.destroy();
+        
+        if (this.level.playerGroundCollider != null)
+            this.level.playerGroundCollider.destroy();
+
+        if (this.level.woodCollider != null)
+            this.level.woodCollider.destroy();
+
+        if (this.level.spikeCollider != null)
+            this.level.spikeCollider.destroy();
     }
 
     isDead() {

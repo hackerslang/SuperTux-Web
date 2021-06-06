@@ -52,21 +52,11 @@
         }
 
         if (!this.sliding) {
-            if (this.body.x <= 10 || this.isAtEdgeLeft() && !this.turnedAroundLeft) {
-                this.direction = this.DIRECTION_RIGHT;
-                this.body.velocity.x = this.direction * 100;
-                this.flipX = true;
-                this.turnedAroundLeft = true;
-                this.turnedAroundRight = false;
-            } else if (this.isAtEdgeRight() && !this.turnedAroundRight) { //no ground below
-                this.direction = this.DIRECTION_LEFT;
-                this.body.velocity.x = this.direction * 100;
-                this.flipX = false;
-                this.turnedAroundLeft = false;
-                this.turnedAroundRight = true;
-            }
+            super.walkAndTurnOnEdge();
         } else {
-            
+            //if (this.body.blocked.right || this.body.blocked.left) {
+            //    this.velocity.x = -this.velocity.x;
+            //}
         }
     }
 
@@ -77,33 +67,7 @@
         this.body.velocity.x = this.direction * 100;
     }
 
-    isAtEdgeLeft() {
-        var levelTiles = this.level.getLevelData();
-        var tileX = Math.floor(this.body.x / 32);
-        var tileY = Math.floor(this.body.y / 32);
 
-        if (tileX <= 0 || tileY >= levelTiles.length - 1) {
-            return false;
-        }
-
-        var tile = levelTiles[tileY + 1][tileX - 1];
-
-        return (tile == 0);
-    }
-
-    isAtEdgeRight() {
-        var levelTiles = this.level.getLevelData();
-        var tileX = Math.floor(this.body.x / 32);
-        var tileY = Math.floor(this.body.y / 32);
-
-        if (tileX >= levelTiles[0].length - 1 || tileY >= levelTiles.length - 1) {
-            return false;
-        }
-
-        var tile = levelTiles[tileY + 1][tileX + 1];
-
-        return (tile == 0);
-    }
 
     playAnimation(key) {
         this.anims.play(key, true);

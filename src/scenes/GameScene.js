@@ -4,7 +4,7 @@ class LevelFactory {
             case 'snow':
                 return new SnowLevel(levelData, scene);
             case 'castle':
-                return null;
+                return new CastleLevel(levelData, scene);
         }
     }
 }
@@ -14,6 +14,12 @@ var Levels = {
         var levelFactory = new LevelFactory();
 
         return levelFactory.makeLevel(new Level1Data(), scene);
+    },
+
+    getLevel2: function (scene) {
+        var levelFactory = new LevelFactory();
+
+        return levelFactory.makeLevel(new Level2Data(), scene);
     }
 }
 
@@ -72,8 +78,10 @@ class GameScene extends Phaser.Scene {
         this.loadEnemyImages();
         this.loadCoinImages();
         this.loadBlockImages();
+        this.loadSpikeImages();
         this.loadPowerupImages();
         this.loadSnowImages();
+        this.loadCastleImages();
     }
 
     loadUIImages() {
@@ -113,6 +121,7 @@ class GameScene extends Phaser.Scene {
         this.loadMrIceBlockImages();
         this.loadKroshImages();
         this.loadFishImages();
+        this.loadGhoulImages();
     }
 
     loadCoinImages() {
@@ -131,6 +140,15 @@ class GameScene extends Phaser.Scene {
         this.load.image('bonus-block-empty', blockPath + 'block-empty.png');
     }
 
+    loadSpikeImages() {
+        var spikePath = './assets/images/objects/spikes/';
+
+        this.load.image('spike-up', spikePath + 'spikeup.png'); 
+        this.load.image('spike-down', spikePath + 'spikedown.png'); 
+        this.load.image('spike-left', spikePath + 'spikeleft.png'); 
+        this.load.image('spike-right', spikePath + 'spikeright.png'); 
+    }
+
     loadKroshImages() {
         var kroshPath = './assets/images/creatures/krosh/';
 
@@ -146,6 +164,16 @@ class GameScene extends Phaser.Scene {
         //this.load.image('fish-up-0', fishPath + 'up-0.png');
         //this.load.image('fish-up-1', fishPath + 'up-1.png');
         this.load.image('fish-down', fishPath + 'down.png');
+    }
+
+    loadGhoulImages() {
+        var ghoulPath = './assets/images/creatures/ghoul/';
+
+        for (var i = 0; i < 8; i++) {
+            this.load.image('ghoul-' + (i + 1), ghoulPath + 'g' + (i + 1) + '.png');
+        }
+
+        this.load.image('ghoul-squished', ghoulPath + 'd1.png');
     }
 
     loadPowerupImages() {
@@ -168,8 +196,18 @@ class GameScene extends Phaser.Scene {
         for (var i = 0; i < this.N_ANTARCTIC_WATER; i++) {
             this.load.image('antarctic-water-' + (i + 1), snowSpritesPath + 'antarctic-' + (i + 1) + '.png');
         }
+    }
 
-        
+    loadCastleImages() {
+        var castleSpritesPath = './assets/images/level/castle/';
+
+        this.load.image('lava', castleSpritesPath + 'lava.png');
+
+        this.N_LAVA = 8;
+
+        for (var i = 0; i < this.N_LAVA; i++) {
+            this.load.image('lava-' + (i + 1), castleSpritesPath + 'lava-' + (i + 1) + '.png');
+        }
     }
 
     loadSnowBallImages() {
@@ -195,6 +233,34 @@ class GameScene extends Phaser.Scene {
     }
 
     makeAnimations() {
+        this.anims.create(
+            {
+                key: "ghoul",
+                frames: [
+                    { key: 'ghoul-2', width: 50, height: 50 },
+                    { key: 'ghoul-3', width: 50, height: 50 },
+                    { key: 'ghoul-5', width: 50, height: 50 },
+                    { key: 'ghoul-5', width: 50, height: 50 },
+                    { key: 'ghoul-6', width: 50, height: 50 },
+                    { key: 'ghoul-7', width: 50, height: 50 },
+                    { key: 'ghoul-7', width: 50, height: 50 },
+                    { key: 'ghoul-7', width: 50, height: 50 },
+                    { key: 'ghoul-8', width: 50, height: 50 },
+                    { key: 'ghoul-1', width: 50, height: 50 },
+                    { key: 'ghoul-1', width: 50, height: 50 },
+                    { key: 'ghoul-1', width: 50, height: 50 },
+                    { key: 'ghoul-1', width: 50, height: 50 },
+                    { key: 'ghoul-1', width: 50, height: 50 },
+                    { key: 'ghoul-1', width: 50, height: 50 },
+                    { key: 'ghoul-1', width: 50, height: 50 },
+                    { key: 'ghoul-1', width: 50, height: 50 },
+                    { key: 'ghoul-1', width: 50, height: 50 }
+                ],
+                frameRate: 10,
+                repeat: -1
+            }
+        );
+
         this.anims.create(
             {
                 key: "fish-up",
@@ -296,6 +362,22 @@ class GameScene extends Phaser.Scene {
             {
                 key: 'antarctic-water',
                 frames: antarcticWaterFrames,
+                frameRate: 5,
+                repeat: -1
+            }
+        );
+
+        var lavaFrames = [];
+        for (var i = 0; i < this.N_LAVA; i++) {
+            lavaFrames.push({
+                key: 'lava-' + (i + 1)
+            });
+        }
+
+        this.anims.create(
+            {
+                key: 'lava',
+                frames: lavaFrames,
                 frameRate: 5,
                 repeat: -1
             }

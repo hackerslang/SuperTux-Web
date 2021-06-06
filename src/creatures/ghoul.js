@@ -1,15 +1,14 @@
-﻿class SnowBall extends Enemy {
+﻿class Ghoul extends Enemy {
     constructor(config) {
         super(config);
 
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
         this.killAt = 0;
         this.direction = 0;
-        this.anims.play("snowball-walk");
+        this.anims.play("ghoul");
         this.firstActivated = false;
-
-        this.slideKill = false;
-        this.killFalling = false;
+        this.body.height = 70;
+        this.body.width = 65;
     }
 
     update(time, delta) {
@@ -34,9 +33,9 @@
             this.body.setVelocityX(0);
 
             if (!this.killFalling) {
-                this.anims.play("snowball-squished");
+                this.setTexture("ghoul-squished");
             } else {
-                this.setTexture("snowball-walk-1");
+                this.setTexture("ghoul-1");
             }
 
             this.killAt -= delta;
@@ -47,14 +46,6 @@
         }
 
         super.walkAndTurnOnEdge();
-
-         
-
-        
-
-        //else if (Math.floor(this.body.x / 32)
-
-
     }
 
     activateStartMoving() {
@@ -64,33 +55,22 @@
         this.body.velocity.x = this.direction * 100;
     }
 
-    playAnimation(key) {
-        this.anims.play(key, true);
-    }
-
     playerHit(enemy, player) {
         if (enemy.verticalHit(enemy, player)) {
             player.enemyBounce(enemy);
             enemy.getFlat();
-        } else if (player.invincible) { 
+        } else if (player.invincible) {
             enemy.killNoFlat();
         } else {
             enemy.hurtPlayer(enemy, player);
         }
     }
 
-    killNoFlat() {
-        super.killNoFlat("snowball-walk-0");
-    }
-
     getFlat() {
-        super.getFlat("snowball-squished");
+        super.getFlat("ghoul-squished");
     }
 
-    slideKill() {
-        this.anims.play("snowball-walk");
-        this.killAt = 1500;
-        this.killFalling = true;
-        this.groundLayerCollider.destroy();
+    killNoFlat() {
+        super.killNoFlat("ghoul-1");
     }
 }
