@@ -55,7 +55,7 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.DUCK_HEIGHT = 40;
         this.currentHeight = this.HEIGHT;
 
-        this.JUMP_GRACE_TIME = 0.25;
+        this.JUMP_GRACE_TIME = 180;
         this.SKID_TIME = 100;
 
         this.jumpButtonTimer = 0;
@@ -74,6 +74,7 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.invincibleIndex = 0;
 
         this.falling = false;
+        this.jumping = false;
     }
 
     getOriginalLevel() {
@@ -128,7 +129,7 @@ class Tux extends Phaser.GameObjects.Sprite {
         return this.body.velocity.y;
     }
 
-    setVelocityX(velocity) {
+    setVelocityX(velocity) { 
         this.body.setVelocityX(velocity);
     }
 
@@ -198,6 +199,16 @@ class Tux extends Phaser.GameObjects.Sprite {
 
         this.resetHurtIfNeeded();
 
+        if (this.jumping && this.body.blocked.down && this.body.velocity.y == 0) {
+            this.jumping = false;
+            this.canJump = true;
+            this.jumpButtonTimer = this.JUMP_GRACE_TIME;
+        }
+
+        if (this.jumpButtonTimer > 0) {
+            this.jumpButtonTimer -= delta;
+        }
+
         if (this.onGround()) {
             this.fallMode = this.ON_GROUND;
             this.lastGroundY = this.y;
@@ -207,10 +218,6 @@ class Tux extends Phaser.GameObjects.Sprite {
             } else if (this.fallMode === this.ON_GROUND) {
                 this.fallMode = this.JUMPING;
             }
-        }
-
-        if (this.onGround()) {
-            this.jumping = false;
         }
 
         this.handleInput(delta);
@@ -228,14 +235,7 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     die() {
-        this.scene.setHealthBar(0);
-        this.killed = true;
-        this.tint = 0xFFFFFF;
-        this.alpha = 1;
-        this.playAnimation("tux-gameover");
-        this.setVelocityX(0);
-        this.setVelocityY(-550);
-        this.setAccelerationX(0);
+        this.dieWithoutRemovingColliders();
         
         if (this.level.playerGroundCollider != null)
             this.level.playerGroundCollider.destroy();
@@ -245,6 +245,18 @@ class Tux extends Phaser.GameObjects.Sprite {
 
         if (this.level.spikeCollider != null)
             this.level.spikeCollider.destroy();
+    }
+
+    dieWithoutRemovingColliders() {
+        if (this.killed) { return; }
+        this.scene.setHealthBar(0);
+        this.killed = true;
+        this.tint = 0xFFFFFF;
+        this.alpha = 1;
+        this.playAnimation("tux-gameover");
+        this.setVelocityX(0);
+        this.setVelocityY(-550);
+        this.setAccelerationX(0);
     }
 
     isDead() {
@@ -275,7 +287,7 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     onGround() {
-        return this.getVelocityY() == 0 || this.slightlyAboveGround();
+        return (this.getVelocityY() == 0 && !this.jumping) || this.slightlyAboveGround();
     }
 
     slightlyAboveGround() {
@@ -310,9 +322,9 @@ class Tux extends Phaser.GameObjects.Sprite {
 
         this.handleHorizontalInput(delta);
 
-        if (this.onGround()) {
-            this.canJump = true;
-        }
+        //if (this.onGround()) {
+        //    this.canJump = true;
+        //}
 
         if (this.getKeyController().hold('duck')) {
             this.doDuck();
@@ -360,7 +372,22 @@ class Tux extends Phaser.GameObjects.Sprite {
         //if (this.grabbedObject != null && this.grabbedObject.isHampering()) {
 
         //} else
-        if (vx * this.directionSign < this.MAX_WALK_XM) {
+
+        // GOOD FOR JUMP!! falling
+        if (this.directionSign == 0 && vy == 0) {
+            if (Math.abs(vx) > 80) {
+                if (vx < 0) {
+                    ax += 5;
+                    vx += 5;
+                } else if (vx > 0) {
+                    ax -= 5;
+                    vx -= 5;
+                }
+            } else {
+                ax = 0;
+                vx = 0;
+            }
+        } else if (vx * this.directionSign < this.MAX_WALK_XM) {
             ax = this.directionSign * this.WALK_ACCELERATION_X;
         } else {
             ax = this.directionSign * this.RUN_ACCELERATION_X;
@@ -395,34 +422,34 @@ class Tux extends Phaser.GameObjects.Sprite {
             } else {
                 ax *= 2;
             }
-        } 
+        }
 
         if (this.onIce()) {
             ax *= this.ICE_ACCELERATION_MULTIPLIER;  
         }
-
-        if (ax > 0)
-            //console.log(vx + " " + vy + " " + ax + " " + ay);
 
         this.setVelocityX(vx);
         this.setVelocityY(vy);
         this.setAccelerationX(ax);
         this.setAccelerationY(ay);
 
-        if (this.directionSign == 0) {
-            this.applyFriction();
-        }
+        //if (this.directionSign == 0)
+        //{
+            //this.applyFriction();
+
+        //}
+            
     }
 
     applyFriction() {
-        if (this.onGround() && Math.abs(this.getVelocityY()) < this.WALK_SPEED) {
-            this.setVelocityX(0);
+        if (this.onGround() && this.getVelocityY() < this.WALK_SPEED) {
+            this.setVelocityX(this.getVelocityX() / 2);
             this.setAccelerationX(0);
         } else {
             var friction = this.WALK_ACCELERATION_X * (this.onIce ? this.ICE_FRICTION_MULTIPLIER : this.NORMAL_FRICTION_MULTIPLIER);
             if (this.getVelocityX() < 0) {
                 this.setAccelerationX(friction);
-            } else if (this.getVelocity > 0) {
+            } else if (this.getVelocityX() > 0) {
                 this.setAccelerationX(-friction);
             }
         }
@@ -459,15 +486,12 @@ class Tux extends Phaser.GameObjects.Sprite {
 
         let controller = this.getKeyController();
 
-        if (controller.pressed('jump')) {
-            this.jumpButtonTimer = this.JUMP_GRACE_TIME;
+        if (this.jumpButtonTimer <= 0 && this.canJump) {
+             if (controller.pressed('jump')) {
+                this.doJump(Math.abs(vx) > this.MAX_WALK_XM ? -580 : -520);
+            } 
         }
 
-        if (controller.hold('jump') && this.jumpButtonTimer > 0 && this.canJump) {
-            this.jumpButtonTimer = 0;
-            this.doJump(Math.abs(vx) > this.MAX_WALK_XM ? -580 : -520);
-        }
-        
         //console.log("vx:" + vx + "vy" + vy);
         this.setAccelerationY(0);  
     }
@@ -500,14 +524,8 @@ class Tux extends Phaser.GameObjects.Sprite {
             this.drawDuck();
         } else if (this.skiddingTimer > 0) {
             this.drawSkid();
-        } else if ((!this.onGround() || this.fallMode != this.ON_GROUND)) {
-            if (this.getVelocityX() != 0 || this.fallMode != this.ON_GROUND) {
-                if (this.getVelocityY() > 0) {
-                    this.drawFalling();
-                } else if (this.getVelocityY() <= 0 || this.fallMode != this.ON_GROUND) {
-                    this.drawJumping();
-                }
-            }
+        } else if ((!this.onGround() || this.fallMode != this.ON_GROUND) && !this.body.blocked.down) {
+            this.drawJumping();
         } else if (Math.abs(this.getVelocityX()) < 1) {
             this.drawStanding();
         } else {

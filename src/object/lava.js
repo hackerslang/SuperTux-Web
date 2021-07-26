@@ -11,9 +11,13 @@
         this.id = config.id;
         this.anims.play('lava');
         this.setOrigin(0, 0);
+
+        //this.lavaCollider = this.scene.physics.add.collider(this.player, this);
     }
 
     update(time, delta) {
+        this.playerHit();
+        
 
         //if (!this.player.isDead()) {
         //    this.scene.physics.world.overlap(this, this.player, this.playerHit);
@@ -38,8 +42,17 @@
         //}
     }
 
-    playerHit(enemy, player) {
-            player.die();
-    }
+    playerHit() {
+        var playerX = this.player.body.x;
+        var playerY = this.player.body.y;
+        var playerHeight = this.player.body.height;
 
+        for (var i = 0; i < this.player.level.lavaSprites.length; i++) {
+            var lavaSprite = this.player.level.lavaSprites[i];
+
+            if (playerX >= lavaSprite.x + 32 && playerX <= lavaSprite.x + 128 && playerY >= lavaSprite.y - playerHeight && playerY <= lavaSprite.y) {
+                this.player.dieWithoutRemovingColliders();
+            }
+        }
+    }
 }

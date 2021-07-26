@@ -6,6 +6,7 @@
         this.level = config.level;
         this.alive = true;
         this.id = config.id
+        this.enemyType = config.key;
 
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
         this.body.allowGravity = true;
@@ -20,7 +21,16 @@
         this.turnedAroundLeft = false;
         this.turnedAroundRight = false;
 
+        this.PADDING_ENEMY_COLLISION = 2;
+        this.ENEMY_COLLISION_TURN_TIMER = 200;
+
+        this.enemyLayerCollider = this.scene.physics.add.collider(this, this.level.enemyGroup);
         this.groundLayerCollider = this.scene.physics.add.collider(this, this.level.groundLayer);
+
+        this.collisionTurnedTimer = 0;
+        this.playerCollisionTurnedTimer = 0;
+
+        this.sliding = false;
     }
 
     activated() {
@@ -31,15 +41,72 @@
                 
                 return true;
             }
-            //aler('false');
+            
             return false;
         }
-        //alert('true');
+        
         return true;
     }
 
     update(time, delta) {
+        if (this.collisionTurnedTimer > 0) {
+            this.collisionTurnedTimer -= delta;
+        }
 
+        if (this.playerCollisionTurnedTimer > 0) {
+            this.playerCollisionTurnedTimer -= delta;
+        }
+    }
+
+    enemyCollideTurn() {
+        Array.from(this.level.enemyGroup.children.entries).forEach(
+            (currentEnemy) => {
+                if (this.body.x != currentEnemy.body.x || this.body.y != currentEnemy.body.y && !currentEnemy.sliding) {
+                    if (this.collisionTurnedTimer <= 0) {
+                        if (this.horizontalCollision(currentEnemy, this)) {
+                            this.changeDirection();
+                            this.collisionTurnedTimer = this.ENEMY_COLLISION_TURN_TIMER;
+                        } else if (this.horizontalCollision(this, currentEnemy)) {
+                            this.changeDirection();
+                            this.collisionTurnedTimer = this.ENEMY_COLLISION_TURN_TIMER;
+                        }
+                    }         
+                }
+            }
+        );
+    }
+
+    playerCollideTurn() {
+        if (this.playerCollisionTurnedTimer <= 0) {
+            if (this.horizontalCollision(this.player, this)) {
+                this.changeDirection();
+                this.player.hurtBy(this);
+                this.playerCollisionTurnedTimer = this.ENEMY_COLLISION_TURN_TIMER;
+            } else if (this.horizontalCollision(this, this.player)) {
+                this.changeDirection();
+                this.player.hurtBy(this);
+                this.playerCollisionTurnedTimer = this.ENEMY_COLLISION_TURN_TIMER;
+
+            }
+        }
+    }
+
+    horizontalCollision(creature, otherCreature) {
+        var creatureXWidth = creature.x + creature.body.width / 2;
+        var creatureYHeight = Math.floor(creature.y) + creature.height;
+
+        return (creature.killAt <= 0 && otherCreature.killAt <= 0 &&
+            (creatureXWidth >= (otherCreature.x - (otherCreature.body.width / 2) - this.PADDING_ENEMY_COLLISION)) && (creatureXWidth <= (otherCreature.x - (otherCreature.body.width / 2)
+            + this.PADDING_ENEMY_COLLISION))
+            && (creatureYHeight >= Math.floor(otherCreature.y)) && (creature.y <= Math.floor(otherCreature.y) + otherCreature.body.height));
+    }
+
+    changeDirection() {
+        if (this.direction == this.DIRECTION_LEFT) {
+            this.turnRight();
+        } else {
+            this.turnLeft();
+        }
     }
 
     isAtEdgeLeft() {
@@ -115,22 +182,44 @@
     }
 
     walkAndTurnOnEdge() {
-        if (this.body.x <= 10 || this.isAtEdgeLeft() && !this.turnedAroundLeft) {
-            this.direction = this.DIRECTION_RIGHT;
-            this.body.velocity.x = this.direction * 100;
-            this.flipX = true;
-            this.turnedAroundLeft = true;
-            this.turnedAroundRight = false;
-        } else if (this.isAtEdgeRight() && !this.turnedAroundRight) { //no ground below
-            this.direction = this.DIRECTION_LEFT;
-            this.body.velocity.x = this.direction * 100;
-            this.flipX = false;
-            this.turnedAroundLeft = false;
-            this.turnedAroundRight = true;
+        if ((this.body.x <= 10 || this.isAtEdgeLeft()) && !this.turnedAroundRight) {
+            this.turnRight();
+        } else if (this.isAtEdgeRight() && !this.turnedAroundLeft) { //no ground below
+            this.turnLeft();
         }
     }
 
+    walkAndTurnCollideEnemy(enemy) {
+        if (enemy.body.x < this.body.x) {
+            this.turnRight();
+        } else if (enemy.body.x > this.body.x) {
+            this.turnLeft();
+        }
+
+        console.log(enemy);
+    }
+
+    turnAroundSpeed(speed, direction) {
+        this.direction = direction;
+        this.body.velocity.x = this.direction * speed;
+        this.flipX = !this.flipX;
+        this.turnedAroundLeft = (direction != this.DIRECTION_RIGHT);
+        this.turnedAroundRight = (direction == this.DIRECTION_RIGHT);
+    }
+
+    turnRight() {
+        this.turnAroundSpeed(100, this.DIRECTION_RIGHT);
+    }
+
+    turnLeft() {
+        this.turnAroundSpeed(100, this.DIRECTION_LEFT);
+    }
+
     enemyOut() {
+
+    }
+
+    slideKill() {
 
     }
 }

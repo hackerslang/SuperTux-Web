@@ -5,6 +5,8 @@ class LevelFactory {
                 return new SnowLevel(levelData, scene);
             case 'castle':
                 return new CastleLevel(levelData, scene);
+            case 'castle2':
+                return new CastleLevel(levelData, scene, "castle2");
         }
     }
 }
@@ -20,6 +22,12 @@ var Levels = {
         var levelFactory = new LevelFactory();
 
         return levelFactory.makeLevel(new Level2Data(), scene);
+    },
+
+    getLevel3: function (scene) {
+        var levelFactory = new LevelFactory();
+
+        return levelFactory.makeLevel(new Level3Data(), scene);
     }
 }
 
@@ -62,7 +70,7 @@ class GameScene extends Phaser.Scene {
     preload() {
         this.loadImages();
         this.generateKeyController();
-        this.level1 = Levels.getLevel1(this);
+        this.level1 = Levels.getLevel3(this);
         this.level1.preload();
     }
 

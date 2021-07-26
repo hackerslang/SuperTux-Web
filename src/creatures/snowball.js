@@ -8,8 +8,9 @@
         this.anims.play("snowball-walk");
         this.firstActivated = false;
 
-        this.slideKill = false;
         this.killFalling = false;
+        this.body.setSize(30, 30, true);
+        this.setOrigin(0.5, 0.5);
     }
 
     update(time, delta) {
@@ -21,6 +22,12 @@
         if (!this.firstActivated) {
             this.activateStartMoving();
         }
+
+        super.update(time, delta);
+        super.enemyCollideTurn();
+        super.playerCollideTurn();
+
+        this.scene.physics.world.collide(this, this.level.enemyGroup, this.enemyHit);
 
         if (!this.killFalling) {
             this.scene.physics.world.collide(this, this.scene.groundLayer);
@@ -55,6 +62,11 @@
         //else if (Math.floor(this.body.x / 32)
 
 
+    }
+
+    enemyHit(thisEnemy, enemy) {
+        enemy.walkAndTurnCollideEnemy(thisEnemy);
+        thisEnemy.walkAndTurnCollideEnemy(enemy);
     }
 
     activateStartMoving() {

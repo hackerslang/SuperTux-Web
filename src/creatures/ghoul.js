@@ -21,6 +21,10 @@
             this.activateStartMoving();
         }
 
+        super.update(time, delta);
+        super.enemyCollideTurn();
+        super.playerCollideTurn();
+        console.log(this);
         if (!this.killFalling) {
             this.scene.physics.world.collide(this, this.scene.groundLayer);
 
@@ -72,5 +76,12 @@
 
     killNoFlat() {
         super.killNoFlat("ghoul-1");
+    }
+
+    slideKill() {
+        this.anims.play("ghoul-1");
+        this.killAt = 1500;
+        this.killFalling = true;
+        this.groundLayerCollider.destroy();
     }
 }
