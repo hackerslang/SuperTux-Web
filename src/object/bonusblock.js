@@ -15,8 +15,10 @@
         this.startY = config.y;
         this.isEmpty = false;
         this.done = false;
+        this.setOrigin(0, 0);
         this.body.setBounce(0);
         this.body.setImmovable(true);
+        this.gotHitByPlayer = false;
     }
 
     update(time, delta) {
@@ -28,6 +30,10 @@
     }
 
     blockHit(block, player) {
+        if (this.gotHitByPlayer) {
+            return;
+        }
+
         block.body.setVelocityY(0);
         if (!block.done && block.hitFromBelow(block, player) && !block.isEmpty) {
             block.body.setImmovable(false);
@@ -51,6 +57,12 @@
                 block.level.addEgg(block.x, block.y - 32);
             }
         }
+
+        this.gotHitByPlayer = true;
+    }
+
+    gotHit() {
+        return this.gotHitByPlayer;
     }
 
     hitFromBelow(block, player) {

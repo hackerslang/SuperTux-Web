@@ -22,15 +22,28 @@
         this.turnedAroundRight = false;
 
         this.PADDING_ENEMY_COLLISION = 2;
-        this.ENEMY_COLLISION_TURN_TIMER = 200;
+        this.ENEMY_COLLISION_TURN_TIMER = 400;
 
         this.enemyLayerCollider = this.scene.physics.add.collider(this, this.level.enemyGroup);
         this.groundLayerCollider = this.scene.physics.add.collider(this, this.level.groundLayer);
 
         this.collisionTurnedTimer = 0;
         this.playerCollisionTurnedTimer = 0;
-
+        
+        this.waitForTurn = false;
+        this.setWaitTurnTimer = 0;
+        this.cannotWaitForTurn = false;
+        this.cannotWaitForTurnTimer = 0;
         this.sliding = false;
+        this.killFalling = false;
+        this.killed = false;
+    }
+
+    setWaitTurn() {
+        if (!this.cannotWaitForTurn) {
+            this.setWaitTurnTimer = this.ENEMY_COLLISION_TURN_TIMER * 4;
+            this.waitForTurn = true;
+        }
     }
 
     activated() {
@@ -49,6 +62,8 @@
     }
 
     update(time, delta) {
+        this.setWaitTurnTimer -= delta;
+
         if (this.collisionTurnedTimer > 0) {
             this.collisionTurnedTimer -= delta;
         }
@@ -56,24 +71,53 @@
         if (this.playerCollisionTurnedTimer > 0) {
             this.playerCollisionTurnedTimer -= delta;
         }
+
+        if (this.waitForTurn && this.setWaitTurnTimer <= 0) {
+            this.changeDirection();
+            this.collisionTurnedTimer = this.ENEMY_COLLISION_TURN_TIMER;
+            this.waitForTurn = false;
+        }
+
+        if (this.cannotWaitForTurn) {
+            this.cannotWaitForTurnTimer -= delta;
+        }
+
+        if (this.cannotWaitForTurnTimer <= 0) {
+            this.cannotWaitForTurn = false;
+        }
     }
 
     enemyCollideTurn() {
         Array.from(this.level.enemyGroup.children.entries).forEach(
             (currentEnemy) => {
-                if (this.body.x != currentEnemy.body.x || this.body.y != currentEnemy.body.y && !currentEnemy.sliding) {
-                    if (this.collisionTurnedTimer <= 0) {
-                        if (this.horizontalCollision(currentEnemy, this)) {
-                            this.changeDirection();
-                            this.collisionTurnedTimer = this.ENEMY_COLLISION_TURN_TIMER;
-                        } else if (this.horizontalCollision(this, currentEnemy)) {
-                            this.changeDirection();
-                            this.collisionTurnedTimer = this.ENEMY_COLLISION_TURN_TIMER;
+                if (this.setWaitTurnTimer <= 0) {
+                    if (this.body.x != currentEnemy.body.x || this.body.y != currentEnemy.body.y && !currentEnemy.sliding) {
+                        if (this.collisionTurnedTimer <= 0) {
+                            if (this.horizontalCollision(currentEnemy, this)) {
+                                this.changeDirection();
+                                this.collisionTurnedTimer = this.ENEMY_COLLISION_TURN_TIMER;
+                                if (this.direction == currentEnemy.direction) {
+                                    currentEnemy.setWaitTurn();
+                                    this.setCannotWaitTurn();
+                                }
+                            } else if (this.horizontalCollision(this, currentEnemy)) {
+                                this.changeDirection();
+                                this.collisionTurnedTimer = this.ENEMY_COLLISION_TURN_TIMER;
+                                if (this.direction == currentEnemy.direction) {
+                                    currentEnemy.setWaitTurn();
+                                    this.setCannotWaitTurn();
+                                }
+                            }
                         }
-                    }         
+                    }
                 }
             }
         );
+    }
+
+    setCannotWaitTurn() {
+        this.cannotWaitForTurnTimer = this.ENEMY_COLLISION_TURN_TIMER * 4;
+        this.cannotWaitForTurn = true;
     }
 
     playerCollideTurn() {
@@ -86,7 +130,6 @@
                 this.changeDirection();
                 this.player.hurtBy(this);
                 this.playerCollisionTurnedTimer = this.ENEMY_COLLISION_TURN_TIMER;
-
             }
         }
     }
@@ -159,6 +202,24 @@
         this.player.hurtBy(enemy);
     }
 
+    checkKillAtSquishedOrFall(squishedTexture, fallingTexture, delta) {
+        if (this.killAt > 0) {
+            this.killed = true;
+            this.body.setVelocityX(0);
+
+            if (!this.killFalling) {
+                this.anims.play(squishedTexture);
+            } else {
+                this.setTexture(fallingTexture);
+            }
+
+            this.killAt -= delta;
+            if (this.killAt <= 0) {
+                this.kill();
+            }
+        }
+    }
+
     kill() {
         this.level.removeEnemy(this);
         this.destroy();
@@ -195,8 +256,6 @@
         } else if (enemy.body.x > this.body.x) {
             this.turnLeft();
         }
-
-        console.log(enemy);
     }
 
     turnAroundSpeed(speed, direction) {

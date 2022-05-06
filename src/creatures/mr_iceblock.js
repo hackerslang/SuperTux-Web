@@ -35,7 +35,6 @@
             super.playerCollideTurn();
         }
 
-        console.log( this);
         if (!this.player.isDead()) {
             this.scene.physics.world.collide(this, this.player, this.playerHit);
         }

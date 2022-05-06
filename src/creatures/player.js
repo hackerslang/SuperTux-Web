@@ -8,7 +8,12 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.originalLevel = config.level;
         this.anims.play("tux-stand");
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
-        this.body.setSize(48, 90, true);
+
+        this.REAL_COLLISION_BOX_WIDTH = 59;
+        this.REAL_COLLISION_BOX_HEIGHT = 80;
+
+        this.body.setSize(this.REAL_COLLISION_BOX_WIDTH, this.REAL_COLLISION_BOX_HEIGHT);
+        this.body.setOffset(10, 15);
         this.setDepth(999);
         this.health = 3;
 
@@ -75,6 +80,12 @@ class Tux extends Phaser.GameObjects.Sprite {
 
         this.falling = false;
         this.jumping = false;
+
+        this.skiddingTimer = 0;
+
+        this.INVINCIBLE_TIME = 14000;
+        this.INVINCIBLE_TIME_WARNING = 2000;
+        this.sparkleEveryOther = false;
     }
 
     getOriginalLevel() {
@@ -148,6 +159,8 @@ class Tux extends Phaser.GameObjects.Sprite {
     jump() {
         this.setVelocityY(-100);
         this.playAnimation('tux-jump');
+        this.body.setSize(59, 70, true);
+        this.body.setOffset(0, 5);
     }
 
     run(velocity, frameRate) {
@@ -171,14 +184,42 @@ class Tux extends Phaser.GameObjects.Sprite {
             return;
         }
 
-        if (this.invincible) {
+        if (this.invincible) { 
             if (this.invincibleTimer > 0) {
                 this.invincibleTimer -= delta;
                 this.invincibleStep += delta;
 
+                var random = Math.floor(Math.random() * 3);
+
                 if (this.invincibleStep >= 50) {
-                    this.invincibleIndex = (this.invincibleIndex == 5 ? 0 : this.invincibleIndex + 1);
-                    this.invincibleStep = 0;
+                    if (random == 0) {
+                        var particleX = this.body.x + Math.floor(Math.random() * this.REAL_COLLISION_BOX_WIDTH);
+                        var particleY = this.body.y + Math.floor(Math.random() * this.REAL_COLLISION_BOX_HEIGHT);
+                    }
+                
+                    this.sparkleEveryOther = !this.sparkleEveryOther;
+
+                    var sparkleKey = "";
+
+                    if (this.invincibleTimer > this.INVINCIBLE_TIME_WARNING) {
+                        if (this.sparkleEveryOther) {
+                            sparkleKey = "sparkle-medium";
+                        } else {
+                            sparkleKey = "sparkle-small";
+                        }
+                    } else {
+                        sparkleKey = "sparkle-dark";
+                    }
+
+                    var sparkle = new Sparkle({
+                        scene: this.scene,
+                        key: sparkleKey,
+                        level: this.level,
+                        x: particleX,
+                        y: particleY
+                    });
+
+                    
                 }
             } else {
                 this.invincible = false;
@@ -235,6 +276,7 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     die() {
+        this.scene.cameras.main.setLerp(0, 0);
         this.dieWithoutRemovingColliders();
         
         if (this.level.playerGroundCollider != null)
@@ -287,7 +329,7 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     onGround() {
-        return (this.getVelocityY() == 0 && !this.jumping) || this.slightlyAboveGround();
+        return (this.getVelocityY() == 0 && !this.jumping) || this.slightlyAboveGround() || this.onObject();
     }
 
     slightlyAboveGround() {
@@ -295,6 +337,58 @@ class Tux extends Phaser.GameObjects.Sprite {
         let groundYDelta = Math.abs(this.lastGroundY - this.y);
 
         return (absVelocityY == 16.625 || absVelocityY == 31.25) && groundYDelta < 0.85;
+    }
+
+    onObject() {
+        var isOnObject = false;
+        var playerX = this.x;
+        var playerY = Math.floor(this.y / 32);
+
+        if (this.onTopOfBlock()) {
+            isOnObject = true;
+        } else if (this.onTopOfEnemy()) {
+            isOnObject = true;
+        }
+
+        return isOnObject;
+    }
+
+    onTopOfBlock() {
+        var isOnTopOfBlock = false;
+        var playerY = Math.floor(this.y / 32);
+
+        Array.from(this.level.blockGroup.children.entries).forEach(
+            (block) => {
+                var blockY = Math.floor(block.y / 32);
+
+                if (this.x >= block.x - 20 && this.x <= block.x + 20 && playerY == blockY - 2) {
+                    isOnTopOfBlock = true;
+                    
+                    return;
+                }
+            }
+        );
+
+        return isOnTopOfBlock;
+    }
+
+    onTopOfEnemy() {
+        var isonTopOfEnemy = false;
+
+        Array.from(this.level.enemyGroup.children.entries).forEach(
+            (enemy) => {
+                if (enemy.enemyType == "krosh") {
+                    if (this.x >= enemy.x - (enemy.width / 2) && this.x <= enemy.x + (enemy.width / 2) //128 40 //enemy still in air, so player moves left and right!!!
+                        && this.y >= enemy.y - 111 && this.y <= enemy.y - 109) {
+                        isonTopOfEnemy = true;
+                        console.log("velocity: " + this.body.velocity.y);
+                        return;
+                    }
+                }
+            }
+        );
+
+        return isonTopOfEnemy;
     }
 
     doStandUp() {
@@ -411,7 +505,7 @@ class Tux extends Phaser.GameObjects.Sprite {
             //console.log("ONGROUND" + this.onGround());
         }
 
-        if ((vx < 0 && controller.hold('right')) || (vx > 0 && controller.hold('left'))) {
+        if ((vx < 0 && controller.hold('right') && !controller.hold('left')) || (vx > 0 && controller.hold('left') && !controller.hold('right'))) {
             if (this.onGround()) {
                 if (Math.abs(vx) > this.SKID_XM && this.skiddingTimer <= 0) { //use time, delta update function!
                     this.skiddingTimer = this.SKID_TIME;
@@ -442,7 +536,7 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     applyFriction() {
-        if (this.onGround() && this.getVelocityY() < this.WALK_SPEED) {
+        if (this.onGround() && this.getVelocityX() < this.WALK_SPEED) {
             this.setVelocityX(this.getVelocityX() / 2);
             this.setAccelerationX(0);
         } else {
@@ -457,7 +551,7 @@ class Tux extends Phaser.GameObjects.Sprite {
 
     makeInvincible() {
         this.invincible = true;
-        this.invincibleTimer = 5000;
+        this.invincibleTimer = this.INVINCIBLE_TIME;
     }
 
     onIce() {
@@ -486,7 +580,7 @@ class Tux extends Phaser.GameObjects.Sprite {
 
         let controller = this.getKeyController();
 
-        if (this.jumpButtonTimer <= 0 && this.canJump) {
+        if (this.jumpButtonTimer <= 0 && this.skiddingTimer <= 0 && this.canJump) {
              if (controller.pressed('jump')) {
                 this.doJump(Math.abs(vx) > this.MAX_WALK_XM ? -580 : -520);
             } 
@@ -515,9 +609,9 @@ class Tux extends Phaser.GameObjects.Sprite {
         // else if backflipping
 
         if (this.invincible) {
-            this.tint = [0xFFFFFF, 0xFF0000, 0xFFFFFF, 0x00FF00, 0xFFFFFF, 0x0000FF][this.invincibleIndex];
+            //this.tint = [0xFFFFFF, 0xFF0000, 0xFFFFFF, 0x00FF00, 0xFFFFFF, 0x0000FF][this.invincibleIndex];
         } else if (this.wasHurt <= 0) {
-            this.tint = 0xFFFFFF;
+           //this.tint = 0xFFFFFF;
         }
 
         if (this.duck && this.isBig) {
@@ -575,7 +669,7 @@ class Tux extends Phaser.GameObjects.Sprite {
 
     drawSkid() {
         this.flipDraw();
-        this.playAnimation("tux-skid");
+        this.setTexture("tux-skid");
     }
 
     drawWalking() {

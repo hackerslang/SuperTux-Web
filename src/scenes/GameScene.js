@@ -1,33 +1,33 @@
 class LevelFactory {
-    makeLevel (levelData, scene) {
+    constructor(scene) {
+        this.levels = [];
+        this.index = 0;
+        this.scene = scene;
+
+        this.levels.push(new LevelTheBeginningData());
+        this.levels.push(new LevelTheDescentData());
+        this.levels.push(new LevelCastle1Data());
+    }
+
+    getLevel(index) {
+        return this.makeLevel(this.levels[index]);
+    }
+
+    getNexLevel() {
+        this.index++;
+
+        return getLevel(this.index);
+    }
+
+    makeLevel (levelData) {
         switch (levelData.landscape) {
             case 'snow':
-                return new SnowLevel(levelData, scene);
+                return new SnowLevel(levelData, this.scene);
             case 'castle':
-                return new CastleLevel(levelData, scene);
+                return new CastleLevel(levelData, this.scene);
             case 'castle2':
-                return new CastleLevel(levelData, scene, "castle2");
+                return new CastleLevel(levelData, this.scene, "castle2");
         }
-    }
-}
-
-var Levels = {
-    getLevel1: function (scene) {
-        var levelFactory = new LevelFactory();
-
-        return levelFactory.makeLevel(new Level1Data(), scene);
-    },
-
-    getLevel2: function (scene) {
-        var levelFactory = new LevelFactory();
-
-        return levelFactory.makeLevel(new Level2Data(), scene);
-    },
-
-    getLevel3: function (scene) {
-        var levelFactory = new LevelFactory();
-
-        return levelFactory.makeLevel(new Level3Data(), scene);
     }
 }
 
@@ -36,6 +36,8 @@ class GameScene extends Phaser.Scene {
         super({
             key: 'GameScene' 
         });
+
+        this.levelFactory = new LevelFactory(this);
     }
 
     generateKeyController() {
@@ -70,13 +72,13 @@ class GameScene extends Phaser.Scene {
     preload() {
         this.loadImages();
         this.generateKeyController();
-        this.level1 = Levels.getLevel3(this);
-        this.level1.preload();
+        this.currentLevel = this.levelFactory.getLevel(0);
+        this.currentLevel.preload();
     }
 
     create() {
         this.makeAnimations();
-        this.level1.create();
+        this.currentLevel.create();
         this.addHealthBar();
     }
 
@@ -90,6 +92,8 @@ class GameScene extends Phaser.Scene {
         this.loadPowerupImages();
         this.loadSnowImages();
         this.loadCastleImages();
+        this.loadWayArrowImages();
+        this.loadBackgroundImages();
     }
 
     loadUIImages() {
@@ -124,12 +128,22 @@ class GameScene extends Phaser.Scene {
         }
     }
 
+    loadBackgroundImages() {
+        this.load.image('pile-of-snow', './assets/images/level/snow/pile-of-snow.png');
+        this.load.image('cloud', './assets/images/doodads/cloud.png');
+        this.load.image('grass1', './assets/images/doodads/grass1.png');
+        this.load.image('grass2', './assets/images/doodads/grass2.png');
+    }
+
     loadEnemyImages() {
         this.loadSnowBallImages();
+        this.loadBouncingSnowBallImages();
         this.loadMrIceBlockImages();
         this.loadKroshImages();
         this.loadFishImages();
         this.loadGhoulImages();
+        this.loadJumpyImages();
+        this.loadSparkleImages();
     }
 
     loadCoinImages() {
@@ -146,6 +160,12 @@ class GameScene extends Phaser.Scene {
         this.load.image('wood-single', blockPath + 'wood-tiny.png'); 
         this.load.image('bonus-block', blockPath + 'bonus-block.png');
         this.load.image('bonus-block-empty', blockPath + 'block-empty.png');
+
+        this.load.image('brick', blockPath + 'brick.png');
+
+        for (var i = 1; i < 7; i++) {
+            this.load.image('brick-piece' + i, blockPath + 'brick_piece' + i + '.png');
+        }
     }
 
     loadSpikeImages() {
@@ -169,8 +189,7 @@ class GameScene extends Phaser.Scene {
         for (var i = 0; i < 2; i++) {
             this.load.image('fish-up-' + i, fishPath + 'up-' + i + '.png');
         }
-        //this.load.image('fish-up-0', fishPath + 'up-0.png');
-        //this.load.image('fish-up-1', fishPath + 'up-1.png');
+
         this.load.image('fish-down', fishPath + 'down.png');
     }
 
@@ -182,6 +201,14 @@ class GameScene extends Phaser.Scene {
         }
 
         this.load.image('ghoul-squished', ghoulPath + 'd1.png');
+    }
+
+    loadJumpyImages() {
+        var jumpyPath = './assets/images/creatures/jumpy/';
+
+        this.load.image('jumpy-down', jumpyPath + 'left-down.png');
+        this.load.image('jumpy-middle', jumpyPath + 'left-middle.png');
+        this.load.image('jumpy-up', jumpyPath + 'left-up.png');
     }
 
     loadPowerupImages() {
@@ -226,7 +253,19 @@ class GameScene extends Phaser.Scene {
             this.load.image('snowball-walk-' + (i + 1), snowballPath + 'snowball-' + i + '.png');
         }
 
-        this.load.image('snowball-squished-0', snowballPath + 'snowball-squished-left.png');
+        this.load.image('snowball-squished', snowballPath + 'snowball-squished-left.png');
+    }
+
+    loadBouncingSnowBallImages() {
+        var bouncingSnowballPath = './assets/images/creatures/bouncing_snowball/';
+
+        for (let i = 1; i < 4; i++) {
+            this.load.image('bouncing-snowball-bounce-' + i, bouncingSnowballPath + 'bounce' + i + '.png');
+        }
+
+        for (let i = 1; i < 9; i++) {
+            this.load.image('bouncing-snowball-' + i, bouncingSnowballPath + 'bs' + i + '.png');
+        }
     }
 
     loadMrIceBlockImages() {
@@ -240,7 +279,64 @@ class GameScene extends Phaser.Scene {
         this.load.image('mriceblock-stomped-0', mrIceBlockPath + 'stomped-left.png');
     }
 
+    loadWayArrowImages() {
+        var wayArrowPath = './assets/images/level/arrow/';
+
+        this.load.image('way-arrow-left', wayArrowPath + 'large-arrow-left.png');
+        this.load.image('way-arrow-right', wayArrowPath + 'large-arrow-right.png');
+    }
+
+    loadSparkleImages() {
+        var particlesPath = './assets/images/particles/';
+
+        this.load.image('sparkle-0', particlesPath + 'sparkle-0.png');
+        this.load.image('sparkle-1', particlesPath + 'sparkle-1.png');
+        this.load.image('sparkle-dark-0', particlesPath + 'sparkle-dark-0.png');
+        this.load.image('sparkle-dark-1', particlesPath + 'sparkle-dark-1.png');
+    }
+
     makeAnimations() {
+        this.anims.create(
+            {
+                key: "sparkle-small",
+                frames: [
+                    { key: "sparkle-0" },
+                    { key: "sparkle-1" },
+                    { key: "sparkle-0" }
+                ],
+                frameRate: 10,
+                repeat: 1
+            }
+        );
+
+        this.anims.create(
+            {
+                key: "sparkle-medium",
+                frames: [
+                    { key: "sparkle-0" },
+                    { key: "sparkle-1" },
+                    { key: "sparkle-0" },
+                    { key: "sparkle-1" },
+                    { key: "sparkle-0" }
+                ],
+                frameRate: 10,
+                repeat: 1
+            }
+        );
+
+        this.anims.create(
+            {
+                key: "sparkle-dark",
+                frames: [
+                    { key: "sparkle-dark-0" },
+                    { key: "sparkle-dark-1" },
+                    { key: "sparkle-dark-0" }
+                ],
+                frameRate: 10,
+                repeat: 1
+            }
+        );
+
         this.anims.create(
             {
                 key: "ghoul",
@@ -268,6 +364,97 @@ class GameScene extends Phaser.Scene {
                 repeat: -1
             }
         );
+
+        this.anims.create(
+            {
+                key: "bouncing-snowball-left",
+                frames: [
+                    { key: 'bouncing-snowball-1' },
+                    { key: 'bouncing-snowball-2' },
+                    { key: 'bouncing-snowball-3' },
+                    { key: 'bouncing-snowball-4' },
+                    { key: 'bouncing-snowball-5' },
+                    { key: 'bouncing-snowball-6' },
+                    { key: 'bouncing-snowball-7' },
+                    { key: 'bouncing-snowball-8' },
+                    { key: 'bouncing-snowball-8' }
+                    //{ key: 'bouncing-snowball-8' }
+                    //{ key: 'bouncing-snowball-8' },
+                    //{ key: 'bouncing-snowball-8' }
+                ],
+                frameRate: 10,
+                repeat: -1
+            }
+        );
+
+        this.anims.create(
+            {
+                key: "bouncing-snowball-left2",
+                frames: [
+                    { key: 'bouncing-snowball-1' },
+                    { key: 'bouncing-snowball-2' },
+                    { key: 'bouncing-snowball-3' },
+                    { key: 'bouncing-snowball-4' },
+                    { key: 'bouncing-snowball-5' },
+                    { key: 'bouncing-snowball-6' },
+                    { key: 'bouncing-snowball-7' },
+                    { key: 'bouncing-snowball-8' },
+                    { key: 'bouncing-snowball-8' }
+                    //{ key: 'bouncing-snowball-8' }
+                    //{ key: 'bouncing-snowball-8' },
+                    //{ key: 'bouncing-snowball-8' }
+                ],
+                frameRate: 10,
+                repeat: -1
+            }
+        );
+
+        this.anims.create(
+            {
+                key: "bouncing-snowball-left-down",
+                frames: [
+                    { key: 'bouncing-snowball-8' },
+                    { key: 'bouncing-snowball-bounce-1' },
+                    { key: 'bouncing-snowball-bounce-2' },
+                    { key: 'bouncing-snowball-bounce-3' }
+                ],
+                frameRate: 10,
+                repeat: 1
+            }
+        );
+
+        this.anims.create(
+            {
+                key: "bouncing-snowball-left-up",
+                frames: [
+                    { key: 'bouncing-snowball-bounce-3' },
+                    { key: 'bouncing-snowball-bounce-2' },
+                    { key: 'bouncing-snowball-bounce-1' },
+                    { key: 'bouncing-snowball-8' }
+                ],
+                frameRate: 10,
+                repeat: 1
+            }
+        );
+
+        this.anims.create(
+            {
+                key: "bouncing-snowball-squished",
+                frames: [
+                    { key: 'bouncing-snowball-squished' }
+                ]
+            }
+        );
+
+        this.anims.create(
+            {
+                key: "snowball-squished",
+                frames: [
+                    { key: 'snowball-squished' }
+                ]
+            }
+        );
+
 
         this.anims.create(
             {
@@ -408,14 +595,6 @@ class GameScene extends Phaser.Scene {
             }
         );
 
-        this.anims.create(
-            {
-                key: 'snowball-squished',
-                frames: [{ key: 'snowball-squished-0' }],
-                frameRate: 24
-            }
-        );
-
         var mrIceBlockWalkFrames = [];
 
         for (var i = 0; i < this.N_SNOWBALL_RUN; i++) {
@@ -440,14 +619,11 @@ class GameScene extends Phaser.Scene {
                 frameRate: 24
             }
         );
-
-
     }
-
 
     update(time, delta) {
         this.getKeyController().update();
         this.healthBar.update(time, delta);
-        this.level1.update(time, delta);
+        this.currentLevel.update(time, delta);
     }
 }

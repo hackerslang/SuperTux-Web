@@ -1,5 +1,5 @@
 const config = {
-    type: Phaser.WEBGL,
+    type: Phaser.Canvas,
     width: 1024,
     height: 768,
     physics: {

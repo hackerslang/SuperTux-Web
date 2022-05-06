@@ -3,6 +3,8 @@
         super(config);
 
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
+        this.body.setSize(37, 46);
+        this.body.setOffset(2, 1);
         this.killAt = 0;
         this.direction = 0;
         this.startY = this.body.y;

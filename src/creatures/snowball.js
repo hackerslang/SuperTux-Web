@@ -8,14 +8,18 @@
         this.anims.play("snowball-walk");
         this.firstActivated = false;
 
-        this.killFalling = false;
         this.body.setSize(30, 30, true);
         this.setOrigin(0.5, 0.5);
     }
 
     update(time, delta) {
-        if (!this.activated()) {
+        super.checkKillAtSquishedOrFall("snowball-squished", "snowball-walk-1", delta);
 
+        if (this.killed) {
+            return;
+        }
+
+        if (!this.activated()) {
             return;
         }
 
@@ -36,32 +40,8 @@
                 this.scene.physics.world.collide(this, this.player, this.playerHit);
             }
         }
-
-        if (this.killAt !== 0) {
-            this.body.setVelocityX(0);
-
-            if (!this.killFalling) {
-                this.anims.play("snowball-squished");
-            } else {
-                this.setTexture("snowball-walk-1");
-            }
-
-            this.killAt -= delta;
-            if (this.killAt <= 0) {
-                this.kill();
-            }
-            return;
-        }
-
-        super.walkAndTurnOnEdge();
-
-         
-
         
-
-        //else if (Math.floor(this.body.x / 32)
-
-
+        super.walkAndTurnOnEdge();
     }
 
     enemyHit(thisEnemy, enemy) {
