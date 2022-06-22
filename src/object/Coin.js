@@ -8,7 +8,7 @@
         this.player = config.player;
         this.level = config.level;
         this.scene = config.scene;
-        this.id = config.id
+        this.id = config.id;
         this.anims.play('coin-moving');
     }
 
@@ -17,6 +17,7 @@
     }
 
     coinHit(coin, player) {
+        player.level.addCollectedCoin();
         coin.remove();
         coin.destroy();
     }

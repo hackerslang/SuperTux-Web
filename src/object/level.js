@@ -8,6 +8,7 @@ class Level {
         this.landscape = config.landscape;
 
         this.TILE_DIMENSION = 32;
+        this.COIN = 'c';
         this.CLOUD = 'cloud';
         this.PILE_OF_SNOW = 'pile-of-snow';
         this.GRASS1 = 'grass1'; 
@@ -25,6 +26,23 @@ class Level {
         this.WAY_ARROW_DOWN = 'arrow-down';
         this.WAY_ARROW_LEFT = 'arrow-left';
         this.WAY_ARROW_RIGHT = 'arrow-right';
+
+        this.TOTAL_NUMBER_OF_COINS = this.getTotalNumberofCoins();
+        this.playerTotalCoinsCollected = 0;
+    }
+
+    addCollectedCoin() {
+        this.playerTotalCoinsCollected++;
+        this.updateTotalCoinsCollectedUI();
+    }
+
+    updateTotalCoinsCollectedUI() {
+        this.scene.setCollectedCoins(this.playerTotalCoinsCollected);
+    }
+
+    pause() {
+        game.scene.pause("GameScene");
+        game.scene.start("PauseScene");
     }
 
     parseObjects() {
@@ -573,6 +591,20 @@ class Level {
 
                     break;
 
+                case "flying-snowball":
+                    creatureObject = new FlyingSnowBall({
+                        id: i,
+                        scene: this.scene,
+                        key: "flying-snowball",
+                        x: creature.position.x * 32,
+                        y: creature.position.y * 32,
+                        realY: creature.position.realY,
+                        player: this.player,
+                        level: this
+                    });
+
+                    break;
+
                 case "iceblock":
                     creatureObject = new MrIceBlock({
                         id: i,
@@ -674,6 +706,20 @@ class Level {
 
     getEnemies() {
         return this.creatureSprites;
+    }
+
+    getTotalNumberofCoins() {
+        var totalNumberofCoins = 0;
+        
+        for (var i = 0; i < this.level.length; i++) {
+            for (var j = 0; j < this.level[i].length; j++) {
+                if (this.level[i][j] == this.COIN) {
+                    totalNumberofCoins++;
+                }
+            }
+        }
+
+        return totalNumberofCoins;
     }
 
     update(time, delta) {
@@ -934,8 +980,6 @@ class CastleLevel  extends Level {
 
         let groundLayer = map.createStaticLayer(0, snowTiles, 0, 0);
         this.groundLayer = groundLayer;
-
-        
 
         this.coinGroup = this.scene.add.group();
         this.parseCoinLayer();
@@ -1308,23 +1352,13 @@ class LevelTheBeginningData {
                 }
             },
 
-            //{
-            //    name: "jumpy",
-            //    direction: "left",
-            //    position: {
-            //        x: 28,
-            //        y: 17,
-            //        realY: 17
-            //    }
-            //},
-            
             {
-                name: "krosh",
+                name: "jumpy",
+                direction: "left",
                 position: {
-                    x: 48,
-                    y: 8,
-                    stopY: 20,
-                    realY: 20
+                    x: 28,
+                    y: 17,
+                    realY: 17
                 }
             },
 
@@ -1333,6 +1367,15 @@ class LevelTheBeginningData {
                 position: {
                     x: 61,
                     y: 25
+                }
+            },
+
+            {
+                name: "flying-snowball",
+                direction: "left",
+                position: {
+                    x: 12,
+                    y: 14
                 }
             }
         ];

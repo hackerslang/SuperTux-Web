@@ -114,8 +114,6 @@
         this.body.velocity.x = this.direction * 100;
     }
 
-
-
     playAnimation(key) {
         this.anims.play(key, true);
     }

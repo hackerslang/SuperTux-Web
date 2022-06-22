@@ -86,6 +86,15 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.INVINCIBLE_TIME = 14000;
         this.INVINCIBLE_TIME_WARNING = 2000;
         this.sparkleEveryOther = false;
+
+        this.inputEnabled = true;
+        this.setInteractive();
+
+
+    }
+
+    listener() {
+        alert("");
     }
 
     getOriginalLevel() {
@@ -114,6 +123,10 @@ class Tux extends Phaser.GameObjects.Sprite {
 
     getDuckKey() {
         return this.scene.keys['duck'];
+    }
+
+    getPauseKey() {
+        return this.scene.keys['menu'];
     }
 
     getAccelerationX() {
@@ -164,7 +177,6 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     run(velocity, frameRate) {
-        //console.log(this.sprite);
         this.setVelocityX(velocity);
         this.playAnimation('tux-run');
     }
@@ -207,16 +219,17 @@ class Tux extends Phaser.GameObjects.Sprite {
                         } else {
                             sparkleKey = "sparkle-small";
                         }
-                    } else {
+                    } else {    
                         sparkleKey = "sparkle-dark";
                     }
 
-                    var sparkle = new Sparkle({
+                    new Particle({
                         scene: this.scene,
                         key: sparkleKey,
                         level: this.level,
                         x: particleX,
-                        y: particleY
+                        y: particleY,
+                        depth: 1000
                     });
 
                     
@@ -381,7 +394,6 @@ class Tux extends Phaser.GameObjects.Sprite {
                     if (this.x >= enemy.x - (enemy.width / 2) && this.x <= enemy.x + (enemy.width / 2) //128 40 //enemy still in air, so player moves left and right!!!
                         && this.y >= enemy.y - 111 && this.y <= enemy.y - 109) {
                         isonTopOfEnemy = true;
-                        console.log("velocity: " + this.body.velocity.y);
                         return;
                     }
                 }
@@ -413,6 +425,10 @@ class Tux extends Phaser.GameObjects.Sprite {
         //} else {
         //    this.currentDelta = 0;
         //}
+
+        if (this.getKeyController().pressed('menu')) {
+            this.level.pause();
+        }
 
         this.handleHorizontalInput(delta);
 

@@ -46,7 +46,8 @@ class GameScene extends Phaser.Scene {
             'fire': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.CTRL),
             'left': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
             'right': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
-            'duck': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN)
+            'duck': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN),
+            'menu': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC)
         };
 
         this.keyController = new KeyController(this.keys, this);
@@ -59,6 +60,23 @@ class GameScene extends Phaser.Scene {
             x: 90,
             y: 20
         });
+    }
+
+    addCoinsDisplay() {
+        this.coinsDisplay = new CoinsDisplay({
+            scene: this,
+            level: this.currentLevel
+        });
+
+        this.coinsDisplay.create();
+    }
+
+    setCollectedCoins(coins) {
+        this.coinsDisplay.setCollectedCoins(coins);
+    }
+
+    addCollectedCoin() {
+        this.coinsDisplay.addCollectedCoin();
     }
 
     setHealthBar(newHealth) {
@@ -80,12 +98,14 @@ class GameScene extends Phaser.Scene {
         this.makeAnimations();
         this.currentLevel.create();
         this.addHealthBar();
+        this.addCoinsDisplay();
     }
 
     loadImages() {
         this.loadUIImages();
         this.loadTuxImages();
         this.loadEnemyImages();
+        this.loadParticleImages();
         this.loadCoinImages();
         this.loadBlockImages();
         this.loadSpikeImages();
@@ -100,9 +120,11 @@ class GameScene extends Phaser.Scene {
         var uiPath = "./assets/images/ui/";
 
         this.loadHealthBarImages(uiPath);
+        this.loadCoinsDisplayImage(uiPath);
+        this.loadMediumFont(uiPath);
     }
 
-    loadHealthBarImages(uiPath){
+    loadHealthBarImages(uiPath) {
         var percent = ["100", "66", "33", "0"];
 
         for (var i = 0; i < percent.length; i++) {
@@ -110,6 +132,16 @@ class GameScene extends Phaser.Scene {
         }
 
         this.load.image("healthbar-border", uiPath + "healthbar-border.png");
+    }
+
+    loadCoinsDisplayImage(uiPath) {
+        this.load.image("coins", uiPath + "coins.png");
+    }
+
+    loadMediumFont(uiPath) {
+        for (var i = 0; i < 10; i++) {
+            this.load.image("medium-font-" + i, uiPath + "fonts/" + i + ".png")
+        }
     }
 
     loadTuxImages() {
@@ -138,12 +170,13 @@ class GameScene extends Phaser.Scene {
     loadEnemyImages() {
         this.loadSnowBallImages();
         this.loadBouncingSnowBallImages();
+        this.loadFlyingSnowBallImages();
         this.loadMrIceBlockImages();
+        this.loadMrBombImages();
         this.loadKroshImages();
         this.loadFishImages();
         this.loadGhoulImages();
         this.loadJumpyImages();
-        this.loadSparkleImages();
     }
 
     loadCoinImages() {
@@ -268,6 +301,20 @@ class GameScene extends Phaser.Scene {
         }
     }
 
+    loadFlyingSnowBallImages() {
+        var FLYING_SNOWBALL_PATH = './assets/images/creatures/flying_snowball/';
+
+        for (let i = 0; i < 4; i++) {
+            this.load.image('flying-snowball-' + i, FLYING_SNOWBALL_PATH + 'left-' + i + '.png');
+        }
+
+        for (let i = 0; i < 3; i++) {
+            this.load.image('flying-snowball-melting-' + i, FLYING_SNOWBALL_PATH + 'melting-' + i + '.png');
+        }
+
+        this.load.image('flying-snowball-squished', FLYING_SNOWBALL_PATH + 'squished-left.png');
+    }
+
     loadMrIceBlockImages() {
         var mrIceBlockPath = './assets/images/creatures/mr_iceblock/';
         this.N_MR_ICEBLOCK_RUN = 8;
@@ -279,6 +326,18 @@ class GameScene extends Phaser.Scene {
         this.load.image('mriceblock-stomped-0', mrIceBlockPath + 'stomped-left.png');
     }
 
+    loadMrBombImages() {
+        var mrBombPath = './assets/images/creatures/mr_bomb/';
+
+        for (let i = 1; i < 9; i++) {
+            this.load.image('mrbomb-left-' + i, mrBombPath + 'bomb' + i + '.png');
+        }
+
+        for (let i = 0; i < 5; i++) {
+            this.load.image('mrbomb-exploding-' + i, mrBombPath + 'exploding-left-' + i + '.png');
+        }
+    }
+
     loadWayArrowImages() {
         var wayArrowPath = './assets/images/level/arrow/';
 
@@ -286,16 +345,62 @@ class GameScene extends Phaser.Scene {
         this.load.image('way-arrow-right', wayArrowPath + 'large-arrow-right.png');
     }
 
-    loadSparkleImages() {
-        var particlesPath = './assets/images/particles/';
+    loadParticleImages() {
+        this.loadSparkleImages();
+        this.loadSmokeImages();
+    }
 
-        this.load.image('sparkle-0', particlesPath + 'sparkle-0.png');
-        this.load.image('sparkle-1', particlesPath + 'sparkle-1.png');
-        this.load.image('sparkle-dark-0', particlesPath + 'sparkle-dark-0.png');
-        this.load.image('sparkle-dark-1', particlesPath + 'sparkle-dark-1.png');
+    loadSparkleImages() {
+        const PARTICLES_PATH = './assets/images/particles/';
+
+        this.load.image('sparkle-0', PARTICLES_PATH + 'sparkle-0.png');
+        this.load.image('sparkle-1', PARTICLES_PATH + 'sparkle-1.png');
+        this.load.image('sparkle-dark-0', PARTICLES_PATH + 'sparkle-dark-0.png');
+        this.load.image('sparkle-dark-1', PARTICLES_PATH + 'sparkle-dark-1.png');
+    }
+
+    loadSmokeImages() {
+        const PARTICLES_PATH = './assets/images/particles/';
+
+        for (let i = 1; i < 7; i++) {
+            this.load.image('smoke-' + i, PARTICLES_PATH + 'smoke-' + i + '.png');
+        }
     }
 
     makeAnimations() {
+        this.anims.create(
+            {
+                key: "mrbomb-left",
+                frames: [
+                    { key: "mrbomb-left-1" },
+                    { key: "mrbomb-left-2" },
+                    { key: "mrbomb-left-3" },
+                    { key: "mrbomb-left-4" },
+                    { key: "mrbomb-left-5" },
+                    { key: "mrbomb-left-6" },
+                    { key: "mrbomb-left-7" },
+                    { key: "mrbomb-left-8" }
+                ],
+                frameRate: 10,
+                repeat: -1
+            }
+        );
+
+        this.anims.create(
+            {
+                key: "mrbomb-exploding-left",
+                frames: [
+                    { key: "mrbomb-exploding-0" },
+                    { key: "mrbomb-exploding-1" },
+                    { key: "mrbomb-exploding-2" },
+                    { key: "mrbomb-exploding-3" },
+                    { key: "mrbomb-exploding-4" }
+                ],
+                frameRate: 10,
+                repeat: -1
+            }
+        );
+
         this.anims.create(
             {
                 key: "sparkle-small",
@@ -331,6 +436,22 @@ class GameScene extends Phaser.Scene {
                     { key: "sparkle-dark-0" },
                     { key: "sparkle-dark-1" },
                     { key: "sparkle-dark-0" }
+                ],
+                frameRate: 10,
+                repeat: 1
+            }
+        );
+
+        this.anims.create(
+            {
+                key: "smoke",
+                frames: [
+                    { key: "smoke-1" },
+                    { key: "smoke-2" },
+                    { key: "smoke-3" },
+                    { key: "smoke-4" },
+                    { key: "smoke-5" },
+                    { key: "smoke-6" }
                 ],
                 frameRate: 10,
                 repeat: 1
@@ -451,6 +572,29 @@ class GameScene extends Phaser.Scene {
                 key: "snowball-squished",
                 frames: [
                     { key: 'snowball-squished' }
+                ]
+            }
+        );
+
+        this.anims.create(
+            {
+                key: 'flying-snowball',
+                frames: [
+                    { key: 'flying-snowball-0' },
+                    { key: 'flying-snowball-2' },
+                    { key: 'flying-snowball-2' },
+                    { key: 'flying-snowball-3' }
+                ]
+            }
+        );
+
+        this.anims.create(
+            {
+                key: 'flying-snowball-melting',
+                frames: [
+                    { key: 'flying-snowball-melting-0' },
+                    { key: 'flying-snowball-melting-1' },
+                    { key: 'flying-snowball-melting-2' }
                 ]
             }
         );

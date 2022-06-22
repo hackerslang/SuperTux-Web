@@ -37,6 +37,8 @@
         this.sliding = false;
         this.killFalling = false;
         this.killed = false;
+
+        this.setDepth(101);
     }
 
     setWaitTurn() {

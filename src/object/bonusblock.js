@@ -19,6 +19,7 @@
         this.body.setBounce(0);
         this.body.setImmovable(true);
         this.gotHitByPlayer = false;
+        this.releasedPowerUp = false;
     }
 
     update(time, delta) {
@@ -30,11 +31,6 @@
     }
 
     blockHit(block, player) {
-        if (this.gotHitByPlayer) {
-            return;
-        }
-
-        block.body.setVelocityY(0);
         if (!block.done && block.hitFromBelow(block, player) && !block.isEmpty) {
             block.body.setImmovable(false);
             block.setTexture("bonus-block-empty");
@@ -51,10 +47,14 @@
                 }
             });
 
-            if (block.powerupType == 'star') {
-                block.level.addStar(block.x, block.y - 32);
-            } else if (block.powerupType == 'egg') {
-                block.level.addEgg(block.x, block.y - 32);
+            if (!this.releasedPowerUp) {
+                if (block.powerupType == 'star') {
+                    block.level.addStar(block.x, block.y - 32);
+                } else if (block.powerupType == 'egg') {
+                    block.level.addEgg(block.x, block.y - 32);
+                }
+
+                this.releasedPowerUp = true;
             }
         }
 

@@ -1,4 +1,4 @@
-﻿class Sparkle extends Phaser.GameObjects.Sprite {
+﻿class Particle extends Phaser.GameObjects.Sprite {
     constructor(config) {
         super(config.scene, config.x, config.y, config.key);
         config.scene.physics.world.enable(this);
@@ -12,8 +12,8 @@
         this.scene = config.scene;
         this.body.setBounce(0);
         this.body.setImmovable(true);
-        this.setDepth(1000);
-
+        this.setDepth(config.depth);
+;
         this.anims.play(this.key).once('animationcomplete', () => {
             this.destroy();
         });

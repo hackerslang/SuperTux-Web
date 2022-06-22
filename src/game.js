@@ -1,7 +1,10 @@
+const CANVAS_WIDTH = 1024;
+const CANVAS_HEIGHT = 768;
+
 const config = {
     type: Phaser.Canvas,
-    width: 1024,
-    height: 768,
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT,
     physics: {
         default: 'arcade',
         arcade: {
@@ -10,7 +13,8 @@ const config = {
         }
     },
     scene: [
-        GameScene
+        GameScene,
+        PauseScene
     ]
 };
 
