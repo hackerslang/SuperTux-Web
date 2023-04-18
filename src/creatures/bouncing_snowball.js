@@ -19,6 +19,10 @@
     }
 
     update(time, delta) {
+        super.activeUpdate();
+
+
+
         super.checkKillAtSquishedOrFall("snowball-squished", "bouncing-snowball-4", delta);
 
         if (this.killed || this.killAt > 0) {
@@ -34,7 +38,7 @@
         if (!this.firstActivated) {
             this.activateStartMoving();
         }
-        
+
         super.update(time, delta);
 
         if (!this.killFalling) {
@@ -60,10 +64,12 @@
         var levelTiles = this.level.getLevelData();
         var tileY = Math.floor(this.body.y / 32);
         var tileX = Math.floor(this.body.x / 32);
-        
+
+        super.killWhenFallenDown();
+
         if (levelTiles[tileY + 1][tileX] != 0 && this.body.velocity.y >= 64) {
             this.anims.play("bouncing-snowball-left-down");
-        } 
+        }
 
         if (this.body.blocked.down) {
             var bounceSpeed = -this.body.velocity.y * 0.8;
@@ -77,8 +83,9 @@
 
     playerHit(enemy, player) {
         if (enemy.verticalHit(enemy, player)) {
-            player.enemyBounce(enemy);
-            enemy.getFlat();
+            player.bounce(enemy);
+            enemy.anims.play("snowball-squished");
+            enemy.killSquished();
         } else if (player.invincible) {
             enemy.killNoFlat();
         } else {
@@ -96,7 +103,7 @@
 
     activateStartMoving() {
         this.firstActivated = true;
-        
+
         this.direction = this.DIRECTION_LEFT;
         this.body.velocity.x = this.direction * this.BSNOWBALL_WALKSPEED;
     }

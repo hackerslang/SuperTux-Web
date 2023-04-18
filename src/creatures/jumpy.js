@@ -20,22 +20,30 @@
         this.changeAt = 0;
     }
 
-    update(time, delta) {
+    activeUpdate(time, delta) {         //FULLY IMPLEMENTED!!
         if (!this.player.isDead()) {
             this.scene.physics.world.collide(this, this.player, this.playerHit);
         }
 
-        this.changeAt -= delta;
+        super.activeUpdate(time, delta);
 
+        if (this.frozen) {
+            return;
+        }
+
+        if (this.changeAt > 0) {
+            this.changeAt -= delta;
+        }
+        
         if (this.isBlockedDownGroundLayer()) {
             this.body.velocity.y = -this.JUMP_SPEED;
             this.jumping = true;
-            this.setTexture("jumpy-down");
+            this.drawDown();
         } else if (this.body.velocity.y == 0) {
-            this.setTexture("jumpy-up");
+            this.drawUp();
         } else if (this.changeAt <= 0) {
-            this.setTexture("jumpy-middle");
-            this.changeAt = 250;
+            this.drawMiddle();
+            this.changeAt = 100;
         }
 
         if (Math.abs(this.player.x - this.x) > 60) {
@@ -48,7 +56,48 @@
             }
         }
     }
-    
+
+    drawDown() {
+        this.setTexture("jumpy-down");
+        this.adjustBodyDown();
+    }
+
+    drawUp() {
+        this.setTexture("jumpy-up");
+        this.adjustBodyUp();
+    }
+
+    drawMiddle() {
+        this.setTexture("jumpy-middle");
+        this.adjustBodyMiddle();
+    }
+
+    adjustBodyDown() {
+        this.adjustBody(47, 46, 0, 0);
+    }
+
+    adjustBodyUp() {
+        this.adjustBody(47, 54, 0, 0);
+    }
+
+    adjustBodyMiddle() {
+        this.adjustBody(47, 49, 0, 0);
+    }
+
+    freeze() {
+        super.freeze();
+
+        this.setVelocityY(Math.abs(0, this.getVelocityY()));
+    }
+
+    isFreezable() {
+        return true;
+    }
+
+    isFlammable() {
+        return true;
+    }
+
     isBlockedDownGroundLayer() {
         var tileX = Math.floor(this.x / 32);
         var tileY = Math.floor(this.y / 32);

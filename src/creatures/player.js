@@ -9,11 +9,11 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.anims.play("tux-stand");
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
 
-        this.REAL_COLLISION_BOX_WIDTH = 59;
+        this.REAL_COLLISION_BOX_WIDTH = 46;
         this.REAL_COLLISION_BOX_HEIGHT = 80;
 
         this.body.setSize(this.REAL_COLLISION_BOX_WIDTH, this.REAL_COLLISION_BOX_HEIGHT);
-        this.body.setOffset(10, 15);
+        this.body.setOffset(15, 15);
         this.setDepth(999);
         this.health = 3;
 
@@ -90,7 +90,11 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.inputEnabled = true;
         this.setInteractive();
 
+        this.grabbedObject = null;
+        this.stone = false;
+        this.doesButtJump = false;
 
+        this.adjustBodyStandingRight();
     }
 
     listener() {
@@ -655,19 +659,62 @@ class Tux extends Phaser.GameObjects.Sprite {
         }
     }
 
+    adjustBody(width, height, offsetX, offsetY) {
+        this.body.setSize(width, height);
+        this.body.setOffset(offsetX, offsetY);
+    }
+
+    adjustBodyStanding() {
+        if (this.direction == this.DIRECTION_RIGHT) {
+            this.adjustBodyStandingRight();
+        } else {
+            this.adjustBodyStandingLeft();
+        }
+    }
+
+    adjustBodySkidding() {
+        if (this.direction == this.DIRECTION_RIGHT) { //Whatch out, when walking right and skidding, skidding is left and vice versa!
+            this.adjustBodySkiddingRight();
+        } else {
+            this.adjustBodySkiddingLeft();
+        }
+    }
+
+    adjustBodyStandingRight() {
+        this.adjustBody(46, 80, 15, 15);
+    }
+
+    adjustBodyStandingLeft() {
+        this.adjustBody(46, 80, 15, 15);
+    }
+
+    adjustBodySkiddingRight() {
+        this.adjustBody(62, 80, 8, 15);
+    }
+
+    adjustBodySkiddingLeft() {
+        this.adjustBody(62, 80, 8, 15);
+    }
+
+    adjustBodyFalling() {
+        this.adjustBody(59, 78, 10, 15);
+    }
+
     drawFalling() {
         this.flipDraw();
         this.setTexture("tux-jump-0");
-        //this.playAnimation("tux-jump");
+        this.adjustBodyFalling();
     }
 
     drawJumping() {
         this.flipDraw();
         this.setTexture("tux-jump-0");
+        this.adjustBodyFalling();
     }
 
     drawStanding() {
         this.playAnimation("tux-stand");
+        this.adjustBodyStanding();
     }
 
     removeFalling() {
@@ -686,6 +733,7 @@ class Tux extends Phaser.GameObjects.Sprite {
     drawSkid() {
         this.flipDraw();
         this.setTexture("tux-skid");
+        this.adjustBodySkidding();
     }
 
     drawWalking() {
@@ -702,7 +750,7 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.playAnimation("tux-gameover");
     }
 
-    enemyBounce(enemy) {
+    bounce(enemy) {
         // Force Mario y-position up a bit (on top of the enemy) to avoid getting killed
         // by neigbouring enemy before being able to bounce
         this.body.y = enemy.body.y - this.body.height;
@@ -747,6 +795,18 @@ class Tux extends Phaser.GameObjects.Sprite {
         }
 
         this.scene.setHealthBar(newHealth);
+    }
+
+    getGrabbedObject() {
+        return this.grabbedObject;
+    }
+
+    unGrab() {
+        this.grabbedObject = null;
+    }
+
+    isStone() {
+        return this.stone;
     }
 }
 

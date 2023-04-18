@@ -1,19 +1,36 @@
-﻿class Enemy extends Phaser.GameObjects.Sprite {
+﻿EnemyState = {
+    STATE_INIT: 0,
+    STATE_INACTIVE: 1,
+    STATE_ACTIVE: 2,
+    STATE_SQUISHED: 3,
+    STATE_FALLING: 4,
+    STATE_BURNING: 5,
+    STATE_MELTING: 6,
+    STATE_GROUND_MELTING: 7,
+    STATE_INSIDE_MELTING: 8,
+    STATE_GEAR: 9
+}
+
+class Enemy extends Phaser.GameObjects.Sprite {
     constructor(config) {
         super(config.scene, config.x, config.y, config.key);
         config.scene.physics.world.enable(this);
         config.scene.add.existing(this);
+        this.scene = config.scene; //console.log(this.scene);
         this.level = config.level;
         this.alive = true;
-        this.id = config.id
+        this.id = config.id;
         this.enemyType = config.key;
 
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
         this.body.allowGravity = true;
         this.hasBeenSeen = false;
 
+        this.setDepth(900);
+
         this.realY = config.realY;
         this.player = config.player;
+        this.DIRECTION_AUTO = -2;
         this.DIRECTION_LEFT = -1;
         this.DIRECTION_RIGHT = 1;
 
@@ -21,10 +38,10 @@
         this.turnedAroundLeft = false;
         this.turnedAroundRight = false;
 
-        this.PADDING_ENEMY_COLLISION = 2;
-        this.ENEMY_COLLISION_TURN_TIMER = 400;
+        this.PADDING_ENEMY_COLLISION = 2; /**/
+        this.ENEMY_COLLISION_TURN_TIMER = 400; /**/
 
-        this.enemyLayerCollider = this.scene.physics.add.collider(this, this.level.enemyGroup);
+        //this.enemyLayerCollider = this.scene.physics.add.collider(this, this.level.enemyGroup);
         this.groundLayerCollider = this.scene.physics.add.collider(this, this.level.groundLayer);
 
         this.collisionTurnedTimer = 0;
@@ -38,8 +55,38 @@
         this.killFalling = false;
         this.killed = false;
 
+        this.state = EnemyState.STATE_INIT;
+
+        //this.setCanBeSquished(config);
+        //this.setCanSlide(config);
+
+        this.SQUISH_TIME = 2;
+
         this.setDepth(101);
     }
+
+    //setCanBeSquished(config) {
+    //    this.canBeSquished = false;
+    //    if (config.canBeSquished != null) {
+    //        this.canBeSquished = config.canBeSquished;
+
+    //        if (this.canBeSquished) {
+    //            this.squishedSprite = config.squishedSprite;
+    //        }
+    //    }
+    //}
+
+    //setCanSlide(config) {
+    //    this.canSlide = false;
+    //    if (config.canSlide != null) {
+    //        this.canSlide = true;
+
+    //        if (this.canSlide) {
+    //            this.slideSpeed = config.slideSpeed;
+    //            this.slideSprite = config.slideSprite;
+    //        }
+    //    }
+    //}
 
     setWaitTurn() {
         if (!this.cannotWaitForTurn) {
@@ -50,43 +97,406 @@
 
     activated() {
         if (!this.hasBeenSeen) {
-            if (this.x < this.scene.cameras.main.scrollX + this.scene.sys.game.canvas.width + 32) {
-                this.hasBeenSeen = true;
-                this.body.velocity.x = this.direction;
-                
-                return true;
-            }
-            
-            return false;
+            return (this.x < this.scene.cameras.main.scrollX + this.scene.sys.game.canvas.width + 32);
         }
         
         return true;
     }
 
+    intialize() {
+
+    }
+
+    activate() {
+
+    }
+
+    deActivate() {
+
+    }
+
+    isOffScreen() {
+        if (this.x < this.scene.cameras.main.scrollX) {
+            return true;
+        }
+
+        if (this.x > this.scene.cameras.main.scrollX + this.scene.sys.game.canvas.width + 32) {
+            return true;
+        }
+
+        if (this.y < this.scene.cameras.main.scrollY) {
+            return true;
+        }
+
+        if (this.y > this.scene.cameras.main.scrollY + this.scene.sys.game.canvas.height + 32) {
+            return true;
+        }
+
+        return false;
+    }
+
     update(time, delta) {
+        if (this.killed) {
+            return;
+        }
+
+        if (this.scene == null) {
+            return;
+        }
+
+        this.scene.physics.world.collide(this, this.level.enemyGroup, this.enemyHit);
+
+        if (!this.player.isDead()) {
+            this.scene.physics.world.collide(this, this.player, this.playerHit);
+        }
+
+        if (this.stateTimer > 0) {
+            this.stateTimer -= delta;
+        }
+
+        if (this.frozen && !this.isGrabbed()) {
+            //setcolgroup??
+            if (this.unfreezeTimer <= 0) {
+                this.unfreeze(false);
+            }
+        }
+
+
+
+        //this.ifPlayerAliveAddCollisionDetection();
+        //this.addGroundCollisionDetection();
+        //this.addAllOtherEnemiesCollisionDetection();
+
+        if (this.isActiveFlag && this.isOffScreen()) {
+            this.deActivate();
+            this.setState(EnemyState.STATE_INACTIVE);
+        }
+
+        switch (this.state) {
+            case EnemyState.STATE_ACTIVE:
+                this.isActiveFlag = true;
+
+                //NOG DOEN!!
+                if (this.frozen && this.isPortable()) {
+                    //this.freezeSpite
+                } else {
+
+                }
+
+                this.activeUpdate();
+                break;
+
+            case EnemyState.STATE_INIT:
+            case EnemyState.STATE_INACTIVE:
+                this.isActiveFlag = false;
+                this.inActiveUpdate();
+                this.tryActivate();
+                break;
+
+            case EnemyState.STATE_BURNING:
+                this.isActiveFlag = false;
+                //to be done ...
+                break;
+
+            case EnemyState.STATE_GEAR:
+            case EnemyState.STATE_SQUISHED:
+                this.isActiveFlag = false;
+
+                if (this.stateTimer <= 0) {
+                    this.remove();
+                }
+
+                
+
+                break;
+
+            //melting, ground melting to be done ...
+
+            case EnemyState.STATE_FALLING:
+                this.isActiveFlag = false;
+
+                break;
+        }
+
+
+        
+
         this.setWaitTurnTimer -= delta;
 
-        if (this.collisionTurnedTimer > 0) {
-            this.collisionTurnedTimer -= delta;
+        //if (this.collisionTurnedTimer > 0) {
+        //    this.collisionTurnedTimer -= delta;
+        //}
+
+        //if (this.playerCollisionTurnedTimer > 0) {
+        //    this.playerCollisionTurnedTimer -= delta;
+        //}
+
+        ////if (this.waitForTurn && this.setWaitTurnTimer <= 0) {
+        ////    this.changeDirection();
+        ////    this.collisionTurnedTimer = this.ENEMY_COLLISION_TURN_TIMER;
+        ////    this.waitForTurn = false;
+        ////}
+
+        //if (this.cannotWaitForTurn) {
+        //    this.cannotWaitForTurnTimer -= delta;
+        //}
+
+        //if (this.cannotWaitForTurnTimer <= 0) {
+        //    this.cannotWaitForTurn = false;
+        //}
+    }
+
+    activeUpdate() {
+        if (this.frozen) {
+            this.setTexture(this.aims.currentFrame);
+        }
+    }
+
+    inActiveUpdate() {
+        this.setVelocityX(0);
+    }
+
+    deActivate() {
+
+    }
+
+    //Must be overridden
+    enemyHit(thisEnemy, enemy) {
+        
+    }
+
+    tryActivate() {
+        if (this.player == null || this.player.isDead()) {
+            return;
         }
 
-        if (this.playerCollisionTurnedTimer > 0) {
-            this.playerCollisionTurnedTimer -= delta;
+        if (!this.isOffScreen()) {
+            this.setState(EnemyState.STATE_ACTIVE);
+
+            if (!this.isInitialized) {
+                if (this.startDirection == this.DIRECTION_AUTO) {
+                    if (this.player.x < this.x) {
+                        this.direction = this.DIRECTION_LEFT;
+                    } else {
+                        this.direction = this.DIRECTION_RIGHT;
+                    }
+                }
+
+                this.initialize();
+                this.isInitialized = true;
+            }
+            
+            this.activate();
         }
 
-        if (this.waitForTurn && this.setWaitTurnTimer <= 0) {
-            this.changeDirection();
-            this.collisionTurnedTimer = this.ENEMY_COLLISION_TURN_TIMER;
-            this.waitForTurn = false;
+        
+    }
+
+    initialize() {
+
+    }
+
+    //must be overridden
+    playerHit(enemy, player) {                  //OK, but needs revision!!
+
+
+        if (player.invincible /* || */) {
+            this.killFall();
+
+            return;
         }
 
-        if (this.cannotWaitForTurn) {
-            this.cannotWaitForTurnTimer -= delta;
+        if (enemy.isGrabbed()) {
+            return;
         }
 
-        if (this.cannotWaitForTurnTimer <= 0) {
-            this.cannotWaitForTurn = false;
+        if (player.getGrabbedObject() != null && !enemy.frozen) {
+            var grabbedEnemy = player.getGrabbedObject();
+
+            if (grabbedEnemy != null) {
+                player.getGrabbedObject().unGrab(player, player.direction);
+                player.stopGrabbin();
+                grabbedEnemy.killFall();
+                enemy.killFall();
+
+                return;
+            }
         }
+
+        if (enemy.verticalHit(enemy, player)) {
+            if (player.isStone()) {
+                enemy.killFall();
+
+                return;
+            } else {
+                if (enemy.collisionSquished(player)) {
+                    return;
+                }
+            }
+        } else {
+            if (enemy.body.x < player.body.x) {
+                enemy.turnRight();
+            } else if (enemy.body.x > player.body.x) {
+                enemy.turnLeft();
+            }
+        }
+
+        if (enemy.frozen) {
+            //collision solid
+        } else {
+            player.hurtBy(enemy);
+        }
+    }
+
+    turnAroundSpeed(speed, direction) {
+        this.direction = direction;
+        this.body.velocity.x = this.direction * speed;
+        this.flipX = !this.flipX;
+        this.turnedAroundLeft = (direction != this.DIRECTION_RIGHT);
+        this.turnedAroundRight = (direction == this.DIRECTION_RIGHT);
+    }
+
+    turnRight() {
+        this.turnAroundSpeed(this.walkSpeed, this.DIRECTION_RIGHT);
+    }
+
+    turnLeft() {
+        this.turnAroundSpeed(this.walkSpeed, this.DIRECTION_LEFT);
+    }
+
+    isGrabbed() {
+        return false;
+    }
+
+    killFall() {
+        if (!this.isActive()) {
+            return;
+        }
+
+        if (this.frozen) {
+            //playSound
+            //Do Stuff ...
+        } else {
+            //playSound
+            this.setVelocityY(0);
+            this.setAccelerationY(0);
+            this.setState(EnemyState.STATE_FALLING);
+            //do stuff!! kill phaser
+        }
+
+
+    }
+
+    collisionSquished(player) {
+        if (this.frozen) {
+            if (player != null && player.doesButtJump) {
+                player.bounce(this);
+                this.killFall();
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    killSquished() {                //ALMOST DONE!!!
+        if (!this.isActive()) {
+            return;
+        }
+
+        //playSound
+
+        this.stopMoving();
+        this.setState(EnemyState.STATE_SQUISHED);
+
+        if (this.player != null && !this.player.isDead()) {
+            this.player.bounce(this);
+        }
+
+        this.stateTimer = this.SQUISH_TIME * 1000;
+        this.killed = true;
+
+        //do dead stuff killAt = ??
+    }
+
+    isActive() {
+        return this.isActiveFlag;
+    }
+
+    stopMoving() {
+        this.setVelocityX(0);
+        this.setVelocityY(0);
+    }
+
+    setState(state) {
+        if (this.state == state) {
+            return;
+        }
+
+        var lastState = this.state;
+        this.state = state;
+
+        switch (state) {
+            case EnemyState.STATE_BURNING:
+                this.stateTimer = this.BURN_TIME;
+
+                break;
+            case EnemyState.STATE_SQUISHED:
+                this.stateTimer = this.SQUISH_TIME;
+
+                break;
+            case EnemyState.STATE_GEAR:
+                this.stateTimer = this.GEAR_TIME;
+
+                break;
+            case EnemyState.STATE_ACTIVE:
+                //setGroup(active);
+
+                break;
+            case EnemyState.STATE_INACTIVE:
+                if (lastState == EnemyState.STATE_SQUISHED || lastState == EnemyState.STATE_FALLING) {
+                    //removeMe();
+                }
+                //setGroup(disabled);
+
+                break;
+
+            case EnemyState.STATE_FALLING:
+                //setGroup(disabled);
+
+                break;
+
+            default:
+
+                break;
+        }
+    }
+
+    ifPlayerAliveAddCollisionDetection() {
+        if (!this.player.isDead()) {
+            this.scene.physics.world.collide(this, this.player, this.playerHit);
+        }
+    }
+
+    addGroundCollisionDetection() {
+        this.scene.physics.world.collide(this, this.level.groundLayer);
+    }
+
+    addAllOtherEnemiesCollisionDetection() {
+        var enemies = this.level.getEnemies();
+
+        for (var i = 0; i < enemies.length; i++) {
+            var enemy = enemies[i];
+
+            if (this !== enemy) {
+                this.scene.physics.world.collide(this, enemy, this.collideEnemy);
+            }
+        }
+    }
+    
+    collideEnemy(self, other) {
+        self.changeDirection();
     }
 
     enemyCollideTurn() {
@@ -222,9 +632,24 @@
         }
     }
 
-    kill() {
+    killWhenFallenDown() {
+        if (this.hasFallenDown()) {
+            this.remove();
+        }
+    }
+
+    hasFallenDown() {
+        var levelTiles = this.level.getLevelData();
+        var tileY = Math.floor(this.body.y / 32);
+
+        return tileY + 1 >= levelTiles.length;
+    }
+
+    remove() {
         this.level.removeEnemy(this);
         this.destroy();
+
+        this.killed = true;
     }
 
     killNoFlat(texture) {
@@ -236,13 +661,7 @@
         this.groundLayerCollider.destroy();
     }
 
-    getFlat(texture) {
-        this.setTexture(texture);
-        this.body.height = 13;
-        this.body.setVelocityX(0);
-        this.body.acceleration.x = 0;
-        this.killAt = 500;
-    }
+
 
     walkAndTurnOnEdge() {
         if ((this.body.x <= 10 || this.isAtEdgeLeft()) && !this.turnedAroundRight) {
@@ -260,20 +679,30 @@
         }
     }
 
-    turnAroundSpeed(speed, direction) {
-        this.direction = direction;
-        this.body.velocity.x = this.direction * speed;
-        this.flipX = !this.flipX;
-        this.turnedAroundLeft = (direction != this.DIRECTION_RIGHT);
-        this.turnedAroundRight = (direction == this.DIRECTION_RIGHT);
+    switchDirection() {
+        if (this.direction == this.DIRECTION_LEFT) {
+            this.turnRight();
+        } else if (this.direction == this.DIRECTION_RIGHT) {
+            this.turnLeft();
+        }
     }
 
     turnRight() {
-        this.turnAroundSpeed(100, this.DIRECTION_RIGHT);
+        this.direction = this.DIRECTION_RIGHT;
+        this.hasJustTurnedAroundLeft = false;
+        this.hasJustTurnedAroundRight = true;
+
+        this.setVelocityX(Math.abs(this.getVelocityX()));
+        this.flipX = true;
     }
 
     turnLeft() {
-        this.turnAroundSpeed(100, this.DIRECTION_LEFT);
+        this.direction = this.DIRECTION_LEFT;
+        this.hasJustTurnedAroundLeft = true;
+        this.hasJustTurnedAroundRight = false;
+
+        this.setVelocityX(-Math.abs(this.getVelocityX()));
+        this.flipX = false;
     }
 
     enemyOut() {
@@ -282,5 +711,104 @@
 
     slideKill() {
 
+    }
+
+    setVelocityX(x) {
+        this.body.setVelocityX(x);
+    }
+
+    setVelocityY(y) {
+        this.body.setVelocityY(y);
+    }
+
+    setAccelerationX(x) {
+        this.body.setAccelerationX(x);
+    }
+
+    setAccelerationY(y) {
+        this.body.setAccelerationY(y);
+    }
+
+    getVelocityX() {
+        return this.body.velocity.x;
+    }
+
+    getVelocityY() {
+        return this.body.velocity.y;
+    }
+
+    getAccelerationX() {
+        return this.body.acceleration.x;
+    }
+
+    getAccelerationY() {
+        return this.body.acceleration.y;
+    }
+
+    onGround() {
+        return (this.getVelocityY() == 0 && !this.jumping) || this.slightlyAboveGround() || this.onObject();
+    }
+
+    slightlyAboveGround() {
+        let absVelocityY = Math.abs(this.getVelocityY());
+        let groundYDelta = Math.abs(this.lastGroundY - this.y);
+
+        return (absVelocityY == 16.625 || absVelocityY == 31.25) && groundYDelta < 0.85;
+    }
+
+    onObject() {
+        var isOnObject = false;
+        var playerX = this.x;
+        var playerY = Math.floor(this.y / 32);
+
+        if (this.onTopOfBlock()) {
+            isOnObject = true;
+        } else if (this.onTopOfEnemy()) {
+            isOnObject = true;
+        }
+
+        return isOnObject;
+    }
+
+    onTopOfBlock() {
+        var isOnTopOfBlock = false;
+        var playerY = Math.floor(this.y / 32);
+
+        Array.from(this.level.blockGroup.children.entries).forEach(
+            (block) => {
+                var blockY = Math.floor(block.y / 32);
+
+                if (this.x >= block.x - 20 && this.x <= block.x + 20 && playerY == blockY - 2) {
+                    isOnTopOfBlock = true;
+
+                    return;
+                }
+            }
+        );
+
+        return isOnTopOfBlock;
+    }
+
+    onTopOfEnemy() {
+        var isonTopOfEnemy = false;
+
+        Array.from(this.level.enemyGroup.children.entries).forEach(
+            (enemy) => {
+                if (enemy.enemyType == "krosh") {
+                    if (this.x >= enemy.x - (enemy.width / 2) && this.x <= enemy.x + (enemy.width / 2) //128 40 //enemy still in air, so player moves left and right!!!
+                        && this.y >= enemy.y - 111 && this.y <= enemy.y - 109) {
+                        isonTopOfEnemy = true;
+                        return;
+                    }
+                }
+            }
+        );
+
+        return isonTopOfEnemy;
+    }
+
+    adjustBody(width, height, offsetX, offsetY) {
+        this.body.setSize(width, height);
+        this.body.setOffset(offsetX, offsetY);
     }
 }

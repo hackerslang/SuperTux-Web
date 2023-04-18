@@ -38,6 +38,31 @@ class GameScene extends Phaser.Scene {
         });
 
         this.levelFactory = new LevelFactory(this);
+        this.imageLoader = new ImageLoader({ scene: this });
+        this.animationLoader = new AnimationLoader({ scene: this });
+
+        this.DEFAULT_FRAMERATE = 10;
+        this.REPEAT_INFINITELY = -1;
+
+        this.UI_PATH = './assets/images/ui/';
+        this.TUX_PATH = './assets/images/creatures/tux/';
+        this.COIN_PATH = './assets/images/objects/';
+        this.BLOCK_PATH = './assets/images/level/blocks/';
+        this.SPIKE_PATH = './assets/images/objects/spikes/';
+        this.KROSH_PATH = './assets/images/creatures/krosh/';
+        this.FISH_PATH = './assets/images/creatures/fish/';
+        this.GHOUL_PATH = './assets/images/creatures/ghoul/';
+        this.JUMPY_PATH = './assets/images/creatures/jumpy/';
+        this.POWER_UP_PATH = './assets/images/powerups/';
+        this.SNOW_SPRITES_PATH = './assets/images/level/snow/';
+        this.CASTLE_SPRITES_PATH = './assets/images/level/castle/';
+        this.SNOWBALL_PATH = './assets/images/creatures/snowball/';
+        this.BOUNCING_SNOWBALL_PATH = './assets/images/creatures/bouncing_snowball/';
+        this.FLYING_SNOWBALL_PATH = './assets/images/creatures/flying_snowball/';
+        this.MR_ICEBLOCK_PATH = './assets/images/creatures/mr_iceblock/';
+        this.MR_BOMB_PATH = './assets/images/creatures/mr_bomb/';
+        this.ARROW_PATH = './assets/images/level/arrow/';
+        this.PARTICLES_PATH = './assets/images/particles/';
     }
 
     generateKeyController() {
@@ -116,55 +141,28 @@ class GameScene extends Phaser.Scene {
         this.loadBackgroundImages();
     }
 
+    loadImage(caption, path) {
+        this.imageLoader.loadImage(caption, path, 'png');
+    }
+
+    loadMultipleImages(caption, path, start, end) {
+        this.imageLoader.loadMultipleImages(caption, path, 'png', start, end);
+    }
+
+    loadSpriteSheet(caption, path, frameWidth, frameHeight, n) {
+        this.imageLoader.loadSpriteSheet(caption, path, frameWidth, frameHeight, n);
+    }
+
     loadUIImages() {
-        var uiPath = "./assets/images/ui/";
-
-        this.loadHealthBarImages(uiPath);
-        this.loadCoinsDisplayImage(uiPath);
-        this.loadMediumFont(uiPath);
-    }
-
-    loadHealthBarImages(uiPath) {
-        var percent = ["100", "66", "33", "0"];
-
-        for (var i = 0; i < percent.length; i++) {
-            this.load.image("healthbar-" + percent[i], uiPath + "healthbar-" + percent[i] + ".png");
-        }
-
-        this.load.image("healthbar-border", uiPath + "healthbar-border.png");
-    }
-
-    loadCoinsDisplayImage(uiPath) {
-        this.load.image("coins", uiPath + "coins.png");
-    }
-
-    loadMediumFont(uiPath) {
-        for (var i = 0; i < 10; i++) {
-            this.load.image("medium-font-" + i, uiPath + "fonts/" + i + ".png")
-        }
+        this.imageLoader.loadImagesFromData("UI");
     }
 
     loadTuxImages() {
-        var tuxPath = './assets/images/creatures/tux/';
-        this.N_TUX_RUN = 6;
-        this.load.image("tux-duck", tuxPath + "duck-0.png");
-        this.load.image("tux-skid", tuxPath + "skid-0.png");
-        this.load.image('tux-gameover-1', tuxPath + 'gameover-0.png');
-        this.load.image('tux-gameover-2', tuxPath + 'gameover-1.png');
-        this.load.image('tux-stand-0', tuxPath + 'stand-0.png');
-        this.load.image('tux-idle-1', tuxPath + 'idle-0.png');
-        this.load.image('tux-idle-2', tuxPath + 'idle-1.png');
-        this.load.image('tux-jump-0', tuxPath + 'jump-0.png');
-        for (let i = 0; i < this.N_TUX_RUN; i++) {
-            this.load.image('tux-run-' + (i + 1), tuxPath + 'walk-' + i + '.png');
-        }
+        this.imageLoader.loadImagesFromData("tux");
     }
 
     loadBackgroundImages() {
-        this.load.image('pile-of-snow', './assets/images/level/snow/pile-of-snow.png');
-        this.load.image('cloud', './assets/images/doodads/cloud.png');
-        this.load.image('grass1', './assets/images/doodads/grass1.png');
-        this.load.image('grass2', './assets/images/doodads/grass2.png');
+        this.imageLoader.loadImagesFromData("backgrounds");
     }
 
     loadEnemyImages() {
@@ -180,169 +178,82 @@ class GameScene extends Phaser.Scene {
     }
 
     loadCoinImages() {
-        var coinPath = './assets/images/objects/';
-        this.N_COINS = 16;
+        var N_COINS = 16;
 
-        this.load.spritesheet('coin', './assets/images/objects/coins.png', { frameWidth: 32, frameHeight: 32 }, this.N_COINS);
+        this.loadSpriteSheet('coin', this.COIN_PATH + 'coins', 32, 32, N_COINS);
     }
 
     loadBlockImages() {
-        var blockPath = './assets/images/level/blocks/';
-
-        this.load.spritesheet('wood', blockPath + 'wood.png', { frameWidth: 32, frameHeight: 32 }, 4);
-        this.load.image('wood-single', blockPath + 'wood-tiny.png'); 
-        this.load.image('bonus-block', blockPath + 'bonus-block.png');
-        this.load.image('bonus-block-empty', blockPath + 'block-empty.png');
-
-        this.load.image('brick', blockPath + 'brick.png');
-
-        for (var i = 1; i < 7; i++) {
-            this.load.image('brick-piece' + i, blockPath + 'brick_piece' + i + '.png');
-        }
+        this.loadSpriteSheet('wood', this.BLOCK_PATH + 'wood', 32, 32, 4);
+        this.loadImage('wood-single', this.BLOCK_PATH  + 'wood-tiny');
+        this.loadImage('bonus-block', this.BLOCK_PATH  + 'bonus-block');
+        this.loadImage('bonus-block-empty', this.BLOCK_PATH  + 'block-empty');
+        this.loadImage('brick', this.BLOCK_PATH + 'brick');
+        this.loadMultipleImages('brick-piece', this.BLOCK_PATH + 'brick_piece', 1, 6);
     }
 
     loadSpikeImages() {
-        var spikePath = './assets/images/objects/spikes/';
-
-        this.load.image('spike-up', spikePath + 'spikeup.png'); 
-        this.load.image('spike-down', spikePath + 'spikedown.png'); 
-        this.load.image('spike-left', spikePath + 'spikeleft.png'); 
-        this.load.image('spike-right', spikePath + 'spikeright.png'); 
+        this.loadImage('spike-up', this.SPIKE_PATH + 'spikeup'); 
+        this.loadImage('spike-down', this.SPIKE_PATH + 'spikedown');
+        this.loadImage('spike-left', this.SPIKE_PATH + 'spikeleft');
+        this.loadImage('spike-right', this.SPIKE_PATH + 'spikeright');
     }
 
     loadKroshImages() {
-        var kroshPath = './assets/images/creatures/krosh/';
-
-        this.load.image('krosh', kroshPath + 'krosh.png'); 
+        this.imageLoader.loadImagesFromData("krosh"); 
     }
 
     loadFishImages() {
-        var fishPath = './assets/images/creatures/fish/';
-
-        for (var i = 0; i < 2; i++) {
-            this.load.image('fish-up-' + i, fishPath + 'up-' + i + '.png');
-        }
-
-        this.load.image('fish-down', fishPath + 'down.png');
+        this.imageLoader.loadImagesFromData("fish");
     }
 
     loadGhoulImages() {
-        var ghoulPath = './assets/images/creatures/ghoul/';
-
-        for (var i = 0; i < 8; i++) {
-            this.load.image('ghoul-' + (i + 1), ghoulPath + 'g' + (i + 1) + '.png');
-        }
-
-        this.load.image('ghoul-squished', ghoulPath + 'd1.png');
+        this.imageLoader.loadImagesFromData("ghoul");
     }
 
     loadJumpyImages() {
-        var jumpyPath = './assets/images/creatures/jumpy/';
-
-        this.load.image('jumpy-down', jumpyPath + 'left-down.png');
-        this.load.image('jumpy-middle', jumpyPath + 'left-middle.png');
-        this.load.image('jumpy-up', jumpyPath + 'left-up.png');
+        this.imageLoader.loadImagesFromData("jumpy");
     }
 
     loadPowerupImages() {
-        var powerupPath = './assets/images/powerups/';
-
-        this.load.spritesheet('star', powerupPath + 'star.png', { frameWidth: 32, frameHeight: 32 }, 8); 
-        this.load.image('egg', powerupPath + 'egg-shade.png');
+        this.imageLoader.loadImagesFromData("powerup");
     }
 
     loadSnowImages() {
-        var snowSpritesPath = './assets/images/level/snow/';
-
-        this.load.image('igloo-fg', snowSpritesPath + 'exitfg.png');
-        this.load.image('igloo-bg', snowSpritesPath + 'exitbg.png');
-        this.load.image('antarctic-water', snowSpritesPath + 'antarctic.png');
-        this.load.spritesheet('icebridge', snowSpritesPath + 'icebridge.png', { frameWidth: 32, frameHeight: 32 }, 4);
-
-        this.N_ANTARCTIC_WATER = 8;
-
-        for (var i = 0; i < this.N_ANTARCTIC_WATER; i++) {
-            this.load.image('antarctic-water-' + (i + 1), snowSpritesPath + 'antarctic-' + (i + 1) + '.png');
-        }
+        this.loadImage('igloo-fg', this.SNOW_SPRITES_PATH + 'exitfg');
+        this.loadImage('igloo-bg', this.SNOW_SPRITES_PATH + 'exitbg');
+        this.loadImage('antarctic-water', this.SNOW_SPRITES_PATH + 'antarctic');
+        this.loadSpriteSheet('icebridge', this.SNOW_SPRITES_PATH + 'icebridge', 32, 32, 4);
+        this.loadMultipleImages('antarctic-water-', this.SNOW_SPRITES_PATH + 'antarctic-', 1, 8);
     }
 
     loadCastleImages() {
-        var castleSpritesPath = './assets/images/level/castle/';
-
-        this.load.image('lava', castleSpritesPath + 'lava.png');
-
-        this.N_LAVA = 8;
-
-        for (var i = 0; i < this.N_LAVA; i++) {
-            this.load.image('lava-' + (i + 1), castleSpritesPath + 'lava-' + (i + 1) + '.png');
-        }
+        this.loadImage('lava', this.CASTLE_SPRITES_PATH + 'lava');
+        this.loadMultipleImages('lava-', this.CASTLE_SPRITES_PATH + 'lava-', 1, 8);
     }
 
     loadSnowBallImages() {
-        var snowballPath = './assets/images/creatures/snowball/';
-        this.N_SNOWBALL_RUN = 8;
-
-        for (let i = 0; i < this.N_SNOWBALL_RUN; i++) {
-            this.load.image('snowball-walk-' + (i + 1), snowballPath + 'snowball-' + i + '.png');
-        }
-
-        this.load.image('snowball-squished', snowballPath + 'snowball-squished-left.png');
+        this.imageLoader.loadImagesFromData("snowball");
     }
 
     loadBouncingSnowBallImages() {
-        var bouncingSnowballPath = './assets/images/creatures/bouncing_snowball/';
-
-        for (let i = 1; i < 4; i++) {
-            this.load.image('bouncing-snowball-bounce-' + i, bouncingSnowballPath + 'bounce' + i + '.png');
-        }
-
-        for (let i = 1; i < 9; i++) {
-            this.load.image('bouncing-snowball-' + i, bouncingSnowballPath + 'bs' + i + '.png');
-        }
+        this.imageLoader.loadImagesFromData("bouncing-snowball");
     }
 
     loadFlyingSnowBallImages() {
-        var FLYING_SNOWBALL_PATH = './assets/images/creatures/flying_snowball/';
-
-        for (let i = 0; i < 4; i++) {
-            this.load.image('flying-snowball-' + i, FLYING_SNOWBALL_PATH + 'left-' + i + '.png');
-        }
-
-        for (let i = 0; i < 3; i++) {
-            this.load.image('flying-snowball-melting-' + i, FLYING_SNOWBALL_PATH + 'melting-' + i + '.png');
-        }
-
-        this.load.image('flying-snowball-squished', FLYING_SNOWBALL_PATH + 'squished-left.png');
+        this.imageLoader.loadImagesFromData("flying-snowball");
     }
 
     loadMrIceBlockImages() {
-        var mrIceBlockPath = './assets/images/creatures/mr_iceblock/';
-        this.N_MR_ICEBLOCK_RUN = 8;
-
-        for (let i = 0; i < this.N_SNOWBALL_RUN; i++) {
-            this.load.image('mriceblock-walk-' + (i + 1), mrIceBlockPath + 'iceblock-' + i + '.png');
-        }
-
-        this.load.image('mriceblock-stomped-0', mrIceBlockPath + 'stomped-left.png');
+        this.imageLoader.loadImagesFromData("mr-iceblock");
     }
 
     loadMrBombImages() {
-        var mrBombPath = './assets/images/creatures/mr_bomb/';
-
-        for (let i = 1; i < 9; i++) {
-            this.load.image('mrbomb-left-' + i, mrBombPath + 'bomb' + i + '.png');
-        }
-
-        for (let i = 0; i < 5; i++) {
-            this.load.image('mrbomb-exploding-' + i, mrBombPath + 'exploding-left-' + i + '.png');
-        }
+        this.imageLoader.loadImagesFromData("mr-bomb");
     }
 
     loadWayArrowImages() {
-        var wayArrowPath = './assets/images/level/arrow/';
-
-        this.load.image('way-arrow-left', wayArrowPath + 'large-arrow-left.png');
-        this.load.image('way-arrow-right', wayArrowPath + 'large-arrow-right.png');
+        this.imageLoader.loadImagesFromData("arrow");
     }
 
     loadParticleImages() {
@@ -351,24 +262,28 @@ class GameScene extends Phaser.Scene {
     }
 
     loadSparkleImages() {
-        const PARTICLES_PATH = './assets/images/particles/';
-
-        this.load.image('sparkle-0', PARTICLES_PATH + 'sparkle-0.png');
-        this.load.image('sparkle-1', PARTICLES_PATH + 'sparkle-1.png');
-        this.load.image('sparkle-dark-0', PARTICLES_PATH + 'sparkle-dark-0.png');
-        this.load.image('sparkle-dark-1', PARTICLES_PATH + 'sparkle-dark-1.png');
+        this.loadMultipleImages('sparkle-', this.PARTICLES_PATH + 'sparkle-', 0, 1);
+        this.loadMultipleImages('sparkle-dark-', this.PARTICLES_PATH + 'sparkle-dark-', 0, 1);
     }
 
     loadSmokeImages() {
-        const PARTICLES_PATH = './assets/images/particles/';
+        this.loadMultipleImages('smoke-', this.PARTICLES_PATH + 'smoke-', 1, 6);
+    }
 
-        for (let i = 1; i < 7; i++) {
-            this.load.image('smoke-' + i, PARTICLES_PATH + 'smoke-' + i + '.png');
+    createAnimation(key, frames, frameRate, repeat) {
+        if (frameRate == null) {
+            frameRate = this.DEFAULT_FRAMERATE;
         }
+
+        if (repeat == null) {
+            repeat = this.REPEAT_INFINITELY;
+        }
+
+        AnimationCreator.getInstance({ scene: this }).createAnimation(key, frames, frameRate, repeat);
     }
 
     makeAnimations() {
-        this.anims.create(
+        this.createAnimation(
             {
                 key: "mrbomb-left",
                 frames: [
@@ -386,7 +301,7 @@ class GameScene extends Phaser.Scene {
             }
         );
 
-        this.anims.create(
+        this.createAnimation(
             {
                 key: "mrbomb-exploding-left",
                 frames: [
@@ -401,35 +316,36 @@ class GameScene extends Phaser.Scene {
             }
         );
 
-        this.anims.create(
-            {
-                key: "sparkle-small",
-                frames: [
-                    { key: "sparkle-0" },
-                    { key: "sparkle-1" },
-                    { key: "sparkle-0" }
-                ],
-                frameRate: 10,
-                repeat: 1
-            }
-        );
+        this.animationLoader.loadAnimationsFromData("sparkle");
+        //this.createAnimation(
+        //    {
+        //        key: "sparkle-small",
+        //        frames: [
+        //            { key: "sparkle-0" },
+        //            { key: "sparkle-1" },
+        //            { key: "sparkle-0" }
+        //        ],
+        //        frameRate: 10,
+        //        repeat: -1
+        //    }
+        //);
 
-        this.anims.create(
-            {
-                key: "sparkle-medium",
-                frames: [
-                    { key: "sparkle-0" },
-                    { key: "sparkle-1" },
-                    { key: "sparkle-0" },
-                    { key: "sparkle-1" },
-                    { key: "sparkle-0" }
-                ],
-                frameRate: 10,
-                repeat: 1
-            }
-        );
+        //this.createAnimation(
+        //    {
+        //        key: "sparkle-medium",
+        //        frames: [
+        //            { key: "sparkle-0" },
+        //            { key: "sparkle-1" },
+        //            { key: "sparkle-0" },
+        //            { key: "sparkle-1" },
+        //            { key: "sparkle-0" }
+        //        ],
+        //        frameRate: 10,
+        //        repeat: - 1
+        //    }
+        //);
 
-        this.anims.create(
+        this.createAnimation(
             {
                 key: "sparkle-dark",
                 frames: [
@@ -438,11 +354,11 @@ class GameScene extends Phaser.Scene {
                     { key: "sparkle-dark-0" }
                 ],
                 frameRate: 10,
-                repeat: 1
+                repeat: -1
             }
         );
 
-        this.anims.create(
+        this.createAnimation(
             {
                 key: "smoke",
                 frames: [
@@ -454,313 +370,56 @@ class GameScene extends Phaser.Scene {
                     { key: "smoke-6" }
                 ],
                 frameRate: 10,
-                repeat: 1
-            }
-        );
-
-        this.anims.create(
-            {
-                key: "ghoul",
-                frames: [
-                    { key: 'ghoul-2', width: 50, height: 50 },
-                    { key: 'ghoul-3', width: 50, height: 50 },
-                    { key: 'ghoul-5', width: 50, height: 50 },
-                    { key: 'ghoul-5', width: 50, height: 50 },
-                    { key: 'ghoul-6', width: 50, height: 50 },
-                    { key: 'ghoul-7', width: 50, height: 50 },
-                    { key: 'ghoul-7', width: 50, height: 50 },
-                    { key: 'ghoul-7', width: 50, height: 50 },
-                    { key: 'ghoul-8', width: 50, height: 50 },
-                    { key: 'ghoul-1', width: 50, height: 50 },
-                    { key: 'ghoul-1', width: 50, height: 50 },
-                    { key: 'ghoul-1', width: 50, height: 50 },
-                    { key: 'ghoul-1', width: 50, height: 50 },
-                    { key: 'ghoul-1', width: 50, height: 50 },
-                    { key: 'ghoul-1', width: 50, height: 50 },
-                    { key: 'ghoul-1', width: 50, height: 50 },
-                    { key: 'ghoul-1', width: 50, height: 50 },
-                    { key: 'ghoul-1', width: 50, height: 50 }
-                ],
-                frameRate: 10,
-                repeat: -1
-            }
-        );
-
-        this.anims.create(
-            {
-                key: "bouncing-snowball-left",
-                frames: [
-                    { key: 'bouncing-snowball-1' },
-                    { key: 'bouncing-snowball-2' },
-                    { key: 'bouncing-snowball-3' },
-                    { key: 'bouncing-snowball-4' },
-                    { key: 'bouncing-snowball-5' },
-                    { key: 'bouncing-snowball-6' },
-                    { key: 'bouncing-snowball-7' },
-                    { key: 'bouncing-snowball-8' },
-                    { key: 'bouncing-snowball-8' }
-                    //{ key: 'bouncing-snowball-8' }
-                    //{ key: 'bouncing-snowball-8' },
-                    //{ key: 'bouncing-snowball-8' }
-                ],
-                frameRate: 10,
-                repeat: -1
-            }
-        );
-
-        this.anims.create(
-            {
-                key: "bouncing-snowball-left2",
-                frames: [
-                    { key: 'bouncing-snowball-1' },
-                    { key: 'bouncing-snowball-2' },
-                    { key: 'bouncing-snowball-3' },
-                    { key: 'bouncing-snowball-4' },
-                    { key: 'bouncing-snowball-5' },
-                    { key: 'bouncing-snowball-6' },
-                    { key: 'bouncing-snowball-7' },
-                    { key: 'bouncing-snowball-8' },
-                    { key: 'bouncing-snowball-8' }
-                    //{ key: 'bouncing-snowball-8' }
-                    //{ key: 'bouncing-snowball-8' },
-                    //{ key: 'bouncing-snowball-8' }
-                ],
-                frameRate: 10,
-                repeat: -1
-            }
-        );
-
-        this.anims.create(
-            {
-                key: "bouncing-snowball-left-down",
-                frames: [
-                    { key: 'bouncing-snowball-8' },
-                    { key: 'bouncing-snowball-bounce-1' },
-                    { key: 'bouncing-snowball-bounce-2' },
-                    { key: 'bouncing-snowball-bounce-3' }
-                ],
-                frameRate: 10,
-                repeat: 1
-            }
-        );
-
-        this.anims.create(
-            {
-                key: "bouncing-snowball-left-up",
-                frames: [
-                    { key: 'bouncing-snowball-bounce-3' },
-                    { key: 'bouncing-snowball-bounce-2' },
-                    { key: 'bouncing-snowball-bounce-1' },
-                    { key: 'bouncing-snowball-8' }
-                ],
-                frameRate: 10,
-                repeat: 1
-            }
-        );
-
-        this.anims.create(
-            {
-                key: "bouncing-snowball-squished",
-                frames: [
-                    { key: 'bouncing-snowball-squished' }
-                ]
-            }
-        );
-
-        this.anims.create(
-            {
-                key: "snowball-squished",
-                frames: [
-                    { key: 'snowball-squished' }
-                ]
-            }
-        );
-
-        this.anims.create(
-            {
-                key: 'flying-snowball',
-                frames: [
-                    { key: 'flying-snowball-0' },
-                    { key: 'flying-snowball-2' },
-                    { key: 'flying-snowball-2' },
-                    { key: 'flying-snowball-3' }
-                ]
-            }
-        );
-
-        this.anims.create(
-            {
-                key: 'flying-snowball-melting',
-                frames: [
-                    { key: 'flying-snowball-melting-0' },
-                    { key: 'flying-snowball-melting-1' },
-                    { key: 'flying-snowball-melting-2' }
-                ]
-            }
-        );
-
-
-        this.anims.create(
-            {
-                key: "fish-up",
-                frames: [{ key: 'fish-up-0' }, { key: 'fish-up-1' }],
-                frameRate: 8,
-                repeat: -1
-            }
-        );
-
-        this.anims.create({
-            key: 'coin-moving',
-            frames: this.anims.generateFrameNumbers('coin'),
-            frameRate: 20,
             repeat: -1
-        });
+            }
+        );
 
-        this.anims.create({
+        this.animationLoader.loadAnimationsFromData("tux");
+        this.animationLoader.loadAnimationsFromData("ghoul");
+        this.animationLoader.loadAnimationsFromData("bouncing-snowball");
+        this.animationLoader.loadAnimationsFromData("snowball");
+        this.animationLoader.loadAnimationsFromData("mr-iceblock");
+        this.animationLoader.loadAnimationsFromData("fish");
+        this.animationLoader.loadAnimationsFromData("coin");
+
+        //this.createAnimation({
+        //    key: 'coin-moving',
+        //    frames: this.anims.generateFrameNumbers('coin'),
+        //    frameRate: 20,
+        //    repeat: -1
+        //});
+
+        this.createAnimation({
             key: 'star-moving',
             frames: this.anims.generateFrameNumbers('star'),
             frameRate: 20,
             repeat: -1
-        })
+        });
 
-        this.anims.create(
-            {
-                key: 'tux-duck',
-                frames: [{ key: 'tux-duck-0' }],
-                frameRate: 24
-            }
-        );
 
-        this.anims.create(
-            {
-                key: 'tux-skid',
-                frames: [{ key: 'tux-skid-0' }],
-                frameRate: 24
-            }
-        );
-
-        this.anims.create(
-            {
-                key: "tux-gameover",
-                frames: [{ key: 'tux-gameover-1' }, { key: 'tux-gameover-2' }],
-                frameRate: 8,
-                repeat: -1
-            }
-        );
-
-        this.anims.create(
-            {
-                key: 'tux-idle',
-                frames: [{ key: 'tux-idle-1' }, { key: 'tux-idle-2' }],
-                frameRate: 24,
-                repeat: -1
-            }
-        );
-
-        this.anims.create(
-            {
-                key: 'tux-stand',
-                frames: [{ key: 'tux-stand-0' }],
-                frameRate: 24
-            }
-        );
-
-        this.anims.create(
-            {
-                key: 'tux-jump',
-                frames: [{ key: 'tux-jump-0' }],
-                frameRate: 24
-            }
-        );
-
-        var tuxRunFrames = [];
-        var i;
-        for (i = 0; i < this.N_TUX_RUN; i++) {
-            tuxRunFrames.push({
-                key: 'tux-run-' + (i + 1)
-            });
-        }
-
-        this.anims.create(
-            {
-                key: 'tux-run',
-                frames: tuxRunFrames,
-                frameRate: 12,
-                repeat: -1
-            }
-        );
-
-        var antarcticWaterFrames = [];
-        for (var i = 0; i < this.N_ANTARCTIC_WATER; i++) {
-            antarcticWaterFrames.push({
-                key: 'antarctic-water-' + (i + 1)
-            });
-        }
-
-        this.anims.create(
+        this.createAnimation(
             {
                 key: 'antarctic-water',
-                frames: antarcticWaterFrames,
+                framesConfig: {
+                    caption: 'antarctic-water-',
+                    start: 1,
+                    end: 8
+                },
                 frameRate: 5,
                 repeat: -1
             }
         );
 
-        var lavaFrames = [];
-        for (var i = 0; i < this.N_LAVA; i++) {
-            lavaFrames.push({
-                key: 'lava-' + (i + 1)
-            });
-        }
-
-        this.anims.create(
+        this.createAnimation(
             {
                 key: 'lava',
-                frames: lavaFrames,
+                framesConfig: {
+                    caption: 'lava-',
+                    start: 1,
+                    end: 8
+                },
                 frameRate: 5,
                 repeat: -1
-            }
-        );
-
-        var snowballWalkFrames = [];
-        var i;
-        for (i = 0; i < this.N_SNOWBALL_RUN; i++) {
-            snowballWalkFrames.push({
-                key: 'snowball-walk-' + (i + 1)
-            });
-        }
-
-        this.anims.create(
-            {
-                key: 'snowball-walk',
-                frames: snowballWalkFrames,
-                frameRate: 12,
-                repeat: -1
-            }
-        );
-
-        var mrIceBlockWalkFrames = [];
-
-        for (var i = 0; i < this.N_SNOWBALL_RUN; i++) {
-            mrIceBlockWalkFrames.push({
-                key: 'mriceblock-walk-' + (i + 1)
-            });
-        }
-
-        this.anims.create(
-            {
-                key: "mriceblock-walk",
-                frames: mrIceBlockWalkFrames,
-                frameRate: 12,
-                repeat: -1
-            }
-        );
-
-        this.anims.create(
-            {
-                key: 'mriceblock-stomped',
-                frames: [{ key: 'mriceblock-stomped-0' }],
-                frameRate: 24
             }
         );
     }

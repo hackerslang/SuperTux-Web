@@ -20,57 +20,80 @@
         this.body.setImmovable(true);
         this.gotHitByPlayer = false;
         this.releasedPowerUp = false;
+        this.hitSide = "none";
+
+        this.scene.physics.add.collider(this.player, this);
     }
 
     update(time, delta) {
         this.body.setImmovable(true);
 
         if (!this.player.killed) {
-            this.scene.physics.world.collide(this, this.player, this.blockHit);
+            if (this.hitFromBelow()) {
+                this.blockHit();
+            }
         }
     }
 
-    blockHit(block, player) {
-        if (!block.done && block.hitFromBelow(block, player) && !block.isEmpty) {
-            block.body.setImmovable(false);
-            block.setTexture("bonus-block-empty");
-            block.scene.tweens.add({
-                targets: block,
-                y: block.y - 32,
-                yoyo: true,
-                duration: 100,
-                onUpdate: () => block.update(),
-                onComplete: () => {
-                    block.y = block.startY;
-                    block.done = true;
-                    block.body.setImmovable(true);
-                }
-            });
-
-            if (!this.releasedPowerUp) {
-                if (block.powerupType == 'star') {
-                    block.level.addStar(block.x, block.y - 32);
-                } else if (block.powerupType == 'egg') {
-                    block.level.addEgg(block.x, block.y - 32);
-                }
-
-                this.releasedPowerUp = true;
-            }
+    blockHit() {
+        if (!this.done && !this.isEmpty) {
+            this.body.setImmovable(false);
+            this.setTexture("bonus-block-empty");
+            this.releasePowerUp(this.getDirectionOnHit());
+            this.addYoyoTween();
         }
 
         this.gotHitByPlayer = true;
+    }
+
+    getDirectionOnHit() {
+        if (this.player.body.x > this.body.x) {
+            return -1;
+        }
+
+        return 1;
+    }
+
+    releasePowerUp(direction) {
+        if (!this.releasedPowerUp) {
+            if (this.powerupType == 'star') {
+                this.level.addStar(this.x, this.y - 32, direction);
+            } else if (this.powerupType == 'egg') {
+                this.level.addEgg(this.x, this.y - 32, direction);
+            }
+
+            this.releasedPowerUp = true;
+        }
+    }
+
+    addYoyoTween() {
+        this.scene.tweens.add({
+            targets: this,
+            y: this.y - 32,
+            yoyo: true,
+            duration: 100,
+            onUpdate: () => {
+                this.update();
+            },
+            onComplete: () => {
+                this.y = this.startY;
+                this.done = true;
+                this.body.setImmovable(true);
+            }
+        });
     }
 
     gotHit() {
         return this.gotHitByPlayer;
     }
 
-    hitFromBelow(block, player) {
-        if (!player.isActiveAndAlive()) {
+    hitFromBelow() {
+        if (!this.player.isActiveAndAlive()) {
             return false;
         }
-        
-        return (block.body.y + block.body.height) - (player.body.y) <= 0;
+
+        return (this.player.body.top <= this.body.bottom + 3 && this.player.body.top >= this.body.bottom)
+            && (this.player.body.right >= this.body.left - 8 && this.player.body.left <= this.body.right + 8);
     }
 
     remove() {

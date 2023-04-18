@@ -576,7 +576,6 @@ class Level {
                     });
 
                     break;
-
                 case "bouncing-snowball":
                     creatureObject = new BouncingSnowBall({
                         id: i,
@@ -591,6 +590,7 @@ class Level {
 
                     break;
 
+/*
                 case "flying-snowball":
                     creatureObject = new FlyingSnowBall({
                         id: i,
@@ -604,7 +604,7 @@ class Level {
                     });
 
                     break;
-
+                    */
                 case "iceblock":
                     creatureObject = new MrIceBlock({
                         id: i,
@@ -632,7 +632,7 @@ class Level {
                     });
 
                     break;
-
+/*
                 case "krosh":
                     creatureObject = new Krosh({
                         id: i,
@@ -674,11 +674,14 @@ class Level {
                         level: this
                     });
 
-                    break;
+                    break;*/
             }
 
-            creatureSprites.push(creatureObject);
-            this.enemyGroup.add(creatureObject);
+            if (creatureObject != null) {
+                creatureSprites.push(creatureObject);
+                this.enemyGroup.add(creatureObject);
+            }
+
         }
 
         this.creatureSprites = creatureSprites;
@@ -803,14 +806,15 @@ class Level {
         this.wayArrowGroup.add(wayArrow);
     }
 
-    addStar(x, y) {
+    addStar(x, y, direction) {
         let star = new StarPowerUp({
             scene: this.scene,
             key: "star",
             x: x,
             y: y,
             player: this.player,
-            level: this
+            level: this,
+            direction: direction
         });
 
         this.powerupGroup.add(star);
@@ -820,14 +824,15 @@ class Level {
 
     }
 
-    addEgg(x, y) {
+    addEgg(x, y, direction) {
         let egg = new EggPowerUp({
             scene: this.scene,
             key: "egg",
             x: x,
             y: y,
             player: this.player,
-            level: this
+            level: this,
+            direction: direction
         });
 
         this.powerupGroup.add(egg);
@@ -1352,15 +1357,15 @@ class LevelTheBeginningData {
                 }
             },
 
-            {
-                name: "jumpy",
-                direction: "left",
-                position: {
-                    x: 28,
-                    y: 17,
-                    realY: 17
-                }
-            },
+            //{
+            //    name: "jumpy",
+            //    direction: "left",
+            //    position: {
+            //        x: 28,
+            //        y: 17,
+            //        realY: 17
+            //    }
+            //},
 
             {
                 name: "fish",

@@ -16,7 +16,8 @@
         this.done = false;
         this.body.setBounce(0);
         this.body.setImmovable(true);
-        this.body.velocity.x = 70;
+        this.direction = config.direction;
+        this.body.velocity.x = this.direction * 70;
     }
 
     update(time, delta) {
