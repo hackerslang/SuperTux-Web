@@ -18,12 +18,13 @@
         //this.on('animationcomplete', this.animCompleted, this);
     }
 
+    initialize() {
+        this.setVelocityX(this.direction == this.DIRECTION_LEFT ? -this.BSNOWBALL_WALKSPEED : this.BSNOWBALL_WALKSPEED);
+    }
+
     update(time, delta) {
-        super.activeUpdate();
 
-
-
-        super.checkKillAtSquishedOrFall("snowball-squished", "bouncing-snowball-4", delta);
+        //super.checkKillAtSquishedOrFall("snowball-squished", "bouncing-snowball-4", delta);
 
         if (this.killed || this.killAt > 0) {
 
@@ -78,6 +79,10 @@
             this.anims.play('bouncing-snowball-left-up');
         } else if (this.body.blocked.up) {
             this.body.velocity.y = 0;
+        } else if (this.body.blocked.left) {
+            this.setVelocityX(this.BSNOWBALL_WALKSPEED);
+        } else if (this.body.blocked.right) {
+            this.setVelocityX(-this.BSNOWBALL_WALKSPEED);
         }
     }
 

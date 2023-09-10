@@ -24,6 +24,7 @@
     getFrameRateFromDataItem(entity) {
         var frameRate = this.DEFAULT_FRAMERATE;
 
+
         if (entity.frameRate != null) {
             frameRate = entity.frameRate;
         }
@@ -46,6 +47,9 @@
 
         if (entity.spriteSheet != null) {
             frames = this.scene.anims.generateFrameNumbers(entity.spriteSheet);
+            console.log(entity);
+            console.log(frames);
+            console.log("FRAEMS");
         } else if (entity.start != null) {
             frames = [];
 

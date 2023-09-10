@@ -42,7 +42,16 @@ class ImageLoader {
     }
 
     loadSpriteSheet(caption, path, frameWidth, frameHeight, n) {
-        this.scene.load.spritesheet(caption, path + '.png', { frameWidth: frameWidth, frameHeight: frameHeight }, n);
+        this.scene.load.spritesheet({
+            key: caption,
+            url: path + '.png',
+            frameConfig: {
+                frameWidth: frameWidth,
+                frameHeight: frameHeight,
+                startFrame: 0,
+                endFrame: n
+            }
+        });
     }
 
     loadMultipleImages(caption, path, ext, start, end) {

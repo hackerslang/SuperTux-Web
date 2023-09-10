@@ -1,5 +1,17 @@
 ﻿var animationsData = {
     "animations": {
+        "antarctic-water": {
+            "animations": [
+                {
+                    key: 'antarctic-water',
+                    caption: 'antarctic-water-',
+                    start: 1,
+                    end: 8,
+                    frameRate: 5,
+                    repeat: -1
+                }
+            ]
+        },
         "tux": {
             "animations": [
                 {
@@ -70,6 +82,25 @@
                     repeat: - 1
                 },
                 {
+                    key: "bouncing-snowball-left2",
+                    frames: [
+                        { key: 'bouncing-snowball-1' },
+                        { key: 'bouncing-snowball-2' },
+                        { key: 'bouncing-snowball-3' },
+                        { key: 'bouncing-snowball-4' },
+                        { key: 'bouncing-snowball-5' },
+                        { key: 'bouncing-snowball-6' },
+                        { key: 'bouncing-snowball-7' },
+                        { key: 'bouncing-snowball-8' },
+                        { key: 'bouncing-snowball-8' }
+                        //{ key: 'bouncing-snowball-8' }
+                        //{ key: 'bouncing-snowball-8' },
+                        //{ key: 'bouncing-snowball-8' }
+                    ],
+                    frameRate: 10,
+                    repeat: - 1
+                },
+                {
                     key: "bouncing-snowball-left-down",
                     frames: [
                         { key: 'bouncing-snowball-8' },
@@ -103,7 +134,7 @@
             "animations": [
                 {
                     key: "coin-moving",
-                    spriteSheet: "coin",
+                    spriteSheet: "coin-moving",
                     frameRate: 20,
                     repeat: -1
                 }
@@ -163,6 +194,26 @@
                     ],
                     frameRate: 10,
                     repeat: - 1
+                }
+            ]
+        },
+        "mr-bomb": {
+            "animations": [
+                {
+                    key: "mrbomb-left",
+                    caption: "mrbomb-left-",
+                    start: 1,
+                    end: 8,
+                    frameRate: 10,
+                    repeat: -1
+                },
+                {
+                    key: "mrbomb-exploding-left",
+                    caption: "mrbomb-exploding-",
+                    start: 0,
+                    end: 4,
+                    frameRate: 10,
+                    repeat: -1
                 }
             ]
         },
@@ -228,7 +279,7 @@
                         { "key": "sparkle-0" }
                     ],
                     "frameRate": 10,
-                    "repeat": -1
+                    "repeat": 0
                 },
                 {
                     "key": "sparkle-medium",
@@ -240,7 +291,7 @@
                         { key: "sparkle-0" }
                     ],
                     frameRate: 10,
-                    repeat: - 1
+                    repeat: 0
                 },
                 {
                     key: "sparkle-dark",
@@ -250,7 +301,7 @@
                         { key: "sparkle-dark-0" }
                     ],
                     frameRate: 10,
-                    repeat: -1
+                    repeat: 0
                 }
             ]
         },

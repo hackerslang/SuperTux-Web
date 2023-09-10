@@ -24,7 +24,7 @@
     }
 
     addCollectedCoin() {
-        setCollectedCoins(++this.coins);
+        this.setCollectedCoins(++this.coins);
     }
 
     setCollectedCoins(n) {

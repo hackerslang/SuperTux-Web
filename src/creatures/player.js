@@ -12,6 +12,9 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.REAL_COLLISION_BOX_WIDTH = 46;
         this.REAL_COLLISION_BOX_HEIGHT = 80;
 
+        this.SPARKLE_BODY_WIDTH = 40;
+        this.SPARKLE_BODY_HEIGHT = 72;
+
         this.body.setSize(this.REAL_COLLISION_BOX_WIDTH, this.REAL_COLLISION_BOX_HEIGHT);
         this.body.setOffset(15, 15);
         this.setDepth(999);
@@ -93,6 +96,8 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.grabbedObject = null;
         this.stone = false;
         this.doesButtJump = false;
+        this.particleSprites = [];
+        this.particleMaxId = 0;
 
         this.adjustBodyStandingRight();
     }
@@ -200,7 +205,9 @@ class Tux extends Phaser.GameObjects.Sprite {
             return;
         }
 
-        if (this.invincible) { 
+        if (this.invincible) {
+            this.forceUpdateSprites(this.particleSprites, time, delta);
+
             if (this.invincibleTimer > 0) {
                 this.invincibleTimer -= delta;
                 this.invincibleStep += delta;
@@ -209,37 +216,38 @@ class Tux extends Phaser.GameObjects.Sprite {
 
                 if (this.invincibleStep >= 50) {
                     if (random == 0) {
-                        var particleX = this.body.x + Math.floor(Math.random() * this.REAL_COLLISION_BOX_WIDTH);
-                        var particleY = this.body.y + Math.floor(Math.random() * this.REAL_COLLISION_BOX_HEIGHT);
-                    }
-                
-                    this.sparkleEveryOther = !this.sparkleEveryOther;
+                        this.sparkleEveryOther = !this.sparkleEveryOther;
 
-                    var sparkleKey = "";
+                        var sparkleKey = "";
 
-                    if (this.invincibleTimer > this.INVINCIBLE_TIME_WARNING) {
-                        if (this.sparkleEveryOther) {
-                            sparkleKey = "sparkle-medium";
-                        } else {
-                            sparkleKey = "sparkle-small";
+                        if (this.invincibleTimer > this.INVINCIBLE_TIME_WARNING) {
+                            if (this.sparkleEveryOther) {
+                                sparkleKey = "sparkle-medium";
+                            } else {
+                                sparkleKey = "sparkle-small";
+                            }
+                        } else {    
+                            sparkleKey = "sparkle-dark";
                         }
-                    } else {    
-                        sparkleKey = "sparkle-dark";
+
+                        var sparkle = new Sparkle({
+                            id: this.particleMaxId,
+                            scene: this.scene,
+                            key: sparkleKey,
+                            level: this.level,
+                            player: this,
+                            depth: 1000
+                        });
+
+                        this.particleSprites.push(sparkle);
+                        this.particleMaxId++;
                     }
-
-                    new Particle({
-                        scene: this.scene,
-                        key: sparkleKey,
-                        level: this.level,
-                        x: particleX,
-                        y: particleY,
-                        depth: 1000
-                    });
-
                     
                 }
             } else {
                 this.invincible = false;
+                this.particleMaxId = 0;
+                this.particleSprites = [];
             }
         }
 
@@ -279,6 +287,23 @@ class Tux extends Phaser.GameObjects.Sprite {
         }
 
         this.handleInput(delta);
+    }
+
+    forceUpdateSprites(sprites, time, delta) {
+        if (sprites != null) {
+            for (var i = 0; i < sprites.length; i++) {
+                var sprite = sprites[i];
+
+                if (sprite != null) {
+                    sprite.update(time, delta);
+                }
+            }
+        }
+    }
+
+    removeParticle(particle) {
+        var index = particle.id;
+        this.particleSprites[index] = null;
     }
     
     resetHurtIfNeeded() {
@@ -374,17 +399,17 @@ class Tux extends Phaser.GameObjects.Sprite {
         var isOnTopOfBlock = false;
         var playerY = Math.floor(this.y / 32);
 
-        Array.from(this.level.blockGroup.children.entries).forEach(
-            (block) => {
-                var blockY = Math.floor(block.y / 32);
+        //Array.from(this.level.blockGroup.children.entries).forEach(
+        //    (block) => {
+        //        var blockY = Math.floor(block.y / 32);
 
-                if (this.x >= block.x - 20 && this.x <= block.x + 20 && playerY == blockY - 2) {
-                    isOnTopOfBlock = true;
+        //        if (this.x >= block.x - 20 && this.x <= block.x + 20 && playerY == blockY - 2) {
+        //            isOnTopOfBlock = true;
                     
-                    return;
-                }
-            }
-        );
+        //            return;
+        //        }
+        //    }
+        //);
 
         return isOnTopOfBlock;
     }

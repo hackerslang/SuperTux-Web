@@ -1,4 +1,4 @@
-class LevelFactory {
+class RandomLevelFactory {
     constructor(scene) {
         this.levels = [];
         this.index = 0;
@@ -19,15 +19,16 @@ class LevelFactory {
         return getLevel(this.index);
     }
 
-    makeLevel (levelData) {
-        switch (levelData.landscape) {
-            case 'snow':
-                return new SnowLevel(levelData, this.scene);
-            case 'castle':
-                return new CastleLevel(levelData, this.scene);
-            case 'castle2':
-                return new CastleLevel(levelData, this.scene, "castle2");
-        }
+    makeLevel(levelData) {
+        return new Level(levelData, this.scene);
+        //switch (levelData.landscape) {
+        //    case 'snow':
+        //        return new Level(levelData, this.scene);
+        //    case 'castle':
+        //        return new CastleLevel(levelData, this.scene);
+        //    case 'castle2':
+        //        return new CastleLevel(levelData, this.scene, "castle2");
+        //}
     }
 }
 
@@ -37,32 +38,24 @@ class GameScene extends Phaser.Scene {
             key: 'GameScene' 
         });
 
-        this.levelFactory = new LevelFactory(this);
+        this.world1Levels = [
+            new Level(levelTheBeginningData, this)
+        ];
+
+        this.currentLevel = this.world1Levels[0];
+
+        //this.levelFactory = new RandomLevelFactory(this);
+
         this.imageLoader = new ImageLoader({ scene: this });
         this.animationLoader = new AnimationLoader({ scene: this });
 
         this.DEFAULT_FRAMERATE = 10;
         this.REPEAT_INFINITELY = -1;
-
-        this.UI_PATH = './assets/images/ui/';
-        this.TUX_PATH = './assets/images/creatures/tux/';
         this.COIN_PATH = './assets/images/objects/';
-        this.BLOCK_PATH = './assets/images/level/blocks/';
         this.SPIKE_PATH = './assets/images/objects/spikes/';
-        this.KROSH_PATH = './assets/images/creatures/krosh/';
-        this.FISH_PATH = './assets/images/creatures/fish/';
-        this.GHOUL_PATH = './assets/images/creatures/ghoul/';
-        this.JUMPY_PATH = './assets/images/creatures/jumpy/';
         this.POWER_UP_PATH = './assets/images/powerups/';
         this.SNOW_SPRITES_PATH = './assets/images/level/snow/';
         this.CASTLE_SPRITES_PATH = './assets/images/level/castle/';
-        this.SNOWBALL_PATH = './assets/images/creatures/snowball/';
-        this.BOUNCING_SNOWBALL_PATH = './assets/images/creatures/bouncing_snowball/';
-        this.FLYING_SNOWBALL_PATH = './assets/images/creatures/flying_snowball/';
-        this.MR_ICEBLOCK_PATH = './assets/images/creatures/mr_iceblock/';
-        this.MR_BOMB_PATH = './assets/images/creatures/mr_bomb/';
-        this.ARROW_PATH = './assets/images/level/arrow/';
-        this.PARTICLES_PATH = './assets/images/particles/';
     }
 
     generateKeyController() {
@@ -114,13 +107,14 @@ class GameScene extends Phaser.Scene {
 
     preload() {
         this.loadImages();
+        this.loadSounds();
         this.generateKeyController();
-        this.currentLevel = this.levelFactory.getLevel(0);
         this.currentLevel.preload();
     }
 
     create() {
         this.makeAnimations();
+        this.makeSounds();
         this.currentLevel.create();
         this.addHealthBar();
         this.addCoinsDisplay();
@@ -134,11 +128,20 @@ class GameScene extends Phaser.Scene {
         this.loadCoinImages();
         this.loadBlockImages();
         this.loadSpikeImages();
+        this.loadIndustrialImages();
         this.loadPowerupImages();
         this.loadSnowImages();
         this.loadCastleImages();
         this.loadWayArrowImages();
         this.loadBackgroundImages();
+    }
+
+    loadSounds() {
+        this.load.audio('enemy-fall', './assets/sounds/fall.wav');
+    }
+
+    makeSounds() {
+        this.sound.add('enemy-fall');
     }
 
     loadImage(caption, path) {
@@ -151,6 +154,14 @@ class GameScene extends Phaser.Scene {
 
     loadSpriteSheet(caption, path, frameWidth, frameHeight, n) {
         this.imageLoader.loadSpriteSheet(caption, path, frameWidth, frameHeight, n);
+    }
+
+    loadImagesFromData(key) {
+        this.imageLoader.loadImagesFromData(key);
+    }
+
+    loadAnimationsFromData(key) {
+        this.animationLoader.loadAnimationsFromData(key);
     }
 
     loadUIImages() {
@@ -178,18 +189,11 @@ class GameScene extends Phaser.Scene {
     }
 
     loadCoinImages() {
-        var N_COINS = 16;
-
-        this.loadSpriteSheet('coin', this.COIN_PATH + 'coins', 32, 32, N_COINS);
+        this.loadImagesFromData('coin');
     }
 
     loadBlockImages() {
-        this.loadSpriteSheet('wood', this.BLOCK_PATH + 'wood', 32, 32, 4);
-        this.loadImage('wood-single', this.BLOCK_PATH  + 'wood-tiny');
-        this.loadImage('bonus-block', this.BLOCK_PATH  + 'bonus-block');
-        this.loadImage('bonus-block-empty', this.BLOCK_PATH  + 'block-empty');
-        this.loadImage('brick', this.BLOCK_PATH + 'brick');
-        this.loadMultipleImages('brick-piece', this.BLOCK_PATH + 'brick_piece', 1, 6);
+        this.loadImagesFromData("blocks");
     }
 
     loadSpikeImages() {
@@ -199,24 +203,28 @@ class GameScene extends Phaser.Scene {
         this.loadImage('spike-right', this.SPIKE_PATH + 'spikeright');
     }
 
+    loadIndustrialImages() {
+        this.loadImagesFromData("industrial");
+    }
+
     loadKroshImages() {
-        this.imageLoader.loadImagesFromData("krosh"); 
+        this.loadImagesFromData("krosh"); 
     }
 
     loadFishImages() {
-        this.imageLoader.loadImagesFromData("fish");
+        this.loadImagesFromData("fish");
     }
 
     loadGhoulImages() {
-        this.imageLoader.loadImagesFromData("ghoul");
+        this.loadImagesFromData("ghoul");
     }
 
     loadJumpyImages() {
-        this.imageLoader.loadImagesFromData("jumpy");
+        this.loadImagesFromData("jumpy");
     }
 
     loadPowerupImages() {
-        this.imageLoader.loadImagesFromData("powerup");
+        this.loadImagesFromData("powerup");
     }
 
     loadSnowImages() {
@@ -233,27 +241,27 @@ class GameScene extends Phaser.Scene {
     }
 
     loadSnowBallImages() {
-        this.imageLoader.loadImagesFromData("snowball");
+        this.loadImagesFromData("snowball");
     }
 
     loadBouncingSnowBallImages() {
-        this.imageLoader.loadImagesFromData("bouncing-snowball");
+        this.loadImagesFromData("bouncing-snowball");
     }
 
     loadFlyingSnowBallImages() {
-        this.imageLoader.loadImagesFromData("flying-snowball");
+        this.loadImagesFromData("flying-snowball");
     }
 
     loadMrIceBlockImages() {
-        this.imageLoader.loadImagesFromData("mr-iceblock");
+        this.loadImagesFromData("mr-iceblock");
     }
 
     loadMrBombImages() {
-        this.imageLoader.loadImagesFromData("mr-bomb");
+        this.loadImagesFromData("mr-bomb");
     }
 
     loadWayArrowImages() {
-        this.imageLoader.loadImagesFromData("arrow");
+        this.loadImagesFromData("arrow");
     }
 
     loadParticleImages() {
@@ -262,12 +270,11 @@ class GameScene extends Phaser.Scene {
     }
 
     loadSparkleImages() {
-        this.loadMultipleImages('sparkle-', this.PARTICLES_PATH + 'sparkle-', 0, 1);
-        this.loadMultipleImages('sparkle-dark-', this.PARTICLES_PATH + 'sparkle-dark-', 0, 1);
+        this.loadImagesFromData("sparkle");
     }
 
     loadSmokeImages() {
-        this.loadMultipleImages('smoke-', this.PARTICLES_PATH + 'smoke-', 1, 6);
+        this.loadImagesFromData("smoke");
     }
 
     createAnimation(key, frames, frameRate, repeat) {
@@ -283,132 +290,15 @@ class GameScene extends Phaser.Scene {
     }
 
     makeAnimations() {
-        this.createAnimation(
-            {
-                key: "mrbomb-left",
-                frames: [
-                    { key: "mrbomb-left-1" },
-                    { key: "mrbomb-left-2" },
-                    { key: "mrbomb-left-3" },
-                    { key: "mrbomb-left-4" },
-                    { key: "mrbomb-left-5" },
-                    { key: "mrbomb-left-6" },
-                    { key: "mrbomb-left-7" },
-                    { key: "mrbomb-left-8" }
-                ],
-                frameRate: 10,
-                repeat: -1
-            }
-        );
+        var keys = [
+            "mr-bomb", "sparkle", "smoke", "tux", "ghoul",
+            "bouncing-snowball", "snowball", "mr-iceblock",
+            "fish", "antarctic-water", "star-moving", "coin"
+        ];
 
-        this.createAnimation(
-            {
-                key: "mrbomb-exploding-left",
-                frames: [
-                    { key: "mrbomb-exploding-0" },
-                    { key: "mrbomb-exploding-1" },
-                    { key: "mrbomb-exploding-2" },
-                    { key: "mrbomb-exploding-3" },
-                    { key: "mrbomb-exploding-4" }
-                ],
-                frameRate: 10,
-                repeat: -1
-            }
-        );
+        var self = this;
 
-        this.animationLoader.loadAnimationsFromData("sparkle");
-        //this.createAnimation(
-        //    {
-        //        key: "sparkle-small",
-        //        frames: [
-        //            { key: "sparkle-0" },
-        //            { key: "sparkle-1" },
-        //            { key: "sparkle-0" }
-        //        ],
-        //        frameRate: 10,
-        //        repeat: -1
-        //    }
-        //);
-
-        //this.createAnimation(
-        //    {
-        //        key: "sparkle-medium",
-        //        frames: [
-        //            { key: "sparkle-0" },
-        //            { key: "sparkle-1" },
-        //            { key: "sparkle-0" },
-        //            { key: "sparkle-1" },
-        //            { key: "sparkle-0" }
-        //        ],
-        //        frameRate: 10,
-        //        repeat: - 1
-        //    }
-        //);
-
-        this.createAnimation(
-            {
-                key: "sparkle-dark",
-                frames: [
-                    { key: "sparkle-dark-0" },
-                    { key: "sparkle-dark-1" },
-                    { key: "sparkle-dark-0" }
-                ],
-                frameRate: 10,
-                repeat: -1
-            }
-        );
-
-        this.createAnimation(
-            {
-                key: "smoke",
-                frames: [
-                    { key: "smoke-1" },
-                    { key: "smoke-2" },
-                    { key: "smoke-3" },
-                    { key: "smoke-4" },
-                    { key: "smoke-5" },
-                    { key: "smoke-6" }
-                ],
-                frameRate: 10,
-            repeat: -1
-            }
-        );
-
-        this.animationLoader.loadAnimationsFromData("tux");
-        this.animationLoader.loadAnimationsFromData("ghoul");
-        this.animationLoader.loadAnimationsFromData("bouncing-snowball");
-        this.animationLoader.loadAnimationsFromData("snowball");
-        this.animationLoader.loadAnimationsFromData("mr-iceblock");
-        this.animationLoader.loadAnimationsFromData("fish");
-        this.animationLoader.loadAnimationsFromData("coin");
-
-        //this.createAnimation({
-        //    key: 'coin-moving',
-        //    frames: this.anims.generateFrameNumbers('coin'),
-        //    frameRate: 20,
-        //    repeat: -1
-        //});
-
-        this.createAnimation({
-            key: 'star-moving',
-            frames: this.anims.generateFrameNumbers('star'),
-            frameRate: 20,
-            repeat: -1
-        });
-
-
-        this.createAnimation(
-            {
-                key: 'antarctic-water',
-                framesConfig: {
-                    caption: 'antarctic-water-',
-                    start: 1,
-                    end: 8
-                },
-                frameRate: 5,
-                repeat: -1
-            }
-        );
+        keys.forEach(key => self.loadAnimationsFromData(key));
 
         this.createAnimation(
             {

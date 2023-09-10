@@ -42,7 +42,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
         this.ENEMY_COLLISION_TURN_TIMER = 400; /**/
 
         //this.enemyLayerCollider = this.scene.physics.add.collider(this, this.level.enemyGroup);
-        this.groundLayerCollider = this.scene.physics.add.collider(this, this.level.groundLayer);
+        //this.groundLayerCollider = this.scene.physics.add.collider(this, this.level.groundLayer);
 
         this.collisionTurnedTimer = 0;
         this.playerCollisionTurnedTimer = 0;
@@ -56,6 +56,8 @@ class Enemy extends Phaser.GameObjects.Sprite {
         this.killed = false;
 
         this.state = EnemyState.STATE_INIT;
+
+        
 
         //this.setCanBeSquished(config);
         //this.setCanSlide(config);
@@ -144,6 +146,12 @@ class Enemy extends Phaser.GameObjects.Sprite {
             return;
         }
 
+        if (this.killFalling) {
+            return;
+        }
+
+        this.scene.physics.world.collide(this, this.level.groundLayer);
+
         this.scene.physics.world.collide(this, this.level.enemyGroup, this.enemyHit);
 
         if (!this.player.isDead()) {
@@ -160,12 +168,6 @@ class Enemy extends Phaser.GameObjects.Sprite {
                 this.unfreeze(false);
             }
         }
-
-
-
-        //this.ifPlayerAliveAddCollisionDetection();
-        //this.addGroundCollisionDetection();
-        //this.addAllOtherEnemiesCollisionDetection();
 
         if (this.isActiveFlag && this.isOffScreen()) {
             this.deActivate();
@@ -301,7 +303,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
 
 
         if (player.invincible /* || */) {
-            this.killFall();
+            enemy.killFall();
 
             return;
         }
@@ -366,25 +368,6 @@ class Enemy extends Phaser.GameObjects.Sprite {
 
     isGrabbed() {
         return false;
-    }
-
-    killFall() {
-        if (!this.isActive()) {
-            return;
-        }
-
-        if (this.frozen) {
-            //playSound
-            //Do Stuff ...
-        } else {
-            //playSound
-            this.setVelocityY(0);
-            this.setAccelerationY(0);
-            this.setState(EnemyState.STATE_FALLING);
-            //do stuff!! kill phaser
-        }
-
-
     }
 
     collisionSquished(player) {
@@ -464,6 +447,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
 
             case EnemyState.STATE_FALLING:
                 //setGroup(disabled);
+                this.flipY = true;
 
                 break;
 
@@ -627,7 +611,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
 
             this.killAt -= delta;
             if (this.killAt <= 0) {
-                this.kill();
+                this.remove();
             }
         }
     }
@@ -652,13 +636,28 @@ class Enemy extends Phaser.GameObjects.Sprite {
         this.killed = true;
     }
 
-    killNoFlat(texture) {
-        this.setTexture(texture);
-        this.body.setVelocityX(0);
-        this.body.setVelocityY(-200);
-        this.killAt = 1500;
-        this.killFalling = true;
-        this.groundLayerCollider.destroy();
+    killFall() {
+        this.killNoFlat();
+    }
+
+    killNoFlat() {
+        //this.setTexture(texture);
+
+        if (!this.isActive()) {
+            return;
+        }
+
+        if (this.frozen) {
+            //playSound
+            //Do Stuff ...
+        } else {
+            this.scene.sound.play('enemy-fall');
+            this.body.setVelocityX(0);
+            this.body.setVelocityY(0);
+            this.killAt = 1500;
+            this.killFalling = true;
+            this.setState(EnemyState.STATE_FALLING);
+        }
     }
 
 

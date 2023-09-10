@@ -4,36 +4,36 @@
             "path": "./assets/images/creatures/tux/",
             "sprites": [
                 {
-                  "name": "tux-duck",
-                  "value": "duck-0"
+                    "name": "tux-duck",
+                    "value": "duck-0"
                 },
                 {
-                  "name": "tux-skid",
-                  "value": "skid-0" 
+                    "name": "tux-skid",
+                    "value": "skid-0"
                 },
                 {
-                  "name": "tux-gameover-1",
-                  "value": "gameover-0" 
+                    "name": "tux-gameover-1",
+                    "value": "gameover-0"
                 },
                 {
-                  "name": "tux-gameover-2",
-                  "value": "gameover-1" 
+                    "name": "tux-gameover-2",
+                    "value": "gameover-1"
                 },
                 {
-                  "name": "tux-stand-0",
-                  "value": "stand-0" 
+                    "name": "tux-stand-0",
+                    "value": "stand-0"
                 },
                 {
-                  "name": "tux-idle-1",
-                  "value": "idle-0" 
+                    "name": "tux-idle-1",
+                    "value": "idle-0"
                 },
                 {
-                  "name": "tux-idle-2",
-                  "value": "idle-1" 
+                    "name": "tux-idle-2",
+                    "value": "idle-1"
                 },
                 {
-                  "name": "tux-jump-0",
-                  "value": "jump-0"
+                    "name": "tux-jump-0",
+                    "value": "jump-0"
                 },
                 {
                     "name": "tux-run-",
@@ -76,6 +76,52 @@
                 }
             ]
         },
+        "blocks": {
+            "path": "./assets/images/level/blocks/",
+            "spritesheets": [
+                {
+                    "name": "wood",
+                    "value": "wood",
+                    "frameWidth": 32,
+                    "frameHeight": 32,
+                    "number": 4
+                }
+            ],
+            "sprites": [
+                {
+                    "name": "wood-single",
+                    "value": "wood-tiny"
+                },
+                {
+                    "name": "bonus-block",
+                    "value": "bonus-block"
+                },
+                {
+                    "name": "bonus-block-empty",
+                    "value": "block-empty",
+                },
+                {
+                    "name": "brick",
+                    "value": "brick"
+                },
+                {
+                    "name": "brick-ice",
+                    "value": "brick-ice"
+                },
+                {
+                    "name": "brick-piece",
+                    "value": "brick_piece",
+                    "start": 1,
+                    "end": 6
+                },
+                {
+                    "name": "pieces",
+                    "value": "brick_piece",
+                    "start": 1,
+                    "end": 6
+                }
+            ]
+        },
         "bouncing-snowball": {
             "path": "./assets/images/creatures/bouncing_snowball/",
             "sprites": [
@@ -90,6 +136,18 @@
                     "value": "bs",
                     "start": 1,
                     "end": 8
+                }
+            ]
+        },
+        "coin": {
+            "path": "./assets/images/objects/",
+            "spritesheets": [
+                {
+                    "name": "coin-moving",
+                    "value": "coins",
+                    "frameWidth": 32,
+                    "frameHeight": 32,
+                    "number": 16
                 }
             ]
         },
@@ -140,6 +198,18 @@
                 {
                     "name": "ghoul-squished",
                     "value": "d1"
+                }
+            ]
+        },
+        "industrial": {
+            "path": "./assets/tilemaps/",
+            "spritesheets": [
+                {
+                    "name": "industrial",
+                    "value": "industrial",
+                    "frameWidth": 32,
+                    "frameHeight": 32,
+                    "number": 35
                 }
             ]
         },
@@ -216,6 +286,17 @@
                 {
                     "name": "egg",
                     "value": "egg-shade"
+                }
+            ]
+        },
+        "smoke": {
+            "path": "./assets/images/particles/",
+            "sprites": [
+                {
+                    "name": "smoke-",
+                    "value": "smoke-",
+                    "start": 1,
+                    "end": 6
                 }
             ]
         },
