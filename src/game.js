@@ -1,7 +1,3 @@
-////import './lib/phaser.js';
-////import GameScene from './scenes/gamescene.js';
-////import PauseScene from './scenes/pausescene.js';
-
 const CANVAS_WIDTH = 1024;
 const CANVAS_HEIGHT = 768;
 

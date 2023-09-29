@@ -4,20 +4,20 @@
             "path": "./assets/images/creatures/tux/",
             "sprites": [
                 {
-                    "name": "tux-duck",
-                    "value": "duck-0"
+                    "name": "tux-gameover-",
+                    "value": "gameover-",
+                    "start": 0,
+                    "end": 3
+                },
+                {
+                    "name": "tux-duck-",
+                    "value": "duck-",
+                    "start": 0,
+                    "end": 4
                 },
                 {
                     "name": "tux-skid",
                     "value": "skid-0"
-                },
-                {
-                    "name": "tux-gameover-1",
-                    "value": "gameover-0"
-                },
-                {
-                    "name": "tux-gameover-2",
-                    "value": "gameover-1"
                 },
                 {
                     "name": "tux-stand-0",
@@ -32,14 +32,28 @@
                     "value": "idle-1"
                 },
                 {
-                    "name": "tux-jump-0",
-                    "value": "jump-0"
+                    "name": "tux-jump-",
+                    "value": "jump-",
+                    "start": 0,
+                    "end": 2
+                },
+                {
+                    "name": "tux-fall-",
+                    "value": "jump-",
+                    "start": 3,
+                    "end": 7
+                },
+                {
+                    "name": "tux-walk-",
+                    "value": "walk-",
+                    "start": 0,
+                    "end": 7
                 },
                 {
                     "name": "tux-run-",
-                    "value": "walk-",
+                    "value": "run-",
                     "start": 0,
-                    "end": 5
+                    "end": 7
                 }
             ]
         },
@@ -268,6 +282,27 @@
                 {
                     "name": "mriceblock-stomped-0",
                     "value": "stomped-left"
+                }
+            ]
+        },
+        "plasma-gun": {
+            "path": "./assets/images/objects/guns/",
+            "sprites": [
+                {
+                    "name": "plasma-gun-bottom",
+                    "value": "plasma-gun-bottom"
+                },
+                {
+                    "name": "plasma-gun-weapon",
+                    "value": "plasma-gun-weapon"
+                },
+                {
+                    "name": "plasma-stream",
+                    "value": "plasma-stream"
+                },
+                {
+                    "name": "plasma",
+                    "value": "plasma"
                 }
             ]
         },

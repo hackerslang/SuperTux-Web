@@ -5,6 +5,12 @@
         config.scene.add.existing(this);
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
 
+        this.incollectableForTimer = 0;
+
+        if (this.incollectableForTimer != null) {
+            this.incollectableForTimer = config.incollectableForTimer;
+        }
+
         this.body.setAllowGravity(true);
         this.player = config.player;
         this.level = config.level;
@@ -28,6 +34,10 @@
             return;
         }
 
+        if (this.incollectableForTimer > 0) {
+            this.incollectableForTimer -= delta;
+        }
+
         this.angle += 1;
 
         this.scene.physics.world.collide(this, this.level.groundLayer);
@@ -38,6 +48,12 @@
     }
 
     collected(egg, player) {
+        if (egg.incollectableForTimer <= 0) {
+            egg.collect(egg, player);
+        }
+    }
+
+    collect(egg, player) {
         player.addHealth(33);
         egg.killed = true;
     }

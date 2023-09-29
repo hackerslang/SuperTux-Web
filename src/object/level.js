@@ -82,9 +82,9 @@ class Level {
 
         let tiles = map.addTilesetImage('tiles');
 
-        this.parseBackgroundImages();
         this.parseAntracticWater();
-
+        this.parseBackgroundImages();
+        
         let groundLayer = map.createLayer(0, tiles, 0, 0);
         this.groundLayer = groundLayer;
 
@@ -409,7 +409,8 @@ class Level {
                         y: creature.position.y * 32,
                         realY: creature.position.realY,
                         player: this.player,
-                        level: this
+                        level: this,
+                        powerUps: creature.powerUps
                     });
 
                     break;
@@ -422,7 +423,8 @@ class Level {
                         y: creature.position.y * 32,
                         realY: creature.position.realY,
                         player: this.player,
-                        level: this
+                        level: this,
+                        powerUps: creature.powerUps
                     });
 
                     break;
@@ -451,7 +453,8 @@ class Level {
                         y: creature.position.y * 32,
                         realY: creature.position.realY,
                         player: this.player,
-                        level: this
+                        level: this,
+                        powerUps: creature.powerUps
                     });
 
                     break;
@@ -464,6 +467,19 @@ class Level {
                         x: creature.position.x * 32,
                         y: creature.position.y * 32,
                         realY: creature.position.realY,
+                        player: this.player,
+                        level: this
+                    });
+
+                    break;
+
+                case "plasma-gun":
+                    creatureObject = new PlasmaGun({
+                        id: i,
+                        scene: this.scene,
+                        key: "plasma-gun",
+                        x: creature.position.x * 32,
+                        y: creature.position.y * 32,
                         player: this.player,
                         level: this
                     });
@@ -662,7 +678,7 @@ class Level {
 
     }
 
-    addEgg(x, y, direction) {
+    addEgg(x, y, direction, timer) {
         let egg = new EggPowerUp({
             scene: this.scene,
             key: "egg",
@@ -670,7 +686,8 @@ class Level {
             y: y,
             player: this.player,
             level: this,
-            direction: direction
+            direction: direction,
+            incollectableForTimer: timer
         });
 
         this.powerupGroup.add(egg);

@@ -18,7 +18,8 @@
     WAY_ARROW_LEFT: 'arrow-left',
     WAY_ARROW_RIGHT: 'arrow-right',
     INDUSTRIAL_START_PART: 'ind-',
-    ICE_BRIDGE: 'ibr'
+    ICE_BRIDGE: 'ibr',
+    BILLBOARD_RUNJUMP: 'expl-rj'
 }
 
 class TilemapParser {
@@ -147,10 +148,9 @@ class TilemapParser {
             waterI++;
         }
 
-        for (var n = i - 1; n < waterI + 1; n += 4) {
+        for (var n = i-1; n < waterI + 1; n += 4) {
             let water = this.createPreloadedObject(n, j, spriteKey);
 
-            this.levelData[j][n] = 0;
             layer.push(water);
         }
 
@@ -314,7 +314,7 @@ class TilemapParser {
         return preloadedObject;
     }
 
-    createPreloadedBackWithOffset(i, j, type, offsetI, offsetJ) {
+    createPreloadedBackWithOffset(i, j, offsetI, offsetJ, type) {
         let preloadedObject = {
             type: type,
             x: i * 32 + offsetI,

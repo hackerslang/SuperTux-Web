@@ -21,10 +21,13 @@ class Enemy extends Phaser.GameObjects.Sprite {
         this.alive = true;
         this.id = config.id;
         this.enemyType = config.key;
+        this.powerUps = config.powerUps;
 
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
         this.body.allowGravity = true;
         this.hasBeenSeen = false;
+
+
 
         this.setDepth(900);
 
@@ -399,7 +402,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
 
         this.stateTimer = this.SQUISH_TIME * 1000;
         this.killed = true;
-
+        this.releasePowerUps();
         //do dead stuff killAt = ??
     }
 
@@ -657,10 +660,49 @@ class Enemy extends Phaser.GameObjects.Sprite {
             this.killAt = 1500;
             this.killFalling = true;
             this.setState(EnemyState.STATE_FALLING);
+            this.releasePowerUps();
         }
     }
 
+    releasePowerUps() {
+        if (this.powerUps == null) { return; }
 
+        var self = this;
+
+        this.powerUps.forEach(function (powerUp, idx) {
+            if (self.doesGeneratePowerup(powerUp.chance)) {
+                switch (powerUp.name) {
+                    case 'egg':
+                        self.releaseEgg();
+                        break;
+                    default:
+                        break;
+                }
+            }
+        });
+    }
+
+    doesGeneratePowerup(chance) {
+        var rnd = this.getRandomInt(100);
+
+        if (rnd <= chance) {
+            return true;
+        }
+
+        return false;
+    }
+
+    getRandomInt(max) {
+        return Math.ceil(Math.random() * max);
+    }
+
+    releaseEgg() {
+        var rndDirection = this.getRandomInt(2);
+
+        if (rndDirection == 2) { rndDirection = -1; }
+        
+        this.level.addEgg(this.x + (rndDirection * 40), this.y - 32, rndDirection, 100);
+    }
 
     walkAndTurnOnEdge() {
         if ((this.body.x <= 10 || this.isAtEdgeLeft()) && !this.turnedAroundRight) {

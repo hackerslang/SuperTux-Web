@@ -129,6 +129,7 @@ class GameScene extends Phaser.Scene {
         this.loadBlockImages();
         this.loadSpikeImages();
         this.loadIndustrialImages();
+        this.loadPlasmaGunImages();
         this.loadPowerupImages();
         this.loadSnowImages();
         this.loadCastleImages();
@@ -205,6 +206,10 @@ class GameScene extends Phaser.Scene {
 
     loadIndustrialImages() {
         this.loadImagesFromData("industrial");
+    }
+
+    loadPlasmaGunImages() {
+        this.loadImagesFromData("plasma-gun");
     }
 
     loadKroshImages() {

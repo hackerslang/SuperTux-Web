@@ -16,14 +16,17 @@
             "animations": [
                 {
                     key: 'tux-duck',
-                    frames: [{ key: 'tux-duck-0' }],
-                    frameRate: 24
+                    caption: 'tux-duck-',
+                    start: 0,
+                    end: 4,
+                    frameRate: 60,
+                    repeat: 0
                 },
                 {
                     key: "tux-gameover",
                     caption: 'tux-gameover-',
-                    start: 1,
-                    end: 2,
+                    start: 0,
+                    end: 3,
                     frameRate: 8,
                     repeat: -1
                 },
@@ -37,8 +40,11 @@
                 },
                 {
                     key: 'tux-jump',
-                    frames: [{ key: 'tux-jump-0' }],
-                    frameRate: 24
+                    caption: 'tux-jump-',
+                    start: 0,
+                    end: 2,
+                    frameRate: 24,
+                    repeat: 0
                 },
                 {
                     key: 'tux-run',
@@ -57,6 +63,14 @@
                     key: 'tux-stand',
                     frames: [{ key: 'tux-stand-0' }],
                     frameRate: 24
+                },
+                {
+                    key: 'tux-walk',
+                    caption: 'tux-walk-',
+                    start: 0,
+                    end: 7,
+                    frameRate: 12,
+                    repeat: -1
                 }
             ]
         },
