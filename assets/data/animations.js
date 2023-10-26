@@ -36,7 +36,7 @@
                     start: 1,
                     end: 2,
                     frameRate: 24,
-                    repeat: -1
+                    repeat: 0
                 },
                 {
                     key: 'tux-jump',
@@ -163,6 +163,17 @@
                     end: 1,
                     frameRate: 8,
                     repeat: -1
+                }
+            ]
+        },
+        "lava-fish": {
+            "animations": [
+                {
+                    key: "lava-fish-open-closed",
+                    frames: [
+                        { key: "lava-fish-closed-mouth" },
+                        { key: "lava-fish-open-mouth" }
+                    ]
                 }
             ]
         },
@@ -326,6 +337,19 @@
                     spriteSheet: 'star',
                     frameRate: 20,
                     repeat: -1
+                }
+            ]
+        },
+        "plus-flickering": {
+            "animations": [
+                {
+                    key: "plus-flickering",
+                    frames: [
+                        { key: "plus-1" },
+                        { key: "plus-1" },
+                        { key: "plus-1" },
+                        { key: "plus-2" }
+                    ]
                 }
             ]
         }

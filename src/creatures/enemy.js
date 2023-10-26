@@ -675,6 +675,9 @@ class Enemy extends Phaser.GameObjects.Sprite {
                     case 'egg':
                         self.releaseEgg();
                         break;
+                    case 'plus':
+                        self.releasePlus();
+                        break;
                     default:
                         break;
                 }
@@ -701,7 +704,15 @@ class Enemy extends Phaser.GameObjects.Sprite {
 
         if (rndDirection == 2) { rndDirection = -1; }
         
-        this.level.addEgg(this.x + (rndDirection * 40), this.y - 32, rndDirection, 100);
+        this.level.addEgg(this.x + (rndDirection * 40), this.y - 32, rndDirection, 600);
+    }
+
+    releasePlus() {
+        var rndDirection = this.getRandomInt(2);
+
+        if (rndDirection == 2) { rndDirection = -1; }
+
+        this.level.addPlus(this.x + (rndDirection * 40), this.y - 32, rndDirection, 600);
     }
 
     walkAndTurnOnEdge() {

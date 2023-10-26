@@ -11,7 +11,8 @@
         this.id = config.id;
         this.anims.play('lava');
         this.setOrigin(0, 0);
-
+        this.setDepth(120);
+        this.alpha = config.alpha != null ? config.alpha : 1;
         //this.lavaCollider = this.scene.physics.add.collider(this.player, this);
     }
 
@@ -43,16 +44,16 @@
     }
 
     playerHit() {
-        var playerX = this.player.body.x;
-        var playerY = this.player.body.y;
-        var playerHeight = this.player.body.height;
+        //var playerX = this.player.body.x;
+        //var playerY = this.player.body.y;
+        //var playerHeight = this.player.body.height;
 
-        for (var i = 0; i < this.player.level.lavaSprites.length; i++) {
-            var lavaSprite = this.player.level.lavaSprites[i];
+        //for (var i = 0; i < this.player.level.lavaSprites.length; i++) {
+        //    var lavaSprite = this.player.level.lavaSprites[i];
 
-            if (playerX >= lavaSprite.x + 32 && playerX <= lavaSprite.x + 128 && playerY >= lavaSprite.y - playerHeight && playerY <= lavaSprite.y) {
-                this.player.dieWithoutRemovingColliders();
-            }
-        }
+        //    if (playerX >= lavaSprite.x + 32 && playerX <= lavaSprite.x + 128 && playerY >= lavaSprite.y - playerHeight && playerY <= lavaSprite.y) {
+        //        this.player.dieWithoutRemovingColliders();
+        //    }
+        //}
     }
 }

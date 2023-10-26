@@ -2,6 +2,7 @@
     constructor(config) {
         super(config);
 
+        this.still = config.still != undefined ? config.still : false;
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
         this.killAt = 0;
         this.direction = 0;
@@ -46,13 +47,15 @@
             this.changeAt = 100;
         }
 
-        if (Math.abs(this.player.x - this.x) > 60) {
-            if (this.player.x > this.x) {
-                this.flipX = true;
-                this.body.velocity.x = this.WALK_SPEED;
-            } else {
-                this.body.velocity.x = -this.WALK_SPEED;
-                this.flipX = false;
+        if (!this.still) {
+            if (Math.abs(this.player.x - this.x) > 60) {
+                if (this.player.x > this.x) {
+                    this.flipX = true;
+                    this.body.velocity.x = this.WALK_SPEED;
+                } else {
+                    this.body.velocity.x = -this.WALK_SPEED;
+                    this.flipX = false;
+                }
             }
         }
     }

@@ -11,9 +11,12 @@
         this.firstActivated = true;
         this.body.allowGravity = true;
         this.scene.add.existing(this);
-        this.groundLayerCollider.destroy();
-        this.anims.play('fish-up');
+        this.animDown = config.down;
+        this.animUp = config.up;
+        this.flip = config.flip;
+        this.anims.play(this.animUp);
         this.jumping = true;
+        this.setDepth(100);
     }
 
     update(time, delta) {
@@ -29,10 +32,16 @@
 
         if (this.body.velocity.y > 0) {
             this.jumping = false;
-            this.setTexture('fish-down');
+            if (this.flip) {
+                this.flipY = true;
+            }
+            this.anims.play(this.animDown, true);
         } else if (!this.jumping) {
-            this.anims.play('fish-up');
+            this.anims.play(this.animUp, true);
             this.jumping = true;
+            if (this.flip) {
+                this.flipY = false;
+            }
         }
     }
 

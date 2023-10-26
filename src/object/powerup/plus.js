@@ -1,4 +1,4 @@
-﻿class EggPowerUp extends Phaser.GameObjects.Sprite {
+﻿class PlusPowerUp extends Phaser.GameObjects.Sprite {
     constructor(config) {
         super(config.scene, config.x, config.y, config.key);
         config.scene.physics.world.enable(this);
@@ -16,14 +16,17 @@
         this.level = config.level;
         this.scene = config.scene;
         this.id = config.id
-        this.setTexture('egg');
-        this.startY = config.y;
-        this.isEmpty = false;
-        this.done = false;
+        this.anims.play('plus-flickering');
         this.body.setBounce(0);
         this.body.setImmovable(true);
         this.direction = config.direction;
-        this.body.velocity.x = this.direction * 70;
+        this.initialDirection = this.direction;
+
+        this.body.velocity.y = - 150;
+        this.body.velocity.x = this.direction * 90;
+
+        this.startedTimer = 1500;
+        this.bounceBack = false;
     }
 
     update(time, delta) {
@@ -38,7 +41,23 @@
             this.incollectableForTimer -= delta;
         }
 
-        this.angle += 1;
+        if (this.startedTimer > 0) {
+            this.startedTimer -= delta;
+        }
+
+        if (this.startedTimer <= 0) {
+            if (!this.bounceBack) {
+                this.body.acceleration.x += (this.direction * -1) + (delta / 50);
+                this.angle += this.direction * 2;
+                if (Math.abs(this.body.velocity.x) < 15) {
+                    this.body.velocity.x = 0;
+                    this.body.acceleration.x = 0;
+                    this.bounceBack = true;
+                }
+            }
+        } else {
+            this.angle += this.direction * 5;
+        }
 
         this.scene.physics.world.collide(this, this.level.groundLayer);
         this.scene.physics.world.collide(this, this.level.woodGroup);
@@ -47,14 +66,14 @@
         this.scene.physics.world.overlap(this, this.player, this.collected);
     }
 
-    collected(egg, player) {
-        if (egg.incollectableForTimer <= 0) {
-            egg.collect(egg, player);
+    collected(plus, player) {
+        if (plus.incollectableForTimer <= 0) {
+            plus.collect(plus, player);
         }
     }
 
-    collect(egg, player) {
-        player.addHealth(1);
-        egg.killed = true;
+    collect(plus, player) {
+        player.addHealth(2);
+        plus.killed = true;
     }
 }

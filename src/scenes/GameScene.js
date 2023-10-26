@@ -39,10 +39,13 @@ class GameScene extends Phaser.Scene {
         });
 
         this.world1Levels = [
+            new Level(levelNTheLavaWorld, this),
             new Level(levelTheBeginningData, this)
         ];
 
         this.currentLevel = this.world1Levels[0];
+
+
 
         //this.levelFactory = new RandomLevelFactory(this);
 
@@ -298,7 +301,7 @@ class GameScene extends Phaser.Scene {
         var keys = [
             "mr-bomb", "sparkle", "smoke", "tux", "ghoul",
             "bouncing-snowball", "snowball", "mr-iceblock",
-            "fish", "antarctic-water", "star-moving", "coin"
+            "fish", "lava-fish", "antarctic-water", "star-moving", "plus-flickering", "coin"
         ];
 
         var self = this;

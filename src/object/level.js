@@ -11,7 +11,10 @@ class Level {
         this.levelEnd = levelData.levelEnd;
         this.creatures = levelData.creatures;
         this.playerPosition = levelData.playerPosition;
+        this.dynamicForegrounds = levelData.dynamicForegrounds;
+        this.staticForegrounds = levelData.staticForegrounds;
         this.landscape = 'snow';
+        this.LAVA_ALPHA = 0.7;
 
         if (config.landscapeType != null) {
             this.landscape = config.landscape;
@@ -20,8 +23,6 @@ class Level {
         this.tilemapParser = new TilemapParser(this, this.levelData);
 
         this.TILE_DIMENSION = 32;
-
-
         this.TOTAL_NUMBER_OF_COINS = this.getTotalNumberofCoins();
         this.playerTotalCoinsCollected = 0;
     }
@@ -60,9 +61,89 @@ class Level {
         this.scene.load.image(name, value);
     }
 
+    createDynamicForeGrounds() {
+        if (this.dynamicForegrounds == null) { return; }
+        var i = 0;
+        var level = this;
+        this.dynamicForegrounds.forEach(function (foreground, ids) {
+            var foregroundImage = {};
+
+            if (foreground.tile == "la") {
+                for (var x = 0; x < level.levelData[0].length; x++) {
+                    for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
+                        var foregroundImage = level.scene.add.sprite(x * 32, y * 32, 'lava');
+                        foregroundImage.setOrigin(0, 0);
+                        foregroundImage.setDepth(120);
+                        foregroundImage.alpha = level.LAVA_ALPHA;
+                    }
+                }
+            } else if (foreground.tile == "la2") {
+                for (var x = 0; x < level.levelData[0].length; x+=4) {
+                    for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
+                        var foregroundImage = new Lava({
+                            id: i,
+                            key: 'lava-' + i,
+                            player: level.player,
+                            scene: level.scene,
+                            x: x * 32,
+                            y: y * 32,
+                            level: level,
+                            alpha: level.LAVA_ALPHA
+                        });
+
+                        i++;
+                    }
+                }
+            }
+        });
+    }
+
+    createStaticForegrounds() {
+        if (this.staticForegrounds == null) { return; }
+        var i = 0;
+        var level = this;
+        this.staticForegrounds.forEach(function (foreground, ids) {
+            var foregroundImage = {};
+
+            if (foreground.tile == "la") {
+                for (var x = foreground.x; x < foreground.x + foreground.width; x++) {
+                    for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
+                        var foregroundImage = level.scene.add.sprite(x * 32, y * 32, 'lava');
+                        foregroundImage.setOrigin(0, 0);
+                        foregroundImage.setDepth(120);
+
+                        foregroundImage.scrollFactorX = 0;
+                        foregroundImage.scrollFactorY = 1;
+                    }
+                }
+            } else if (foreground.tile == "la2") {
+                for (var x = foreground.x; x < foreground.x + foreground.width; x += 4) {
+                    for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
+                        var foregroundImage = new Lava({
+                            id: i,
+                            key: 'lava-' + i,
+                            player: level.player,
+                            scene: level.scene,
+                            x: x * 32,
+                            y: y * 32,
+                            level: level
+                        });
+
+                        foregroundImage.scrollFactorX = 0;
+                        foregroundImage.scrollFactorY = 1;
+
+                        i++;
+                    }
+                }
+            }
+
+            
+        });
+    }
+
     createBackground() {
         var backgroundImage = this.scene.add.image(0, 0, 'background');
-        backgroundImage.setOrigin(0, 0.2);
+        backgroundImage.setOrigin(0, 0);
         backgroundImage.scrollFactorX = 0;
         backgroundImage.scrollFactorY = 0;
     }
@@ -83,7 +164,11 @@ class Level {
         let tiles = map.addTilesetImage('tiles');
 
         this.parseAntracticWater();
+        this.parseLava();
         this.parseBackgroundImages();
+
+        this.createDynamicForeGrounds();
+        this.createStaticForegrounds();
         
         let groundLayer = map.createLayer(0, tiles, 0, 0);
         this.groundLayer = groundLayer;
@@ -105,29 +190,20 @@ class Level {
         this.hurtableTilesGroup = this.scene.add.group();
         this.parseHurtableTiles();
 
-        //this.spikeGroup = this.scene.add.group();
-        //this.parseSpikeLayer();
-
         this.powerupGroup = this.scene.add.group();
 
-        /*this.parseLevelEndLayer();*/
+        this.scene.physics.add.collider(this.coinGroup, this.groundLayer);
+        this.playerGroundCollider = this.scene.physics.add.collider(this.player, this.groundLayer);
+        this.woodCollider = this.scene.physics.add.collider(this.player, this.collisionTilesGroup, this.woodHit);
 
-        //this.wayArrowGroup = this.scene.add.group();
-        //this.parseWayArrowLayer();
+        this.scene.physics.world.bounds.width = groundLayer.width;
+        this.scene.physics.world.bounds.height = groundLayer.height;
+        groundLayer.setCollisionByExclusion(0, true);
 
-        //this.scene.physics.add.collider(this.enemyGroup, this.groundLayer);
-        this.scene.physics.add.collider(this.coinGroup, this.groundLayer); //shoudl be put in class Level
-        this.playerGroundCollider = this.scene.physics.add.collider(this.player, this.groundLayer); //shoudl be put in class Level
-        this.woodCollider = this.scene.physics.add.collider(this.player, this.collisionTilesGroup, this.woodHit); //shoudl be put in class Level
-
-        this.scene.physics.world.bounds.width = groundLayer.width; //shoudl be put in class Level
-        this.scene.physics.world.bounds.height = groundLayer.height; //shoudl be put in class Level
-        groundLayer.setCollisionByExclusion(0, true); //shoudl be put in class Level
-
-        this.scene.physics.world.enable(this.player); //shoudl be put in class Level
-        this.scene.physics.world.setBoundsCollision(true, true, true, true); //shoudl be put in class Level
-        this.scene.cameras.main.setBounds(0, 0, this.level[0].length * 32, (this.level.length - 3) * 32); //shoudl be put in class Level
-        this.scene.cameras.main.startFollow(this.player, true); //shoudl be put in class Level
+        this.scene.physics.world.enable(this.player);
+        this.scene.physics.world.setBoundsCollision(true, true, true, true);
+        this.scene.cameras.main.setBounds(0, 0, this.level[0].length * 32, (this.level.length - 3) * 32);
+        this.scene.cameras.main.startFollow(this.player, true);
     }
 
     parseTilemaps() {
@@ -323,6 +399,8 @@ class Level {
             if (preloadedLava.type == 'plain') {
                 lava = this.scene.add.sprite(preloadedLava.x, preloadedLava.y, 'lava');
                 lava.setOrigin(0, 0);
+                lava.setDepth(120);
+                lava.alpha = this.LAVA_ALPHA;
             } else /*if (preloadedAntarcticWater.type == 'top')*/ {
                 lava = new Lava({
                     id: i,
@@ -331,7 +409,8 @@ class Level {
                     scene: this.scene,
                     x: preloadedLava.x,
                     y: preloadedLava.y,
-                    level: this
+                    level: this,
+                    alpha: this.LAVA_ALPHA
                 });
 
                 lavaSprites.push(lava);
@@ -485,21 +564,21 @@ class Level {
                     });
 
                     break;
-/*
-                case "krosh":
-                    creatureObject = new Krosh({
-                        id: i,
-                        scene: this.scene,
-                        key: "krosh",
-                        x: creature.position.x * 32,
-                        y: creature.position.y * 32,
-                        stopY: creature.position.stopY,
-                        realY: creature.position.realY,
-                        player: this.player,
-                        level: this
-                    });
 
-                    break;
+                //case "krosh":
+                //    creatureObject = new Krosh({
+                //        id: i,
+                //        scene: this.scene,
+                //        key: "krosh",
+                //        x: creature.position.x * 32,
+                //        y: creature.position.y * 32,
+                //        stopY: creature.position.stopY,
+                //        realY: creature.position.realY,
+                //        player: this.player,
+                //        level: this
+                //    });
+
+                //    break;
 
                 case "fish":
                     creatureObject = new Fish({
@@ -509,12 +588,15 @@ class Level {
                         x: creature.position.x * 32,
                         y: creature.position.y * 32,
                         realY: creature.position.realY,
+                        up: creature.up,
+                        down: creature.down,
+                        flip: creature.flip,
                         player: this.player,
                         level: this
                     });
 
                     break;
-
+                /*
                 case "ghoul":
                     creatureObject = new Ghoul({
                         id: i,
@@ -691,6 +773,21 @@ class Level {
         });
 
         this.powerupGroup.add(egg);
+    }
+
+    addPlus(x, y, direction, timer) {
+        let plus = new PlusPowerUp({
+            scene: this.scene,
+            key: "plus",
+            x: x,
+            y: y,
+            player: this.player,
+            level: this,
+            direction: direction,
+            incollectableForTimer: timer
+        });
+
+        this.powerupGroup.add(plus);
     }
 
     addBouncyCoin(x, y, emerge) {

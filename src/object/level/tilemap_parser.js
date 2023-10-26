@@ -19,7 +19,8 @@
     WAY_ARROW_RIGHT: 'arrow-right',
     INDUSTRIAL_START_PART: 'ind-',
     ICE_BRIDGE: 'ibr',
-    BILLBOARD_RUNJUMP: 'expl-rj'
+    BILLBOARD_RUNJUMP: 'expl-rj',
+    ENEMY_START_PART: 'e-'
 }
 
 class TilemapParser {
@@ -74,9 +75,9 @@ class TilemapParser {
                     this.createPreloadedplainWater(i, j, nextTile);
                 } else if (currentTile == TilemapConstants.TOP_WATER_TILE) {
                     i = this.createPreloadedWater(i, j);
-                } else if (currentTile == this.PLAIN_LAVA_TILE) {
+                } else if (currentTile == TilemapConstants.PLAIN_LAVA_TILE) {
                     this.createPreloadedPlainLava(i, j, nextTile);
-                } else if (currentTile == this.TOP_LAVA_TILE) {
+                } else if (currentTile == TilemapConstants.TOP_LAVA_TILE) {
                     i = this.createPreloadedLava(i, j);
                 } else if (currentTile == TilemapConstants.ICE_BRIDGE) {
                     iceBridgeStart = this.createIceBridge(i, j, iceBridgeStart, nextTile);

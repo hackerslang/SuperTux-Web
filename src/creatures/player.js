@@ -103,6 +103,7 @@ class Tux extends Phaser.GameObjects.Sprite {
 
         this.adjustBodyStandingRight();
         this.hasPlayedDuck = false;
+        this.hasPlayerJump = false;
     }
 
     listener() {
@@ -188,8 +189,8 @@ class Tux extends Phaser.GameObjects.Sprite {
     jump() {
         this.setVelocityY(-100);
         this.playAnimation('tux-jump');
-        this.body.setSize(59, 70, true);
-        this.body.setOffset(0, 5);
+        //this.body.setSize(59, 70, true);
+        //this.body.setOffset(0, 5);
     }
 
     run(velocity, frameRate) {
@@ -210,6 +211,24 @@ class Tux extends Phaser.GameObjects.Sprite {
             this.die();
 
             return;
+        }
+
+        if (this.ducked) {
+            if (this.anims.getName() == 'tux-duck') {
+                let textureKey = this.anims.currentFrame.textureKey;
+
+                if (textureKey == "tux-duck-0") {
+                    this.adjustBody(43, 57, 11, 20);
+                } else if (textureKey == "tux-duck-1") {
+                    this.adjustBody(43, 46, 11, 31);
+                } else if (textureKey == "tux-duck-2") {
+                    this.adjustBody(50, 31, 8, 46);
+                } else if (textureKey == "tux-duck-3") {
+                    this.adjustBody(46, 36, 8, 41);
+                } else if (textureKey == "tux-duck-4") {
+                    this.adjustBody(46, 36, 8, 41);
+                }
+            }
         }
 
         if (this.invincible) {
@@ -470,6 +489,13 @@ class Tux extends Phaser.GameObjects.Sprite {
 
         this.handleHorizontalInput(delta);
 
+        if (this.isClimbing) {
+            this.handleInputClimbing();
+
+            return;
+        }
+
+        //Leave this out, in order to prevent multiple jumps right after each other!
         //if (this.onGround()) {
         //    this.canJump = true;
         //}
@@ -481,6 +507,51 @@ class Tux extends Phaser.GameObjects.Sprite {
         }
 
         this.handleVerticalInput(delta); 
+    }
+
+    handleInputClimbing() {
+        if (!this.isClimbing) {
+            return;
+        }
+
+        var vx = 0;
+        var vy = 0;
+
+        if (this.getKeyController().hold('left') && this.hasClimbableTileToTheLeft()) {
+            this.direction = this.DIRECTION_LEFT;
+            vx -= this.MAX_CLIMB_XM;
+        }
+
+        if (this.getKeyController().hold('right') && this.hasClimbableTileToTheRight()) {
+            this.direction = this.DIRECTION_RIGHT;
+            vx += this.MAX_CLIMB_XM;
+        }
+
+        if (this.getKeyController().hold('jump') && this.hasClimbableTileAbove()) {
+            vy -= this.MAX_CLIMB_YM;
+        }
+
+        if (this.getKeyController().hold('duck') && this.hasClimbableTileBelow()) {
+            vy += this.MAX_CLIMB_YM;
+        }
+
+    }
+
+    hasClimbableTileToTheLeft() {
+        var playerX = this.x;
+        var playerY = Math.floor(this.y / 32);
+    }
+
+    hasClimbableTileToTheRight() {
+
+    }
+
+    hasClimbableTileAbove() {
+
+    }
+
+    hasClimbableTileBelow() {
+
     }
 
     handleHorizontalInput(delta) { //done, FULLY OK!  
@@ -692,6 +763,7 @@ class Tux extends Phaser.GameObjects.Sprite {
             this.drawJumping();
         } else if (Math.abs(this.getVelocityX()) < 1) {
             this.drawStanding();
+            this.hasPlayerJump = false;
         } else {
             if (Math.abs(this.getVelocityX()) > this.MAX_WALK_XM) {
                 this.drawRunning();
@@ -739,11 +811,11 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     adjustBodyStandingRight() { //ok
-        this.adjustBody(43, 68, 11, 10);
+        this.adjustBody(43, 68, 11, 11);
     }
 
     adjustBodyStandingLeft() { //ok
-        this.adjustBody(43, 68, 8, 10);
+        this.adjustBody(43, 68, 8, 11);
     }
 
     adjustBodySkiddingRight() {
@@ -756,12 +828,10 @@ class Tux extends Phaser.GameObjects.Sprite {
 
     adjustBodyFallingRight() { //ok
         this.adjustBody(60, 68, 5, 10);
-        console.log("falling");
     }
 
     adjustBodyFallingLeft() { //ok
         this.adjustBody(60, 68, 0, 10);
-        console.log("falling");
     }
 
     drawFalling() {
@@ -772,12 +842,19 @@ class Tux extends Phaser.GameObjects.Sprite {
 
     drawJumping() {
         this.flipDraw();
-        this.setTexture("tux-jump-0");
+
+        if (!this.hasPlayerJump) {
+            this.playAnimationOnce("tux-jump");
+            this.hasPlayerJump = true;
+        } else {
+            this.setTexture("tux-jump-2");
+        }
+
         this.adjustBodyFalling();
     }
 
     drawStanding() {
-        this.playAnimation("tux-stand");
+        this.setTexture("tux-stand-0");
         this.adjustBodyStanding();
     }
 
@@ -786,17 +863,10 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     drawDuck() {
-        if (this.oldDirection == this.DIRECTION_LEFT) {
-            //this.sprite.ScaleX = -1;
-        } else if (this.oldDirection == this.DIRECTION_RIGHT) {
-            //this.sprite.ScaleX = 1;
-        }
-
         if (!this.hasPlayedDuck) {
             this.playAnimationOnce("tux-duck");
             this.hasPlayedDuck = true;
         }
-        
     }
 
     drawSkid() {
@@ -820,10 +890,7 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     bounce(enemy) {
-        // Force Mario y-position up a bit (on top of the enemy) to avoid getting killed
-        // by neigbouring enemy before being able to bounce
         this.body.y = enemy.body.y - this.body.height;
-        // TODO: if jump-key is down, add a boost value to jump-velocity to use and init jump for controls to handle.
         this.body.setVelocityY(-150);
     }
 
@@ -854,7 +921,8 @@ class Tux extends Phaser.GameObjects.Sprite {
             return;
         }
 
-        this.health = Math.min(3, this.health + 1);
+        this.health += health;
+        this.health = Math.min(3, this.health);
 
         let newHealth = this.health * 33;
 

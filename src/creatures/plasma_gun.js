@@ -35,7 +35,6 @@
         this.setTexture("plasma-gun-weapon");
 
         this.setOrigin(0, 0);
-        this.setOrigin(0, 0);
         this.plasmaStreams = [];
 
         this.scene.physics.world.enableBody(this, 0);
@@ -43,6 +42,7 @@
         
         this.FIRE_PAUSE_TIME = 3000;
         this.firePauseTimer = this.FIRE_PAUSE_TIME;
+        this.alreadyFired = false;
     }
 
     update(time, delta) {
@@ -69,6 +69,7 @@
             },
             onComplete: () => {
                 this.x = this.startX;
+                this.alreadyFired = false;
             }
         });
         
@@ -76,7 +77,12 @@
 
     updateFire() {
         if (!this.hasFiredDuringPeriod) {
-            this.firePlasma();
+            if (!this.alreadyFired) {
+                this.firePlasma();
+                this.alreadyFired = true;
+            }
+            
+            //this.scene.sound.play('enemy-fall');
         }
     }
 
@@ -84,8 +90,8 @@
         var plasmaStream = new PlasmaStream({
             scene: this.scene,
             level: this.level,
-            x: this.x - 20,
-            y: this.y - 37,
+            x: this.x - 10,
+            y: this.y + 13,
             plasmaGun: this,
             key: "plasma-stream",
             id: this.plasmaStreams.length
@@ -106,13 +112,14 @@ class PlasmaStream extends Phaser.GameObjects.Sprite {
         this.plasmaGun = config.plasmaGun;
         this.level = config.level;
         this.scene = config.scene;
-        this.body.setVelocityX(-300);
+        this.body.setVelocityX(-500);
         this.x = config.x;
         this.y = config.y;
         this.killed = false;
         this.previousX = config.x;
         this.MAX_ALIVE_DISTANCE = 700;
         this.aliveMarker = this.MAX_ALIVE_DISTANCE;
+        this.setDepth(800);
     }
 
     update(time, delta) {

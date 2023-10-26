@@ -177,6 +177,14 @@
                 {
                     "name": "fish-down",
                     "value": "down"
+                },
+                {
+                    "name": "lava-fish-closed-mouth",
+                    "value": "lava-fish-closed-mouth"
+                },
+                {
+                    "name": "lava-fish-open-mouth",
+                    "value": "lava-fish-open-mouth"
                 }
             ]
         },
@@ -321,6 +329,12 @@
                 {
                     "name": "egg",
                     "value": "egg-shade"
+                },
+                {
+                    "name": "plus-",
+                    "value": "plus-",
+                    "start": 1,
+                    "end": 2
                 }
             ]
         },
