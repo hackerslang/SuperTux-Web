@@ -23,8 +23,7 @@
     }
 
     update(time, delta) {
-
-        //super.checkKillAtSquishedOrFall("snowball-squished", "bouncing-snowball-4", delta);
+        super.killWhenFallenDown();
 
         if (this.killed || this.killAt > 0) {
 
@@ -66,10 +65,10 @@
         var tileY = Math.floor(this.body.y / 32);
         var tileX = Math.floor(this.body.x / 32);
 
-        super.killWhenFallenDown();
-
-        if (levelTiles[tileY + 1][tileX] != 0 && this.body.velocity.y >= 64) {
-            this.anims.play("bouncing-snowball-left-down");
+        if (tileY + 1 < levelTiles.length) {
+            if (levelTiles[tileY + 1][tileX] != 0 && this.body.velocity.y >= 64) {
+                this.anims.play("bouncing-snowball-left-down");
+            }
         }
 
         if (this.body.blocked.down) {

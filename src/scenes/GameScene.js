@@ -43,7 +43,7 @@ class GameScene extends Phaser.Scene {
             new Level(levelTheBeginningData, this)
         ];
 
-        this.currentLevel = this.world1Levels[0];
+        this.currentLevel = this.world1Levels[1];
 
 
 

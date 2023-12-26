@@ -3,7 +3,7 @@ class Level {
         this.scene = scene;
         this.levelData = levelData.level;
         this.level = levelData.level;
-        this.originalLevel = levelData.level;
+        this.originalLevelData = levelData.level.slice();
         this.tilemaps = levelData.tilemaps;
         this.title = levelData.title;
         this.backgroundImage = levelData.backgroundImage;
@@ -71,31 +71,54 @@ class Level {
             if (foreground.tile == "la") {
                 for (var x = 0; x < level.levelData[0].length; x++) {
                     for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
-                        var foregroundImage = level.scene.add.sprite(x * 32, y * 32, 'lava');
-                        foregroundImage.setOrigin(0, 0);
-                        foregroundImage.setDepth(120);
-                        foregroundImage.alpha = level.LAVA_ALPHA;
+                        if (level.levelData[y][x] != -1) {
+                            level.createDynamicForeGroundStillTile(level, x, y, 'lava', level.LAVA_ALPHA, 120);
+                        }
+                    }
+                }
+            } else if (typeof foreground.tile == 'number') {
+                console.log(level);
+                for (var x = 0; x < level.levelData[0].length; x++) {
+                    for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
+                        if (level.levelData[y][x] == 0) {
+                            level.levelData[y][x] = foreground.tile;
+                        } else if (level.levelData[y][x] == -1) {
+                            level.levelData[y][x] = 0;
+                        }
                     }
                 }
             } else if (foreground.tile == "la2") {
-                for (var x = 0; x < level.levelData[0].length; x+=4) {
+                for (var x = 0; x < level.levelData[0].length; x += 4) {
                     for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
-                        var foregroundImage = new Lava({
-                            id: i,
-                            key: 'lava-' + i,
-                            player: level.player,
-                            scene: level.scene,
-                            x: x * 32,
-                            y: y * 32,
-                            level: level,
-                            alpha: level.LAVA_ALPHA
-                        });
+                        if (level.levelData[y][x] != -1) {
+                            var foregroundImage = new Lava({
+                                id: i,
+                                key: 'lava-' + i,
+                                player: level.player,
+                                scene: level.scene,
+                                x: x * 32,
+                                y: y * 32,
+                                level: level,
+                                alpha: level.LAVA_ALPHA
+                            });
 
-                        i++;
+                            i++;
+                        }
                     }
                 }
             }
         });
+    }
+
+    createDynamicForeGroundStillTile(level, x, y, key, alpha, depth) {
+        var foregroundImage = level.scene.add.sprite(x * 32, y * 32, key);
+
+        foregroundImage.setOrigin(0, 0);
+        foregroundImage.alpha = level.LAVA_ALPHA;
+
+        if (depth != null) {
+            foregroundImage.setDepth(120);
+        }
     }
 
     createStaticForegrounds() {
@@ -158,6 +181,9 @@ class Level {
         this.additionalTiles = this.parseTilemaps();
         this.createBackground();
 
+        this.createDynamicForeGrounds();
+        this.createStaticForegrounds();
+
         let map = this.scene.make.tilemap({ key: 'map', data: this.level, width: this.level[0].length, height: 21, tileWidth: 32, tileHeight: 32 });
         this.map = map;
 
@@ -166,9 +192,6 @@ class Level {
         this.parseAntracticWater();
         this.parseLava();
         this.parseBackgroundImages();
-
-        this.createDynamicForeGrounds();
-        this.createStaticForegrounds();
         
         let groundLayer = map.createLayer(0, tiles, 0, 0);
         this.groundLayer = groundLayer;

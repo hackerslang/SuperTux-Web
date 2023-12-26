@@ -60,6 +60,14 @@
                     frameRate: 24
                 },
                 {
+                    key: 'tux-kick',
+                    caption: 'tux-kick-',
+                    start: 0,
+                    end: 5,
+                    frameRate: 12,
+                    repeat: 0
+                },
+                {
                     key: 'tux-stand',
                     frames: [{ key: 'tux-stand-0' }],
                     frameRate: 24
@@ -141,6 +149,22 @@
                     frames: [
                         { key: 'bouncing-snowball-squished' }
                     ]
+                }
+            ]
+        },
+        "captain-snowball": {
+            "animations": [
+                {
+                    key: "captain-snowball-walk",
+                    caption: "captain-snowball-walk-",
+                    start: 0,
+                    end: 7
+                },
+                {
+                    key: "captain-snowball-jump",
+                    caption: "captain-snowball-jump-",
+                    start: 0,
+                    end: 3
                 }
             ]
         },

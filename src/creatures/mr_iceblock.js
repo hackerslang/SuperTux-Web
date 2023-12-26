@@ -10,24 +10,13 @@ class MrIceBlock extends WalkingEnemy {
     constructor(config) {
         config.walkSpeed = 80;
 
-        //config.canSlide = true;
-        //config.slideSpeed = 300;
-        //config.slideSprite = 'mriceblock-stomped';
         super(config);
 
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
-        //this.killAt = 0;
-        //this.direction = 0;
         this.walkAnimation = "mriceblock-walk";
         this.iceState = EnemyIceState.ICESTATE_NORMAL;
         this.WALK_SPEED = 80;
         this.KICK_SPEED = 500;
-        //this.firstActivated = false;
-        //this.changedDirectionBeforeEdge = false;
-        //this.turnedAroundLeft = false;
-        //this.turnedAroundRight = false;
-        //this.stomped = false;
-        //this.sliding = false;
         this.body.setSize(32, 32, true);
         this.body.setOffset(7, 6);
         this.setOrigin(0.5, 0.5);
@@ -41,8 +30,8 @@ class MrIceBlock extends WalkingEnemy {
         this.squishCount = 0;
     }
 
-        create() {
-            this.createWalkAnimation();
+    create() {
+        this.createWalkAnimation();
     }
 
     setIceState(iceState) {
@@ -56,12 +45,11 @@ class MrIceBlock extends WalkingEnemy {
 
                 break;
             case EnemyIceState.ICESTATE_FLAT:
-                this.anims.play("flat");
+                this.anims.play("mriceblock-stomped");
                 this.flipX = (this.direction == this.DIRECTION_RIGHT);
                 this.flatTimer = 4 * 1000;
 
                 break;
-
             case EnemyIceState.ICESTATE_KICKED:
                 this.setVelocityX(this.direction == this.DIRECTION_RIGHT ? this.KICK_SPEED : -this.KICK_SPEED);
                 this.flipX = (this.direction == this.DIRECTION_RIGHT);
@@ -95,6 +83,10 @@ class MrIceBlock extends WalkingEnemy {
             this.noKickTimer -= delta;
         }
 
+        if (this.flatTimer > 0) {
+            this.flatTimer -= delta;
+        }
+
         super.update(time, delta);
     }
 
@@ -108,7 +100,7 @@ class MrIceBlock extends WalkingEnemy {
         }
 
         if (this.iceState == EnemyIceState.ICESTATE_WAKING /* && this.animationDone */) {
-            this.seticeState(EnemyIceState.ICESTATE_NORMAL);
+            this.setIceState(EnemyIceState.ICESTATE_NORMAL);
         }
 
         if (this.iceState == EnemyIceState.ICESTATE_NORMAL) {
@@ -127,12 +119,12 @@ class MrIceBlock extends WalkingEnemy {
     }
 
     canBreak() {
-        return this.iceState == EnemyIceState.ICESTATE_KICKED;
+        return this.iceState == EnemyIceState.ICESTATE_KICKED || this.iceState == EnemyIceState.ICESTATE_FLAT;
     }
 
     playerHit(enemy, player) {
-        if ((this.iceState == EnemyIceState.ICESTATE_WAKING || this.iceState == EnemyIceState.ICESTATE_FLAT) && this.state == EnemyState.STATE_ACTIVE) {
-            if (!enemy.verticalHit(player)) {
+        if ((enemy.iceState == EnemyIceState.ICESTATE_WAKING || enemy.iceState == EnemyIceState.ICESTATE_FLAT) && enemy.state == EnemyState.STATE_ACTIVE) {
+            if (!enemy.verticalHit(enemy, player)) {
                 if (player.x < enemy.x) {
                     enemy.direction = enemy.DIRECTION_RIGHT;
                     enemy.kick(enemy, player);
@@ -145,9 +137,27 @@ class MrIceBlock extends WalkingEnemy {
                     return;
                 }
             }
+            console.log("enemyP");
         }
 
         return super.EnemyPlayerHit(enemy, player);
+    }
+
+    enemyHit(thisEnemy, enemy) {
+        alert("ice block hit other enemy");
+        switch (thisEnemy.iceState) {
+            case EnemyIceState.ICESTATE_NORMAL:
+                //WalkingBadguy::collision_badguy(badguy, hit);
+                break;
+            case EnemyIceState.ICESTATE_FLAT:
+            case EnemyIceState.ICESTATE_WAKING:
+                return;
+            case EnemyIceState.ICESTATE_KICKED:
+                enemy.killfall();
+                return;
+            default:
+                return;
+        }
     }
 
     kick(enemy, player) {
@@ -219,6 +229,8 @@ class MrIceBlock extends WalkingEnemy {
         if (player != null) {
             player.bounce(this);
         }
+
+        return true;
     }
 
     //update(time, delta) {
@@ -333,15 +345,6 @@ class MrIceBlock extends WalkingEnemy {
             enemy.walkAndTurnCollideEnemy(thisEnemy);
             thisEnemy.walkAndTurnCollideEnemy(enemy);
         }
-    }
-
-    makeStomped() {
-        this.anims.play("mriceblock-stomped");
-        this.body.setVelocityX(0);
-        this.body.acceleration.x = 0;
-
-        this.stomped = true;
-        this.sliding = false;
     }
 
     //slide(player) {

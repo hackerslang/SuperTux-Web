@@ -165,6 +165,10 @@ class WalkingEnemy extends Enemy { //everything implemented except collision and
     //    this.body.velocity.x = this.direction * speed;
     //}
 
+    enemyHit(thisEnemy, enemy) {
+        console.log("walking badguy hit ice block ...");
+    }
+
     spriteFlip() {
         this.flipX = !this.flipX;
     }

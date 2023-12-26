@@ -60,8 +60,6 @@ class Enemy extends Phaser.GameObjects.Sprite {
 
         this.state = EnemyState.STATE_INIT;
 
-        
-
         //this.setCanBeSquished(config);
         //this.setCanSlide(config);
 
@@ -153,10 +151,9 @@ class Enemy extends Phaser.GameObjects.Sprite {
             return;
         }
 
-        this.scene.physics.world.collide(this, this.level.groundLayer);
-
         this.scene.physics.world.collide(this, this.level.enemyGroup, this.enemyHit);
-
+        this.scene.physics.world.collide(this, this.level.groundLayer);
+        
         if (!this.player.isDead()) {
             this.scene.physics.world.collide(this, this.player, this.playerHit);
         }
@@ -267,7 +264,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
 
     //Must be overridden
     enemyHit(thisEnemy, enemy) {
-        
+        console.log(" hit enemy ...");
     }
 
     tryActivate() {
@@ -303,8 +300,6 @@ class Enemy extends Phaser.GameObjects.Sprite {
 
     //must be overridden
     playerHit(enemy, player) {                  //OK, but needs revision!!
-
-
         if (player.invincible /* || */) {
             enemy.killFall();
 
@@ -457,7 +452,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
             default:
 
                 break;
-        }
+        }console.log("st"+this.state);
     }
 
     ifPlayerAliveAddCollisionDetection() {
@@ -551,6 +546,10 @@ class Enemy extends Phaser.GameObjects.Sprite {
         }
     }
 
+    mightFall() {
+        return (this.direction == this.DIRECTION_LEFT && this.isAtEdgeLeft()) || (this.direction == this.DIRECTION_RIGHT && this.isAtEdgeRight());
+    }
+
     isAtEdgeLeft() {
         var levelTiles = this.level.getLevelData();
         var tileX = Math.floor(this.body.x / 32);
@@ -620,8 +619,12 @@ class Enemy extends Phaser.GameObjects.Sprite {
     }
 
     killWhenFallenDown() {
-        if (this.hasFallenDown()) {
-            this.remove();
+        if (!this.killed) {
+            if (this.hasFallenDown()) {
+                this.killed = true;
+
+                this.remove();
+            }
         }
     }
 

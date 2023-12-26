@@ -54,6 +54,12 @@
                     "value": "run-",
                     "start": 0,
                     "end": 7
+                },
+                {
+                    "name": "tux-kick-",
+                    "value": "kick-",
+                    "start": 0,
+                    "end": 5
                 }
             ]
         },
@@ -150,6 +156,27 @@
                     "value": "bs",
                     "start": 1,
                     "end": 8
+                }
+            ]
+        },
+        "captain-snowball": {
+            "path": "./assets/images/creatures/captain_snowball/",
+            "sprites": [
+                {
+                    "name": "captain-snowball-walk-",
+                    "value": "captain_left-",
+                    "start": 0,
+                    "end": 7
+                },
+                {
+                    "name": "captain-snowball-jump-",
+                    "value": "captain_jump-",
+                    "start": 0,
+                    "end": 7
+                },
+                {
+                    "name": "snowball- squished",
+                    "value": "captain_left-squished"
                 }
             ]
         },

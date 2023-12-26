@@ -15,8 +15,9 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.SPARKLE_BODY_WIDTH = 40;
         this.SPARKLE_BODY_HEIGHT = 80;
 
-        this.body.setSize(this.REAL_COLLISION_BOX_WIDTH, this.REAL_COLLISION_BOX_HEIGHT);
-        this.body.setOffset(15, 0);
+        //this.body.setSize(this.REAL_COLLISION_BOX_WIDTH, this.REAL_COLLISION_BOX_HEIGHT);
+        this.setOrigin(0.5, 0.5);
+        this.body.setOffset(0, 0);
         this.setDepth(999);
         this.health = 3;
 
@@ -50,7 +51,7 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.WALK_SPEED = 100;
 
         this.WALK_ACCELERATION_X = 300;
-        this.RUN_ACCELERATION_X = 550; 
+        this.RUN_ACCELERATION_X = 400; 
 
         this.NORMAL_FRICTION_MULTIPLIER = 1.5;
         this.ICE_FRICTION_MULTIPLIER = 0.1;
@@ -76,7 +77,6 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.pointingTo = this.DIRECTION_RIGHT;
         this.flipDirection = false;
 
-        this.MIN_DELTA = 100;
         this.currentDelta = 0;
 
         this.invincible = false;
@@ -103,7 +103,10 @@ class Tux extends Phaser.GameObjects.Sprite {
 
         this.adjustBodyStandingRight();
         this.hasPlayedDuck = false;
+        this.hasPlayedKick = false;
         this.hasPlayerJump = false;
+
+        this.KICK_TIME = 300;
     }
 
     listener() {
@@ -207,29 +210,35 @@ class Tux extends Phaser.GameObjects.Sprite {
             return;
         }
 
+        //this.setTexture("tux-kick-0");
+        //this.adjustBody(44, 60, 9, 20);
+        //return;
+
         if (this.body.y >= Math.floor(this.level.getLevelData().length * 32 - this.body.height) && !this.killed) {
             this.die();
 
             return;
         }
 
-        if (this.ducked) {
-            if (this.anims.getName() == 'tux-duck') {
-                let textureKey = this.anims.currentFrame.textureKey;
+        if (this.mightAlmostFall()) {
 
-                if (textureKey == "tux-duck-0") {
-                    this.adjustBody(43, 57, 11, 20);
-                } else if (textureKey == "tux-duck-1") {
-                    this.adjustBody(43, 46, 11, 31);
-                } else if (textureKey == "tux-duck-2") {
-                    this.adjustBody(50, 31, 8, 46);
-                } else if (textureKey == "tux-duck-3") {
-                    this.adjustBody(46, 36, 8, 41);
-                } else if (textureKey == "tux-duck-4") {
-                    this.adjustBody(46, 36, 8, 41);
-                }
-            }
         }
+
+        if (this.skiddingTimer > 0) {
+            this.skiddingTimer -= delta;
+        }
+
+        if (this.kickTimer > 0) {
+            this.kickTimer -= delta;
+        } else {
+            this.hasPlayedKick = false;
+        }
+
+        //this.setTexture("tux-walk-7");
+        //this.adjustBody(50, 63, 0, 0);
+        //return;
+
+        this.setCollisionBoxesForAnimations();
 
         if (this.invincible) {
             this.forceUpdateSprites(this.particleSprites, time, delta);
@@ -313,6 +322,76 @@ class Tux extends Phaser.GameObjects.Sprite {
         }
 
         this.handleInput(delta);
+    }
+
+    setCollisionBoxesForAnimations() {
+        //console.log(this.anims.currentFrame.textureKey);
+        if (this.anims.getName() == 'tux-walk') {
+            let textureKey = this.anims.currentFrame.textureKey;
+
+            switch (textureKey) {
+                case "tux-walk-0":
+                    this.adjustBody(50, 66, 0, 12);
+                    break;
+                case "tux-walk-1":
+                    this.adjustBody(55, 66, 0, 12);
+                    break;
+                case "tux-walk-2":
+                    this.adjustBody(55, 66, 0, 12);
+                    break;
+                case "tux-walk-3":
+                    this.adjustBody(42, 66, 0, 12);
+                    break;
+                case "tux-walk-4":
+                    this.adjustBody(45, 66, 0, 12);
+                    break;
+                case "tux-walk-5":
+                    this.adjustBody(49, 66, 0, 12);
+                    break;
+                case "tux-walk-6":
+                    this.adjustBody(49, 66, 0, 12);
+                    break;
+                case "tux-walk-7":
+                    this.adjustBody(42, 66, 0, 12);
+                    break;
+                default: //case "tux-walk-7"
+                    alert("other");
+            }
+
+        } else if (this.anims.getName() == 'tux-kick') {
+            let textureKey = this.anims.currentFrame.textureKey;
+
+            if (textureKey == "tux-kick-0") {
+                if (this.direction == this.DIRECTION_RIGHT) {
+                    this.adjustBody(42, 57, 10, 20);
+                } else {
+
+                }
+
+            } else if (textureKey == "tux-kick-1") {
+                this.adjustBody(43, 46, 11, 31);
+            } else if (textureKey == "tux-kick-2") {
+                this.adjustBody(50, 31, 8, 46);
+            } else if (textureKey == "tux-kick-3") {
+                this.adjustBody(46, 36, 8, 41);
+            } else if (textureKey == "tux-kick-4") {
+                this.adjustBody(46, 36, 8, 41);
+            }
+        } else if (this.anims.getName() == 'tux-duck') {
+            let textureKey = this.anims.currentFrame.textureKey;
+
+            if (textureKey == "tux-duck-0") {
+                this.adjustBody(43, 57, 11, 20);
+            } else if (textureKey == "tux-duck-1") {
+                this.adjustBody(43, 46, 11, 31);
+            } else if (textureKey == "tux-duck-2") {
+                this.adjustBody(50, 31, 8, 46);
+            } else if (textureKey == "tux-duck-3") {
+                this.adjustBody(46, 36, 8, 41);
+            } else if (textureKey == "tux-duck-4") {
+                this.adjustBody(46, 36, 8, 41);
+            }
+        }
     }
 
     forceUpdateSprites(sprites, time, delta) {
@@ -580,13 +659,11 @@ class Tux extends Phaser.GameObjects.Sprite {
                 this.direction = this.DIRECTION_RIGHT;
                 this.directionSign = 1;
             }
-
+            
             if (this.direction != this.oldDirection) {
                 this.flipDirection = true;
             }
         }
-
-       // console.log("direction sign" + this.directionSign);
 
         //if (this.grabbedObject != null && this.grabbedObject.isHampering()) {
 
@@ -640,8 +717,6 @@ class Tux extends Phaser.GameObjects.Sprite {
         //    ax = 0;
         //}
 
-
-        this.skiddingTimer -= delta;
         if (this.directionSign != 0) {
             //console.log("dir sign" + this.directionSign + " " + vx);
             //console.log("ONGROUND" + this.onGround());
@@ -651,6 +726,7 @@ class Tux extends Phaser.GameObjects.Sprite {
             if (this.onGround()) {
                 if (Math.abs(vx) > this.SKID_XM && this.skiddingTimer <= 0) { //use time, delta update function!
                     this.skiddingTimer = this.SKID_TIME;
+
                     ax *= 2.5;
                 } else {
                     ax *= 2;
@@ -676,8 +752,25 @@ class Tux extends Phaser.GameObjects.Sprite {
             
     }
 
+    mightAlmostFall() {
+        var halfX = this.direction == this.DIRECTION_RIGHT ? this.body.width / 2 : -this.body.width / 2;
+        var halfY = this.body.height / 2;
+        var overEdge = this.body.x % 32;
+        var tileBelowX = Math.floor((this.body.x + halfX) / 32);
+        var tileBelowY = Math.floor(this.body.bottom / 32);
+
+        if (overEdge > 16) {
+            //check whether there are sprites below
+            //console.log(this.level.originalLevel[tileBelowY + 1][tileBelowX]);
+            if (this.body.blocked.down && this.level.originalLevelData[tileBelowY][tileBelowX] == 0) {
+                this.drawWalking();
+                this.setVelocityX(this.WALK_SPEED);
+            }
+        }
+    }
+
     applyFriction() {
-        if (this.onGround() && this.getVelocityX() < this.WALK_SPEED) {
+        if (this.onGround() && Math.abs(this.getVelocityX()) < this.WALK_SPEED) {
             this.setVelocityX(this.getVelocityX() / 2);
             this.setAccelerationX(0);
         } else {
@@ -759,6 +852,8 @@ class Tux extends Phaser.GameObjects.Sprite {
             this.drawDuck();
         } else if (this.skiddingTimer > 0) {
             this.drawSkid();
+        } else if (this.kickTimer > 0) {
+            this.drawKicking();
         } else if ((!this.onGround() || this.fallMode != this.ON_GROUND) && !this.body.blocked.down) {
             this.drawJumping();
         } else if (Math.abs(this.getVelocityX()) < 1) {
@@ -803,7 +898,7 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     adjustBodySkidding() {
-        if (this.direction == this.DIRECTION_RIGHT) { //Whatch out, when walking right and skidding, skidding is left and vice versa!
+        if (this.direction == this.DIRECTION_RIGHT) { //Watch out, when walking right and skidding, skidding is left and vice versa!
             this.adjustBodySkiddingRight();
         } else {
             this.adjustBodySkiddingLeft();
@@ -811,27 +906,27 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     adjustBodyStandingRight() { //ok
-        this.adjustBody(43, 68, 11, 11);
+        this.adjustBody(43, 66, 0, 12);
     }
 
     adjustBodyStandingLeft() { //ok
-        this.adjustBody(43, 68, 8, 11);
+        this.adjustBody(43, 63, 8, 0);
     }
 
     adjustBodySkiddingRight() {
-        this.adjustBody(38, 70, 11, 10);
+        this.adjustBody(38, 70, 11, 0);
     }
 
     adjustBodySkiddingLeft() {
-        this.adjustBody(38, 70, 11, 10);
+        this.adjustBody(38, 70, 11, 0);
     }
 
     adjustBodyFallingRight() { //ok
-        this.adjustBody(60, 68, 5, 10);
+        this.adjustBody(59, 77, 0, 0);
     }
 
     adjustBodyFallingLeft() { //ok
-        this.adjustBody(60, 68, 0, 10);
+        this.adjustBody(60, 68, 0, 0);
     }
 
     drawFalling() {
@@ -856,6 +951,9 @@ class Tux extends Phaser.GameObjects.Sprite {
     drawStanding() {
         this.setTexture("tux-stand-0");
         this.adjustBodyStanding();
+
+        //strange bug rounding float, player sprite trembles!
+        this.body.y = Math.ceil(this.body.y);
     }
 
     removeFalling() {
@@ -867,12 +965,22 @@ class Tux extends Phaser.GameObjects.Sprite {
             this.playAnimationOnce("tux-duck");
             this.hasPlayedDuck = true;
         }
+
+        //strange bug rounding float, player sprite trembles!
+        this.body.y = Math.ceil(this.body.y);
     }
 
     drawSkid() {
         this.flipDraw();
         this.setTexture("tux-skid");
         this.adjustBodySkidding();
+    }
+
+    drawKicking() {
+        if (!this.hasPlayedKick) {
+            this.anims.play("tux-kick", true);
+            this.hasPlayedKick = true;
+        }
     }
 
     drawWalking() {
@@ -943,6 +1051,10 @@ class Tux extends Phaser.GameObjects.Sprite {
 
     isStone() {
         return this.stone;
+    }
+
+    kick() {
+        this.kickTimer = this.KICK_TIME;
     }
 }
 
