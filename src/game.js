@@ -9,14 +9,16 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 600 },
-            debug: true
+            debug: false
             //,fixedStep: false
         }
     },
     scene: [
-        GameScene,
+        LevelSelectScene,
+        //SectorScene,
         PauseScene
-    ]
+    ],
+    powerPreference: "high-performance"
 };
 
 const game = new Phaser.Game(config);

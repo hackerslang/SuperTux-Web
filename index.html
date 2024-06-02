@@ -6,14 +6,17 @@
         }
     </style>
 
-    <script type="text/javascript" src="./src/lib/phaser.js"></script>
+    <script type="text/javascript" src="./src/lib/phaser.min.js"></script>
+    <script type="text/javascript" src="./src/object/game_session.js"></script>
     <script type="text/javascript" src="./src/object/water.js"></script>
     <script type="text/javascript" src="./src/object/lava.js"></script>
     <script type="text/javascript" src="./src/object/spike.js"></script>
     <script type="text/javascript" src="./src/object/level/campaign_levels.js"></script>
     <script type="text/javascript" src="./src/object/level/tile_creator.js"></script>
     <script type="text/javascript" src="./src/object/level/tilemap_parser.js"></script>
-    <script type="text/javascript" src="./src/object/level.js"></script>
+    <script type="text/javascript" src="./src/object/level/sector_swapper.js"></script>
+    <script type="text/javascript" src="./src/object/level/sector.js"></script>
+    <script type="text/javascript" src="./src/object/level/level.js"></script>
     <script type="text/javascript" src="./src/object/blocks/bounceableblock.js"></script>
     <script type="text/javascript" src="./src/object/blocks/brick.js"></script>
     <script type="text/javascript" src="./src/object/blocks/bonusblock.js"></script>
@@ -34,6 +37,7 @@
     <script type="text/javascript" src="./src/creatures/player.js"></script>
     <script type="text/javascript" src="./src/creatures/bomb.js"></script>
     <script type="text/javascript" src="./src/creatures/mr_bomb.js"></script>
+    <script type="text/javascript" src="./src/creatures/spiky.js"></script>
     <script type="text/javascript" src="./src/object/coin.js"></script>
     <script type="text/javascript" src="./src/object/powerup/star.js"></script>
     <script type="text/javascript" src="./src/object/powerup/egg.js"></script>
@@ -49,8 +53,9 @@
     <script type="text/javascript" src="./src/helpers/ImageLoader.js"></script>
     <script type="text/javascript" src="./src/helpers/animationloader.js"></script>
     <script type="text/javascript" src="./src/helpers/AnimationCreator.js"></script>
-    <script type="text/javascript" src="./src/scenes/gamescene.js"></script>
-    <script type="text/javascript" src="./src/scenes/PauseScene.js"></script>
+    <script type="text/javascript" src="./src/scenes/levelselectscene.js"></script>
+    <script type="text/javascript" src="./src/scenes/sectorscene.js"></script>
+    <script type="text/javascript" src="./src/scenes/pausescene.js"></script>
     <script type="text/javascript" src="./src/game.js"></script>
 </head>
 <body>

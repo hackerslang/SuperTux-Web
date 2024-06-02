@@ -12,17 +12,13 @@
         this.body.setSize(32, 32, true);
         this.setOrigin(0.5, 0.5);
         this.body.setOffset(7, 6);
+
+        this.squishable = true;
+        this.squishedAnim = "snowball-squished";
     }
 
-    collisionSquished() {
-        this.anims.play("snowball-squished");
-        this.killSquished();
-
-        return true;
-    }
-
-    canBeSquished() {
-        return true;
+    update(time, delta) {
+        super.update(time, delta);
     }
 
     //update(time, delta) {

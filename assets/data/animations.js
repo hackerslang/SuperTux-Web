@@ -23,6 +23,11 @@
                     repeat: 0
                 },
                 {
+                    key: "tux-fall",
+                    frames: [{ key: 'tux-jump-2' }],
+                    frameRate: 24
+                },
+                {
                     key: "tux-gameover",
                     caption: 'tux-gameover-',
                     start: 0,
@@ -214,6 +219,12 @@
                     caption: 'flying-snowball-melting-',
                     start: 0,
                     end: 2
+                },
+                {
+                    key: "flying-snowball-squished",
+                    frames: [
+                        { key: "flying-snowball-squished" }
+                    ]
                 }
             ]
         },
@@ -351,6 +362,34 @@
                     ],
                     frameRate: 10,
                     repeat: 0
+                }
+            ]
+        },
+        "spiky": {
+            "animations": [
+                {
+                    key: "spiky-sleep",
+                    frames: [
+                        { key: "spiky-sleep-0" }
+                    ]
+                },
+                {
+                    key: "spiky-wakeup",
+                    frames: [
+                        { key: "spiky-sleep-1" },
+                        { key: "spiky-sleep-2" },
+                        { key: "spiky-sleep-3" }
+                    ],
+                    frameRate: 10,
+                    repeat: 0
+                },
+                {
+                    key: "spiky-walk",
+                    caption: "spiky-walk-",
+                    start: 0,
+                    end: 7,
+                    frameRate: 12,
+                    repeat: -1
                 }
             ]
         },

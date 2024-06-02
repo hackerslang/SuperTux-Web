@@ -16,8 +16,8 @@ class Enemy extends Phaser.GameObjects.Sprite {
         super(config.scene, config.x, config.y, config.key);
         config.scene.physics.world.enable(this);
         config.scene.add.existing(this);
-        this.scene = config.scene; //console.log(this.scene);
-        this.level = config.level;
+        this.scene = config.scene;
+        this.sector = config.sector;
         this.alive = true;
         this.id = config.id;
         this.enemyType = config.key;
@@ -26,8 +26,6 @@ class Enemy extends Phaser.GameObjects.Sprite {
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
         this.body.allowGravity = true;
         this.hasBeenSeen = false;
-
-
 
         this.setDepth(900);
 
@@ -41,11 +39,13 @@ class Enemy extends Phaser.GameObjects.Sprite {
         this.turnedAroundLeft = false;
         this.turnedAroundRight = false;
 
+        this.prevTurnAround = false;
+
         this.PADDING_ENEMY_COLLISION = 2; /**/
         this.ENEMY_COLLISION_TURN_TIMER = 400; /**/
+        this.KILL_AT = 2500;
 
-        //this.enemyLayerCollider = this.scene.physics.add.collider(this, this.level.enemyGroup);
-        //this.groundLayerCollider = this.scene.physics.add.collider(this, this.level.groundLayer);
+        this.direction = this.DIRECTION_LEFT;
 
         this.collisionTurnedTimer = 0;
         this.playerCollisionTurnedTimer = 0;
@@ -57,45 +57,17 @@ class Enemy extends Phaser.GameObjects.Sprite {
         this.sliding = false;
         this.killFalling = false;
         this.killed = false;
+        this.removed = false;
 
         this.state = EnemyState.STATE_INIT;
 
-        //this.setCanBeSquished(config);
-        //this.setCanSlide(config);
-
+        this.TURN_AROUND_WAIT_TIMER = 150;
+        this.turnAroundWaitTimer = 0;
         this.SQUISH_TIME = 2;
-
+        this.killAt = this.KILL_AT;
+        this.squishable = false;
+        this.body.pushable = false;
         this.setDepth(101);
-    }
-
-    //setCanBeSquished(config) {
-    //    this.canBeSquished = false;
-    //    if (config.canBeSquished != null) {
-    //        this.canBeSquished = config.canBeSquished;
-
-    //        if (this.canBeSquished) {
-    //            this.squishedSprite = config.squishedSprite;
-    //        }
-    //    }
-    //}
-
-    //setCanSlide(config) {
-    //    this.canSlide = false;
-    //    if (config.canSlide != null) {
-    //        this.canSlide = true;
-
-    //        if (this.canSlide) {
-    //            this.slideSpeed = config.slideSpeed;
-    //            this.slideSprite = config.slideSprite;
-    //        }
-    //    }
-    //}
-
-    setWaitTurn() {
-        if (!this.cannotWaitForTurn) {
-            this.setWaitTurnTimer = this.ENEMY_COLLISION_TURN_TIMER * 4;
-            this.waitForTurn = true;
-        }
     }
 
     activated() {
@@ -140,6 +112,13 @@ class Enemy extends Phaser.GameObjects.Sprite {
 
     update(time, delta) {
         if (this.killed) {
+
+            if (this.killAt <= 0) {
+                this.remove();
+            } else {
+                this.killAt -= delta;
+            }
+
             return;
         }
 
@@ -151,9 +130,31 @@ class Enemy extends Phaser.GameObjects.Sprite {
             return;
         }
 
-        this.scene.physics.world.collide(this, this.level.enemyGroup, this.enemyHit);
-        this.scene.physics.world.collide(this, this.level.groundLayer);
-        
+        this.scene.physics.world.collide(this, this.scene.enemyGroup, this.enemyHit);
+        this.scene.physics.world.collide(this, this.scene.groundLayer);
+
+        if (this.turnAroundWaitTimer > 0) {
+            this.turnAroundWaitTimer -= delta;
+        }
+
+        if (this.turnAroundWaitTimer <= 0) {
+            this.swapTurnAround();
+        }
+
+        if (this.scene.enemyGroupCreated) {
+            if (this.turnAroundWaitTimer <= 0) {
+                this.turnAroundBothEnemiesIfNeeded();
+
+                if (this.currentTurnAround) {
+                    this.turnAroundSpeed(this.walkSpeed, this.direction * -1);
+                    this.turnAroundWaitTimer = this.TURN_AROUND_WAIT_TIMER;
+                    this.currentTurnAround = false;
+                }
+            }
+
+            this.swapTurnAround();
+        }
+
         if (!this.player.isDead()) {
             this.scene.physics.world.collide(this, this.player, this.playerHit);
         }
@@ -220,32 +221,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
                 break;
         }
 
-
-        
-
         this.setWaitTurnTimer -= delta;
-
-        //if (this.collisionTurnedTimer > 0) {
-        //    this.collisionTurnedTimer -= delta;
-        //}
-
-        //if (this.playerCollisionTurnedTimer > 0) {
-        //    this.playerCollisionTurnedTimer -= delta;
-        //}
-
-        ////if (this.waitForTurn && this.setWaitTurnTimer <= 0) {
-        ////    this.changeDirection();
-        ////    this.collisionTurnedTimer = this.ENEMY_COLLISION_TURN_TIMER;
-        ////    this.waitForTurn = false;
-        ////}
-
-        //if (this.cannotWaitForTurn) {
-        //    this.cannotWaitForTurnTimer -= delta;
-        //}
-
-        //if (this.cannotWaitForTurnTimer <= 0) {
-        //    this.cannotWaitForTurn = false;
-        //}
     }
 
     activeUpdate() {
@@ -264,7 +240,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
 
     //Must be overridden
     enemyHit(thisEnemy, enemy) {
-        console.log(" hit enemy ...");
+
     }
 
     tryActivate() {
@@ -276,13 +252,13 @@ class Enemy extends Phaser.GameObjects.Sprite {
             this.setState(EnemyState.STATE_ACTIVE);
 
             if (!this.isInitialized) {
-                if (this.startDirection == this.DIRECTION_AUTO) {
-                    if (this.player.x < this.x) {
-                        this.direction = this.DIRECTION_LEFT;
-                    } else {
-                        this.direction = this.DIRECTION_RIGHT;
-                    }
-                }
+                //if (this.startDirection == this.DIRECTION_AUTO) {
+                //    if (this.player.x < this.x) {
+                //        this.direction = this.DIRECTION_LEFT;
+                //    } else {
+                //        this.direction = this.DIRECTION_RIGHT;
+                //    }
+                //}
 
                 this.initialize();
                 this.isInitialized = true;
@@ -330,6 +306,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
                 return;
             } else {
                 if (enemy.collisionSquished(player)) {
+
                     return;
                 }
             }
@@ -376,6 +353,15 @@ class Enemy extends Phaser.GameObjects.Sprite {
 
                 return true;
             }
+
+            return false;
+        }
+
+        if (this.squishable) {
+            this.anims.play(this.squishedAnim);
+            this.killSquished(this.squishedAnim);
+
+            return true;
         }
 
         return false;
@@ -452,7 +438,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
             default:
 
                 break;
-        }console.log("st"+this.state);
+        }
     }
 
     ifPlayerAliveAddCollisionDetection() {
@@ -462,11 +448,11 @@ class Enemy extends Phaser.GameObjects.Sprite {
     }
 
     addGroundCollisionDetection() {
-        this.scene.physics.world.collide(this, this.level.groundLayer);
+        this.scene.physics.world.collide(this, this.sector.groundLayer);
     }
 
     addAllOtherEnemiesCollisionDetection() {
-        var enemies = this.level.getEnemies();
+        var enemies = this.sector.getEnemies();
 
         for (var i = 0; i < enemies.length; i++) {
             var enemy = enemies[i];
@@ -482,31 +468,59 @@ class Enemy extends Phaser.GameObjects.Sprite {
     }
 
     enemyCollideTurn() {
-        Array.from(this.level.enemyGroup.children.entries).forEach(
-            (currentEnemy) => {
-                if (this.setWaitTurnTimer <= 0) {
-                    if (this.body.x != currentEnemy.body.x || this.body.y != currentEnemy.body.y && !currentEnemy.sliding) {
-                        if (this.collisionTurnedTimer <= 0) {
-                            if (this.horizontalCollision(currentEnemy, this)) {
-                                this.changeDirection();
-                                this.collisionTurnedTimer = this.ENEMY_COLLISION_TURN_TIMER;
-                                if (this.direction == currentEnemy.direction) {
-                                    currentEnemy.setWaitTurn();
-                                    this.setCannotWaitTurn();
-                                }
-                            } else if (this.horizontalCollision(this, currentEnemy)) {
-                                this.changeDirection();
-                                this.collisionTurnedTimer = this.ENEMY_COLLISION_TURN_TIMER;
-                                if (this.direction == currentEnemy.direction) {
-                                    currentEnemy.setWaitTurn();
-                                    this.setCannotWaitTurn();
-                                }
-                            }
+
+    }
+
+    getClosestFacingEnemy() {
+        var minDistance = -1;
+        var closestFacingEnemy = null;
+        var self = this;
+ 
+        this.scene.creatureObjects.forEach(function (enemy, index) {
+            if (enemy != null && !enemy.killed) {
+                var distanceY = Math.abs(self.y - enemy.y);
+
+                if (distanceY < 80) {
+                    if (self.direction == self.DIRECTION_LEFT && enemy.x < self.x) {
+                        var distance = self.x - enemy.x;
+
+                        if (distance < minDistance || minDistance == -1) {
+                            closestFacingEnemy = enemy;
+                            minDistance = distance;
+                        }
+                    } else if (self.direction == self.DIRECTION_RIGHT && self.x < enemy.x) {
+                        var distance = enemy.x - self.x;
+
+                        if (distance < minDistance || minDistance == -1) {
+                            closestFacingEnemy = enemy;
+                            minDistance = distance;
                         }
                     }
                 }
             }
-        );
+        });
+
+        return closestFacingEnemy;
+    }
+
+    turnAroundBothEnemiesIfNeeded() {
+        var closestFacingEnemy = this.getClosestFacingEnemy();
+        if (closestFacingEnemy == null) {
+            return;
+        }
+        var distanceX = Math.abs(closestFacingEnemy.x - this.x);
+        
+        if (distanceX <= 32) {
+            this.prevTurnAround = true;
+            closestFacingEnemy.prevTurnAround = true;
+            //this.turnAroundWaitTimer = this.TURN_AROUND_WAIT_TIMER;
+            //closestFacingEnemy.turnAroundWaitTimer = this.TURN_AROUND_WAIT_TIMER;
+        }
+    }
+
+    swapTurnAround() {
+        this.currentTurnAround = this.prevTurnAround;
+        this.prevTurnAround = false;
     }
 
     setCannotWaitTurn() {
@@ -551,40 +565,33 @@ class Enemy extends Phaser.GameObjects.Sprite {
     }
 
     isAtEdgeLeft() {
-        var levelTiles = this.level.getLevelData();
-        var tileX = Math.floor(this.body.x / 32);
-        var tileY = this.realY;
-
-        if (tileX <= 0 || tileY >= levelTiles.length - 1) {
+        var tileX = Math.ceil(this.body.x / 32);
+        var tileY = Math.ceil(this.body.y / 32);
+        
+        if (tileX <= 0 || tileY >= Level.getMaxLevelHeightY() - 1) {
             return false;
         }
 
-        var edgeTile = levelTiles[tileY + 1][tileX - 1];
-
-        return (edgeTile == 0 || this.body.blocked.left /*|| this.body.touching.left*/);
+        return (Level.isFreeOfObjects(tileX-1, tileY+1)/* || this.body.blocked.left /*|| this.body.touching.left*/);
     }
 
     isAtEdgeRight() {
-        var levelTiles = this.level.getLevelData();
         var tileX = Math.floor(this.body.x / 32);
-        var tileY = this.realY;
-        
-        if (tileX >= levelTiles[0].length - 1 || tileY >= levelTiles.length - 1) {
+        var tileY = Math.ceil(this.body.y / 32);
+
+        if (tileX >= Level.getMaxLevelWidthX() - 1 || tileY >= Level.getMaxLevelHeightY() - 1) {
             return false;
         }
 
-        var edgeTile = levelTiles[tileY + 1][tileX + 1];
-
-        return (edgeTile == 0 || this.body.blocked.right /*|| this.body.touching.right*/);
+        return (Level.isFreeOfObjects(tileX + 1, tileY + 1)/* || this.body.blocked.right /*|| this.body.touching.right*/);
     }
 
     verticalHit(enemy, player) {
         if (!player.isActiveAndAlive()) {
-
             return false;
         }
 
-        return player.body.velocity.y >= 0 && (player.body.y + player.body.height) - enemy.body.y < 10;
+        return (player.body.y + player.body.height) - enemy.body.y < 10;
     }
 
     downHit(enemy, player) {
@@ -629,14 +636,13 @@ class Enemy extends Phaser.GameObjects.Sprite {
     }
 
     hasFallenDown() {
-        var levelTiles = this.level.getLevelData();
         var tileY = Math.floor(this.body.y / 32);
 
-        return tileY + 1 >= levelTiles.length;
+        return tileY + 1 >= Level.getMaxLevelHeightY();
     }
 
     remove() {
-        this.level.removeEnemy(this);
+        this.scene.removeEnemy(this);
         this.destroy();
 
         this.killed = true;
@@ -707,7 +713,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
 
         if (rndDirection == 2) { rndDirection = -1; }
         
-        this.level.addEgg(this.x + (rndDirection * 40), this.y - 32, rndDirection, 600);
+        this.scene.addEgg(this.x + (rndDirection * 40), this.y - 32, rndDirection, 600);
     }
 
     releasePlus() {
@@ -715,7 +721,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
 
         if (rndDirection == 2) { rndDirection = -1; }
 
-        this.level.addPlus(this.x + (rndDirection * 40), this.y - 32, rndDirection, 600);
+        this.scene.addPlus(this.x + (rndDirection * 40), this.y - 32, rndDirection, 600);
     }
 
     walkAndTurnOnEdge() {
@@ -829,7 +835,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
         var isOnTopOfBlock = false;
         var playerY = Math.floor(this.y / 32);
 
-        Array.from(this.level.blockGroup.children.entries).forEach(
+        Array.from(this.scene.blockGroup.children.entries).forEach(
             (block) => {
                 var blockY = Math.floor(block.y / 32);
 
@@ -847,7 +853,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
     onTopOfEnemy() {
         var isonTopOfEnemy = false;
 
-        Array.from(this.level.enemyGroup.children.entries).forEach(
+        Array.from(this.scene.enemyGroup.children.entries).forEach(
             (enemy) => {
                 if (enemy.enemyType == "krosh") {
                     if (this.x >= enemy.x - (enemy.width / 2) && this.x <= enemy.x + (enemy.width / 2) //128 40 //enemy still in air, so player moves left and right!!!

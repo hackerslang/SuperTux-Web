@@ -20,13 +20,14 @@
     INDUSTRIAL_START_PART: 'ind-',
     ICE_BRIDGE: 'ibr',
     BILLBOARD_RUNJUMP: 'expl-rj',
-    ENEMY_START_PART: 'e-'
+    ENEMY_START_PART: 'e-',
+    HOME: '(home)'
 }
 
 class TilemapParser {
-    constructor(level, levelData) {
-        this.level = level;
-        this.levelData = levelData;
+    constructor(sector, sectorData) {
+        this.level = sector.level;
+        this.tileData = sectorData.data;
 
         this.backgroundObjects = [];
         this.lava = [];
@@ -34,6 +35,7 @@ class TilemapParser {
         this.coins = [];
         this.hurtableTiles = [];
         this.collisionTiles = [];
+        this.enemies = [];
 
         this.waterStart = false;
     }
@@ -43,13 +45,13 @@ class TilemapParser {
         var iceBridgeStart = false;
         var waterStart = false;
 
-        for (var j = 0; j < this.levelData.length; j++) {
-            for (var i = 0; i < this.levelData[0].length; i++) {
-                var currentTile = this.levelData[j][i];
+        for (var j = 0; j < this.tileData.length; j++) {
+            for (var i = 0; i < this.tileData[0].length; i++) {
+                var currentTile = this.tileData[j][i];
                 currentTile = currentTile.toString();
                 var nextTile = '';
-                if (i + 1 < this.levelData[0].length) {
-                    nextTile = this.levelData[j][i + 1];
+                if (i + 1 < this.tileData[0].length) {
+                    nextTile = this.tileData[j][i + 1];
                 }
 
                 if (currentTile == 'end') {
@@ -81,22 +83,34 @@ class TilemapParser {
                     i = this.createPreloadedLava(i, j);
                 } else if (currentTile == TilemapConstants.ICE_BRIDGE) {
                     iceBridgeStart = this.createIceBridge(i, j, iceBridgeStart, nextTile);
-                } else if (this.levelData[j][i] == 'bigb') {
+                } else if (this.tileData[j][i] == 'bigb') {
                     this.createPreloadedBigBlock(i, j);
-                } else if (this.levelData[j][i] == 'w') {
+                } else if (this.tileData[j][i] == 'w') {
                     blockStart = this.createPreloadedWoodPieces(blockStart, i, j, nextTile);
-                } else if (this.levelData[j][i] == this.WAY_ARROW_LEFT) {
+                } else if (this.tileData[j][i] == this.WAY_ARROW_LEFT) {
                     this.createPreloadedWayArrow(i, j, "left");
-                } else if (this.levelData[j][i] == this.WAY_ARROW_RIGHT) {
+                } else if (this.tileData[j][i] == this.WAY_ARROW_RIGHT) {
                     this.createPreloadedWayArrow(i, j, "right");
-                } else if (this.levelData[j][i] == this.WAY_ARROW_UP) {
+                } else if (this.tileData[j][i] == this.WAY_ARROW_UP) {
                     this.createPreloadedWayArrow(i, j, "up");
-                } else if (this.levelData[j][i] == this.WAY_ARROW_DOWN) {
+                } else if (this.tileData[j][i] == this.WAY_ARROW_DOWN) {
                     this.createPreloadedWayArrow(i, j, "down");
+                } else if (currentTile.startsWith(TilemapConstants.ENEMY_START_PART)) {
+                    this.createPreloadedEnemy(i, j, currentTile);
+                } else if (currentTile == ">>") {
+                    this.createPreloadedObject(i, j, SpriteKeyConstants.DOUBLE_ARROW_RIGHT);
+                } else if (currentTile == "<<") {
+                    this.createPreloadedObject(i, j, SpriteKeyConstants.DOUBLE_ARROW_LEFT);
+                } else if (currentTile == "^^") {
+                    this.createPreloadedObject(i, j, SpriteKeyConstants.DOUBLE_ARROW_UP);
+                } else if (currentTile == "vv") {
+                    this.createPreloadedObject(i, j, SpriteKeyConstants.DOUBLE_ARROW_DOWN);
+                } else if (currentTile == TilemapConstants.HOME) {
+                    this.createPreloadedHome(i, j);
                 }
 
                 if (this.tileIsString(currentTile)) {
-                    this.levelData[j][i] = 0;
+                    this.tileData[j][i] = 0;
                 }
             }
         }
@@ -107,7 +121,8 @@ class TilemapParser {
             lava: this.lava,
             coins: this.coins,
             hurtableTiles: this.hurtableTiles,
-            collisionTiles: this.collisionTiles
+            collisionTiles: this.collisionTiles,
+            enemies: this.enemies
         };
     }
 
@@ -145,7 +160,7 @@ class TilemapParser {
     createPreloadedLiquid(i, j, tileType, spriteKey, layer) {
         var waterI = i;
 
-        while (this.levelData[j][waterI] == tileType) {
+        while (this.tileData[j][waterI] == tileType) {
             waterI++;
         }
 
@@ -221,6 +236,12 @@ class TilemapParser {
         let wayArrow = this.createPreloadedObject(i, j, position);
 
         this.backgroundObjects.push(wayArrow);
+    }
+
+    createPreloadedHome(i, j) {
+        let home = this.createPreloadedObject(i, j, 'home');
+
+        this.backgroundObjects.push(home);
     }
 
     createPreloadedBackgroundObject(i, j, offsetI, offsetJ, type) {
@@ -303,6 +324,78 @@ class TilemapParser {
 
     createPreloadedIceBridgeEnd(i, j) {
         return this.createPreloadedObject(i, j, SpriteKeyConstants.ICE_BRIDGE_END);
+    }
+
+    createPreloadedEnemy(i, j, currentTile) {
+        let enemyNumber = currentTile.replace("e-", "");
+
+        switch (enemyNumber) {
+            case '1':
+                this.addSnowball(i, j);
+                break;
+            case '6':
+                this.addFlyingSnowball(i, j);
+                break;
+            case '8':
+                this.addSpiky(i, j);
+                break;
+            case '9':
+                this.addSpleepingSpiky(i, j);
+            default:
+                break;
+        }
+    }
+
+    addSnowball(i, j) {
+        var snowball =
+        {
+            name: "snowball",
+            direction: "left",
+            position: {
+                x: i,
+                y: j,
+                realY: 20
+            }
+        };
+
+        this.enemies.push(snowball);
+    }
+
+    addFlyingSnowball(i, j) {
+        var flyingSnowball =
+        {
+            name: "flying-snowball",
+            direction: "left",
+            position: {
+                x: i,
+                y: j
+            }
+        };
+
+        this.enemies.push(flyingSnowball);
+    }
+
+    addSpiky(i, j) {
+        this.createSpiky(i, j, false);
+    }
+
+    addSpleepingSpiky(i, j) {
+        this.createSpiky(i, j, true);
+    }
+
+    createSpiky(i, j, sleeping) {
+        var spiky =
+        {
+            name: "spiky",
+            direction: "left",
+            position: {
+                x: i,
+                y: j
+            },
+            sleeping: sleeping
+        };
+
+        this.enemies.push(spiky);
     }
 
     createPreloadedObject(i, j, spriteType) {

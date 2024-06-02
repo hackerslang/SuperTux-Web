@@ -15,11 +15,10 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.SPARKLE_BODY_WIDTH = 40;
         this.SPARKLE_BODY_HEIGHT = 80;
 
-        //this.body.setSize(this.REAL_COLLISION_BOX_WIDTH, this.REAL_COLLISION_BOX_HEIGHT);
-        this.setOrigin(0.5, 0.5);
-        this.body.setOffset(0, 0);
+        this.setOrigin(0.5, 0);
+        this.adjustBodyStanding();
         this.setDepth(999);
-        this.health = 3;
+        this.health = config.health != null ? config.health : 3;
 
         this.x = config.x;
         this.y = config.y;
@@ -46,8 +45,8 @@ class Tux extends Phaser.GameObjects.Sprite {
 
         this.SKID_XM = 200;
 
-        this.MAX_WALK_XM = 250;
-        this.MAX_RUN_XM = 500;
+        this.MAX_WALK_XM = 175;
+        this.MAX_RUN_XM = 400;
         this.WALK_SPEED = 100;
 
         this.WALK_ACCELERATION_X = 300;
@@ -70,12 +69,14 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.SKID_TIME = 100;
 
         this.jumpButtonTimer = 0;
+        this.fallingStartTimer = 0;
 
         this.flipped = false;
 
         this.direction = this.DIRECTION_RIGHT;
         this.pointingTo = this.DIRECTION_RIGHT;
         this.flipDirection = false;
+        this.forceDrawWalking = 0;
 
         this.currentDelta = 0;
 
@@ -107,10 +108,6 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.hasPlayerJump = false;
 
         this.KICK_TIME = 300;
-    }
-
-    listener() {
-        alert("");
     }
 
     getOriginalLevel() {
@@ -210,18 +207,30 @@ class Tux extends Phaser.GameObjects.Sprite {
             return;
         }
 
-        //this.setTexture("tux-kick-0");
-        //this.adjustBody(44, 60, 9, 20);
+        this.body.y = Math.ceil(this.body.y);
+
+        //this.setTexture("tux-walk-1");
+        //this.adjustBody(53, 66, 7, 13);//
         //return;
 
-        if (this.body.y >= Math.floor(this.level.getLevelData().length * 32 - this.body.height) && !this.killed) {
+        //this.setTexture("tux-walk-2");
+        //this.adjustBody(53, 60, 7, 18);//ok
+        //return;
+
+        if (this.body.y >= Math.floor(Level.getMaxLevelHeightY() * 32 - this.body.height) && !this.killed) {
             this.die();
 
             return;
         }
 
-        if (this.mightAlmostFall()) {
+        if (this.forceDrawWalking > 0) {
+            this.forceDrawWalking -= delta;
+        }
 
+        this.fallIfMightAlmostFallOverEdge();
+
+        if (this.fallingStartTimer > 0) {
+            this.fallingStartTimer -= delta;
         }
 
         if (this.skiddingTimer > 0) {
@@ -233,10 +242,6 @@ class Tux extends Phaser.GameObjects.Sprite {
         } else {
             this.hasPlayedKick = false;
         }
-
-        //this.setTexture("tux-walk-7");
-        //this.adjustBody(50, 63, 0, 0);
-        //return;
 
         this.setCollisionBoxesForAnimations();
 
@@ -269,7 +274,7 @@ class Tux extends Phaser.GameObjects.Sprite {
                             id: this.particleMaxId,
                             scene: this.scene,
                             key: sparkleKey,
-                            level: this.level,
+                            sector: Sector.getCurrentSector(),
                             player: this,
                             depth: 1000
                         });
@@ -313,7 +318,13 @@ class Tux extends Phaser.GameObjects.Sprite {
         if (this.onGround()) {
             this.fallMode = this.ON_GROUND;
             this.lastGroundY = this.y;
+            this.fallingFlagStart = false;
         } else {
+            if (!this.fallingFlagStart && !this.jumping) {
+                this.fallingStartTimer = 300;
+                this.fallingFlagStart = true;
+            }
+
             if (this.y > this.lastGroundY) {
                 this.fallMode = this.FALLING;
             } else if (this.fallMode === this.ON_GROUND) {
@@ -325,39 +336,93 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     setCollisionBoxesForAnimations() {
-        //console.log(this.anims.currentFrame.textureKey);
-        if (this.anims.getName() == 'tux-walk') {
+        if (this.anims.getName() == 'tux-stand') {
+            this.adjustBodyStanding();
+        } else if (this.anims.getName() == 'tux-walk') {
             let textureKey = this.anims.currentFrame.textureKey;
 
             switch (textureKey) {
                 case "tux-walk-0":
-                    this.adjustBody(50, 66, 0, 12);
+                    this.adjustBody(52, 65, 7, 14);
                     break;
                 case "tux-walk-1":
-                    this.adjustBody(55, 66, 0, 12);
+                    this.adjustBody(53, 66, 7, 12);
                     break;
                 case "tux-walk-2":
-                    this.adjustBody(55, 66, 0, 12);
+                    this.adjustBody(53, 60, 7, 18);
                     break;
                 case "tux-walk-3":
-                    this.adjustBody(42, 66, 0, 12);
+                    this.adjustBody(39, 63, 11, 15);
                     break;
                 case "tux-walk-4":
-                    this.adjustBody(45, 66, 0, 12);
+                    this.adjustBody(47, 65, 10, 13);
                     break;
                 case "tux-walk-5":
-                    this.adjustBody(49, 66, 0, 12);
+                    this.adjustBody(51, 65, 10, 13);
                     break;
                 case "tux-walk-6":
-                    this.adjustBody(49, 66, 0, 12);
+                    this.adjustBody(50, 60, 10, 18);
                     break;
                 case "tux-walk-7":
-                    this.adjustBody(42, 66, 0, 12);
+                    this.adjustBody(41, 64, 12, 15);
                     break;
-                default: //case "tux-walk-7"
-                    alert("other");
+                default:
+                    console.log("Error: invalid texture in tux-walk!");
+                    break;
             }
+        } else if (this.anims.getName() == 'tux-run') {
+            let textureKey = this.anims.currentFrame.textureKey;
 
+            if (this.direction == this.DIRECTION_RIGHT) {
+                switch (textureKey) {
+                    case "tux-run-0":
+                    case "tux-run-1":
+                        this.adjustBody(62, 64, 7, 12);
+                        break;
+                    case "tux-run-2":
+                        this.adjustBody(67, 61, 3, 15);
+                        break;
+                    case "tux-run-3":
+                        this.adjustBody(60, 58, 5, 18);
+                        break;
+                    case "tux-run-4":
+                    case "tux-run-5":
+                        this.adjustBody(60, 63, 5, 13);
+                        break;
+                    case "tux-run-6":
+                        this.adjustBody(66, 61, 3, 15);
+                        break;
+                    case "tux-run-7":
+                        this.adjustBody(60, 58, 5, 18);
+                        break;
+                    default:
+                        console.log("Error: invalid texture in tux-run!");
+                        break;
+                }
+            }
+        } else if (this.anims.getName() == 'tux-jump') {
+            let textureKey = this.anims.currentFrame.textureKey;
+
+            if (this.direction == this.DIRECTION_RIGHT) {
+                switch (textureKey) {
+                    case "tux-jump-0":
+                        this.adjustBody(59, 70, 1, 0);
+                        break;
+                    case "tux-jump-1":
+                    case "tux-jump-2":
+                        this.adjustBody(62, 77, 1, 0);
+                        break;
+                    default:
+                        console.log("Error: invalid texture in tux-jump!");
+                }
+
+            } else {
+
+            }
+        } else if (this.anims.getName() == 'tux-fall') {
+            if (this.direction == this.DIRECTION_RIGHT) {
+                this.adjustBody(62, 77, 1, 0);
+            }
         } else if (this.anims.getName() == 'tux-kick') {
             let textureKey = this.anims.currentFrame.textureKey;
 
@@ -442,14 +507,14 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     removeColliders() {
-        if (this.level.playerGroundCollider != null)
-            this.level.playerGroundCollider.destroy();
+        if (this.scene.playerGroundCollider != null)
+            this.scene.playerGroundCollider.destroy();
 
-        if (this.level.woodCollider != null)
-            this.level.woodCollider.destroy();
+        if (this.scene.woodCollider != null)
+            this.scene.woodCollider.destroy();
 
-        if (this.level.spikeCollider != null)
-            this.level.spikeCollider.destroy();
+        if (this.scene.spikeCollider != null)
+            this.scene.spikeCollider.destroy();
     }
 
     isDead() {
@@ -481,10 +546,11 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     slightlyAboveGround() {
-        let absVelocityY = Math.abs(this.getVelocityY());
-        let groundYDelta = Math.abs(this.lastGroundY - this.y);
+        var tileBelowX = Math.floor(this.body.x / 32);
+        var bottomY = Math.floor((this.body.bottom - 5) / 32);
+        var tileBelowY = bottomY + 1;
 
-        return (absVelocityY == 16.625 || absVelocityY == 31.25) && groundYDelta < 0.85;
+        return !Level.isFreeOfObjects(tileBelowX, tileBelowY);
     }
 
     onObject() {
@@ -523,7 +589,7 @@ class Tux extends Phaser.GameObjects.Sprite {
     onTopOfEnemy() {
         var isonTopOfEnemy = false;
 
-        Array.from(this.level.enemyGroup.children.entries).forEach(
+        Array.from(this.scene.enemyGroup.children.entries).forEach(
             (enemy) => {
                 if (enemy.enemyType == "krosh") {
                     if (this.x >= enemy.x - (enemy.width / 2) && this.x <= enemy.x + (enemy.width / 2) //128 40 //enemy still in air, so player moves left and right!!!
@@ -550,18 +616,9 @@ class Tux extends Phaser.GameObjects.Sprite {
         this.adjustBodyStanding();
         this.ducked = false;
         this.hasPlayedDuck = false;
-        //m_unduck_hurt_timer.stop();
     }
 
     handleInput(delta) {
-        //this.currentDelta += delta;
-
-        //if (this.currentDelta < this.MIN_DELTA) {
-        //    return;
-        //} else {
-        //    this.currentDelta = 0;
-        //}
-
         if (this.getKeyController().pressed('menu')) {
             this.level.pause();
         }
@@ -573,11 +630,6 @@ class Tux extends Phaser.GameObjects.Sprite {
 
             return;
         }
-
-        //Leave this out, in order to prevent multiple jumps right after each other!
-        //if (this.onGround()) {
-        //    this.canJump = true;
-        //}
 
         if (this.getKeyController().pressed('duck') || (this.ducked && this.getKeyController().hold('duck'))) {
             this.doDuck();
@@ -749,24 +801,47 @@ class Tux extends Phaser.GameObjects.Sprite {
         {
             this.applyFriction();
         }
-            
     }
 
-    mightAlmostFall() {
+    isAtEndSector(sector) {
+        return this.x >= sector.sectorWidth - 32;
+    }
+
+    fallIfMightAlmostFallOverEdge() {
         var halfX = this.direction == this.DIRECTION_RIGHT ? this.body.width / 2 : -this.body.width / 2;
         var halfY = this.body.height / 2;
         var overEdge = this.body.x % 32;
         var tileBelowX = Math.floor((this.body.x + halfX) / 32);
-        var tileBelowY = Math.floor(this.body.bottom / 32);
+        var tileBelowY = Math.floor((this.body.bottom - 10) / 32);
 
-        if (overEdge > 16) {
-            //check whether there are sprites below
-            //console.log(this.level.originalLevel[tileBelowY + 1][tileBelowX]);
-            if (this.body.blocked.down && this.level.originalLevelData[tileBelowY][tileBelowX] == 0) {
-                this.drawWalking();
+        if (this.forceDrawWalking > 0) {
+            this.setVelocityX(this.fallingDirection * this.WALK_SPEED);
+            this.playAnimation("tux-walk");
+        } 
+
+        if (this.forceDrawWalking <= 0 && !this.jumping) {
+            if (overEdge > 16 &&
+                Level.isFreeOfObjects(tileBelowX, tileBelowY+1) &&
+                !Level.isFreeOfObjects(tileBelowX-1, tileBelowY+1) &&
+                !this.isSkidding() && Math.abs(this.getVelocityX()) <= this.WALK_SPEED) {
+
+                this.forceDrawWalking = 300;
+                this.fallingDirection = this.DIRECTION_RIGHT;
                 this.setVelocityX(this.WALK_SPEED);
+            } else if (overEdge < 16 &&
+                Level.isFreeOfObjects(tileBelowX, tileBelowY + 1) &&
+                !Level.isFreeOfObjects(tileBelowX+1, tileBelowY+1) &&
+                !this.isSkidding() && Math.abs(this.getVelocityX()) <= this.WALK_SPEED) {
+
+                this.forceDrawWalking = 300;
+                this.fallingDirection = this.DIRECTION_LEFT;
+                this.setVelocityX(-this.WALK_SPEED);
             }
         }
+    }
+
+    isSkidding() {
+        return this.skiddingTimer > 0;
     }
 
     applyFriction() {
@@ -775,6 +850,7 @@ class Tux extends Phaser.GameObjects.Sprite {
             this.setAccelerationX(0);
         } else {
             var friction = this.WALK_ACCELERATION_X * (this.onIce ? this.ICE_FRICTION_MULTIPLIER : this.NORMAL_FRICTION_MULTIPLIER);
+;
             if (this.getVelocityX() < 0) {
                 this.setAccelerationX(friction);
             } else if (this.getVelocityX() > 0) {
@@ -815,7 +891,9 @@ class Tux extends Phaser.GameObjects.Sprite {
         let controller = this.getKeyController();
 
         if (this.jumpButtonTimer <= 0 && this.skiddingTimer <= 0 && this.canJump) {
-             if (controller.pressed('jump')) {
+            if (controller.pressed('jump')) {
+                this.fallingFlagStart = true;
+                this.fallingStartTimer = 0;
                 this.doJump(Math.abs(vx) > this.MAX_WALK_XM ? -580 : -520);
             } 
         }
@@ -840,13 +918,6 @@ class Tux extends Phaser.GameObjects.Sprite {
 
             return;
         } 
-        // else if backflipping
-
-        if (this.invincible) {
-            //this.tint = [0xFFFFFF, 0xFF0000, 0xFFFFFF, 0x00FF00, 0xFFFFFF, 0x0000FF][this.invincibleIndex];
-        } else if (this.wasHurt <= 0) {
-           //this.tint = 0xFFFFFF;
-        }
 
         if (this.ducked && this.isBig) {
             this.drawDuck();
@@ -910,7 +981,7 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     adjustBodyStandingLeft() { //ok
-        this.adjustBody(43, 63, 8, 0);
+        this.adjustBody(43, 66, 8, 12);
     }
 
     adjustBodySkiddingRight() {
@@ -922,36 +993,37 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     adjustBodyFallingRight() { //ok
-        this.adjustBody(59, 77, 0, 0);
+        this.adjustBody(59, 70, 1, 0);
     }
 
     adjustBodyFallingLeft() { //ok
-        this.adjustBody(60, 68, 0, 0);
+        this.adjustBody(60, 70, 0, 0);
     }
 
     drawFalling() {
+        if (this.forceDrawWalking > 0) { return; }
+
         this.flipDraw();
         this.setTexture("tux-jump-0");
-        this.adjustBodyFalling();
     }
 
     drawJumping() {
+        if (this.forceDrawWalking > 0) { return; }
+
         this.flipDraw();
 
         if (!this.hasPlayerJump) {
             this.playAnimationOnce("tux-jump");
             this.hasPlayerJump = true;
-        } else {
-            this.setTexture("tux-jump-2");
+        } else if (this.fallingStartTimer <= 0) {
+            this.playAnimation("tux-fall");
         }
-
-        this.adjustBodyFalling();
     }
 
     drawStanding() {
-        this.setTexture("tux-stand-0");
-        this.adjustBodyStanding();
+        if (this.forceDrawWalking > 0) { return; }
 
+        this.playAnimation("tux-stand");
         //strange bug rounding float, player sprite trembles!
         this.body.y = Math.ceil(this.body.y);
     }
@@ -961,6 +1033,8 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     drawDuck() {
+        if (this.forceDrawWalking > 0) { return; }
+
         if (!this.hasPlayedDuck) {
             this.playAnimationOnce("tux-duck");
             this.hasPlayedDuck = true;
@@ -971,12 +1045,16 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     drawSkid() {
+        if (this.forceDrawWalking > 0) { return; }
+
         this.flipDraw();
         this.setTexture("tux-skid");
         this.adjustBodySkidding();
     }
 
     drawKicking() {
+        if (this.forceDrawWalking > 0) { return; }
+
         if (!this.hasPlayedKick) {
             this.anims.play("tux-kick", true);
             this.hasPlayedKick = true;
@@ -989,6 +1067,8 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     drawRunning() {
+        if (this.forceDrawWalking > 0) { return; }
+
         this.flipDraw();
         this.playAnimation("tux-run");
     }

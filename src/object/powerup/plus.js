@@ -13,7 +13,7 @@
 
         this.body.setAllowGravity(true);
         this.player = config.player;
-        this.level = config.level;
+        this.sector = config.sector;
         this.scene = config.scene;
         this.id = config.id
         this.anims.play('plus-flickering');
@@ -31,7 +31,7 @@
 
     update(time, delta) {
         if (this.killed) {
-            this.level.powerupGroup.remove(this);
+            this.scene.powerupGroup.remove(this);
             this.destroy();
 
             return;
@@ -59,9 +59,9 @@
             this.angle += this.direction * 5;
         }
 
-        this.scene.physics.world.collide(this, this.level.groundLayer);
-        this.scene.physics.world.collide(this, this.level.woodGroup);
-        this.scene.physics.world.collide(this, this.level.blockGroup);
+        this.scene.physics.world.collide(this, this.scene.groundLayer);
+        this.scene.physics.world.collide(this, this.scene.woodGroup);
+        this.scene.physics.world.collide(this, this.scene.blockGroup);
 
         this.scene.physics.world.overlap(this, this.player, this.collected);
     }

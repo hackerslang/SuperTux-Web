@@ -20,12 +20,14 @@
         this.body.setBounce(0);
         this.setDepth(config.depth);
 
-        if (this.texture != null) {
-            this.setTexture(texture);
-        } else {
+
+        if (this.key != null) {
             this.anims.play(this.key).once('animationcomplete', () => {
                 this.destroy();
             });
+            
+        } else if (this.texture != null) {
+            this.setTexture(this.texture);
         }
     }
 

@@ -7,7 +7,7 @@
 
         this.body.setAllowGravity(true);
         this.player = config.player;
-        this.level = config.level;
+        this.sector = config.sector;
         this.scene = config.scene;
         this.id = config.id
         this.anims.play('star-moving');
@@ -22,15 +22,15 @@
 
     update(time, delta) {
         if (this.killed) {
-            this.level.powerupGroup.remove(this);
+            this.sector.powerupGroup.remove(this);
             this.destroy();
 
             return;
         }
 
-        this.scene.physics.world.collide(this, this.level.groundLayer);
-        this.scene.physics.world.collide(this, this.level.woodGroup); 
-        this.scene.physics.world.collide(this, this.level.blockGroup);
+        this.scene.physics.world.collide(this, this.sector.groundLayer);
+        this.scene.physics.world.collide(this, this.sector.woodGroup); 
+        this.scene.physics.world.collide(this, this.sector.blockGroup);
 
         this.scene.physics.world.overlap(this, this.player, this.collected);
 

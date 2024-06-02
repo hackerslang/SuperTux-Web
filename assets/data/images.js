@@ -67,16 +67,24 @@
             "path": "./assets/images/level/arrow/",
             "sprites": [
                 {
-                    "name": "way-arrow-left",
-                    "value": "large-arrow-left"
+                    "name": "double-arrow-down",
+                    "value": "arrows-down"
                 },
                 {
-                    "name": "way-arrow-right",
-                    "value": "large-arrow-right"
+                    "name": "double-arrow-left",
+                    "value": "arrows-left"
+                },
+                {
+                    "name": "double-arrow-right",
+                    "value": "arrows-right"
+                },
+                {
+                    "name": "double-arrow-up",
+                    "value": "arrows-up"
                 }
             ]
         },
-        "backgrounds": {
+        "backgrounds": {    
             "sprites": [
                 {
                     "name": "pile-of-snow",
@@ -175,7 +183,7 @@
                     "end": 7
                 },
                 {
-                    "name": "snowball- squished",
+                    "name": "snowball-squished",
                     "value": "captain_left-squished"
                 }
             ]
@@ -250,6 +258,19 @@
                 }
             ]
         },
+        "home-exit": {
+            "path": "./assets/images/level/snow/",
+            "sprites": [
+                {
+                    "name": "exitbg",
+                    "value": "exitbg"
+                },
+                {
+                    "name": "exitfg",
+                    "value": "exitfg"
+                }
+            ]
+        },
         "industrial": {
             "path": "./assets/tilemaps/",
             "spritesheets": [
@@ -285,6 +306,21 @@
                 {
                     "name": "krosh",
                     "value": "krosh"
+                }
+            ]
+        },
+        "lava": {
+            "path": "./assets/images/level/castle/",
+            "sprites": [
+                {
+                    "name": "lava",
+                    "value": "lava"
+                },
+                {
+                    "name": "lava-",
+                    "value": "lava-",
+                    "start": 1,
+                    "end": 8
                 }
             ]
         },
@@ -365,6 +401,28 @@
                 }
             ]
         },
+        "slope-particles": {
+            "path": "./assets/images/particles/",
+            "sprites": [
+                {
+                    "name": "slope-particle",
+                    "value": "slope-particle"
+                }
+            ]
+        },
+        "slopes": {
+            "path": "./assets/tilemaps/slopes/",
+            "sprites": [
+                { 
+                    "name": "snow-slope-1",
+                    "value": "snow-slope1"
+                },
+                {
+                    "name": "snow-slope-2",
+                    "value": "snow-slope2"
+                }
+            ]
+        },
         "smoke": {
             "path": "./assets/images/particles/",
             "sprites": [
@@ -373,6 +431,38 @@
                     "value": "smoke-",
                     "start": 1,
                     "end": 6
+                }
+            ]
+        },
+        "snow": {
+            "path": "./assets/images/level/snow/",
+            "spritesheets": [
+                {
+                    "name": "icebridge",
+                    "value": "icebridge",
+                    "frameWidth": 32,
+                    "frameHeight": 32,
+                    "number": 4
+                }
+            ],
+            "sprites": [
+                {
+                    "name": "igloo-fg",
+                    "value": "exitfg"
+                },
+                {
+                    "name": "igloo-bg",
+                    "value": "exitbg"
+                },
+                {
+                    "name": "antarctic-water",
+                    "value": "antarctic"
+                },
+                {
+                    "name": "antarctic-water-",
+                    "value": "antarctic-",
+                    "start": 1,
+                    "end": 8
                 }
             ]
         },
@@ -405,6 +495,23 @@
                     "value": "sparkle-dark-",
                     "start": 0,
                     "end": 1
+                }
+            ]
+        },
+        "spiky": {
+            "path": "./assets/images/creatures/spiky/",
+            "sprites": [
+                {
+                    "name": "spiky-walk-",
+                    "value": "spiky-",
+                    "start": 0,
+                    "end": 7
+                },
+                {
+                    "name": "spiky-sleep-",
+                    "value": "spiky_sleep-",
+                    "start": 0,
+                    "end": 3
                 }
             ]
         },

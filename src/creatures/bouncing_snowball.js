@@ -3,7 +3,6 @@
         super(config);
 
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
-        this.killAt = 0;
         this.direction = 0;
         this.setTexture('bouncing-snowball-4');
         this.firstActivated = false;
@@ -14,7 +13,9 @@
         this.JUMPSPEED = -450;
         this.BSNOWBALL_WALKSPEED = 80;
         this.animationUp = false;
-
+        this.squishable = true;
+        this.squishedAnim = "snowball-squished";
+       
         //this.on('animationcomplete', this.animCompleted, this);
     }
 
@@ -23,12 +24,11 @@
     }
 
     update(time, delta) {
+        super.update(time, delta);
+
+        if (this.killed) { return; }
+
         super.killWhenFallenDown();
-
-        if (this.killed || this.killAt > 0) {
-
-            return;
-        }
 
         if (!this.activated()) {
 
@@ -39,7 +39,7 @@
             this.activateStartMoving();
         }
 
-        super.update(time, delta);
+
 
         if (!this.killFalling) {
             this.scene.physics.world.collide(this, this.scene.groundLayer);
@@ -61,12 +61,11 @@
             }
         }
 
-        var levelTiles = this.level.getLevelData();
         var tileY = Math.floor(this.body.y / 32);
         var tileX = Math.floor(this.body.x / 32);
 
-        if (tileY + 1 < levelTiles.length) {
-            if (levelTiles[tileY + 1][tileX] != 0 && this.body.velocity.y >= 64) {
+        if (tileY + 1 < Level.getMaxLevelHeightY()) {
+            if (!Level.isFreeOfObjects(tileX, tileY+1) && this.body.velocity.y >= 64) {
                 this.anims.play("bouncing-snowball-left-down");
             }
         }
@@ -85,17 +84,17 @@
         }
     }
 
-    playerHit(enemy, player) {
-        if (enemy.verticalHit(enemy, player)) {
-            player.bounce(enemy);
-            enemy.anims.play("snowball-squished");
-            enemy.killSquished();
-        } else if (player.invincible) {
-            enemy.killNoFlat();
-        } else {
-            enemy.hurtPlayer(enemy, player);
-        }
-    }
+    //playerHit(enemy, player) {
+    //    if (enemy.verticalHit(enemy, player)) {
+    //        player.bounce(enemy);
+    //        enemy.anims.play("snowball-squished");
+    //        enemy.killSquished();
+    //    } else if (player.invincible) {
+    //        enemy.killNoFlat();
+    //    } else {
+    //        enemy.hurtPlayer(enemy, player);
+    //    }
+    //}
 
     killNoFlat() {
         super.killNoFlat("bouncing-snowball-4");

@@ -18,5 +18,10 @@
     WATER_TOP: 'water-top',
     LAVA_TOP: 'lava-top',
 
-    INDUSTRIAL: 'industrial-'
+    INDUSTRIAL: 'industrial-',
+
+    DOUBLE_ARROW_LEFT: 'arrows-left',
+    DOUBLE_ARROW_RIGHT: 'arrows-right',
+    DOUBLE_ARROW_UP: 'arrows-up',
+    DOUBLE_ARROW_DOWN: 'arrows-down'
 }

@@ -46,24 +46,6 @@ class WalkingEnemy extends Enemy { //everything implemented except collision and
         this.walkSpeed = Math.abs(walkSpeed);
     }
 
-    //update(time, delta) {
-    //    super.update(time, delta);
-    //}
-
-    //update(time, delta) {
-    //    if (this.killed) {
-    //        return;
-    //    }
-
-    //    if (!this.activated()) {
-    //        return;
-    //    }
-
-    //    if (this.activated()) {
-    //        this.activateStartMoving();
-    //    }
-    //}
-
     update(time, delta) {
         super.update(time, delta);
     }
@@ -74,13 +56,6 @@ class WalkingEnemy extends Enemy { //everything implemented except collision and
         if (this.frozen) {
             return;
         }
-
-        //super.walkAndTurnOnEdge();
-
-        //perhaps we must make sure they can drop from small heights!! == walkAndTurnOnEdge();
-        //if (this.onGround() && this.mightFall()) {
-        //    this.turnAround();
-        //}
 
         super.walkAndTurnOnEdge();
 
@@ -145,28 +120,8 @@ class WalkingEnemy extends Enemy { //everything implemented except collision and
         this.walk();
     }
 
-    //activateStartMoving() {
-    //    this.setActivated();
-    //    this.direction = this.DIRECTION_LEFT;
-    //    this.setVelocityInDirection();
-    //}
-
-    //setActivated() {
-    //    this.firstActivated = true;
-    //}
-
-    //turnAround() {
-    //    super.switchDirection();
-    //    this.setVelocityInDirection();
-    //    this.spriteFlip();
-    //}
-
-    //setVelocityInDirection() {
-    //    this.body.velocity.x = this.direction * speed;
-    //}
-
     enemyHit(thisEnemy, enemy) {
-        console.log("walking badguy hit ice block ...");
+       
     }
 
     spriteFlip() {

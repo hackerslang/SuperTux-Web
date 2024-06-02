@@ -137,14 +137,12 @@ class MrIceBlock extends WalkingEnemy {
                     return;
                 }
             }
-            console.log("enemyP");
         }
 
         return super.EnemyPlayerHit(enemy, player);
     }
 
     enemyHit(thisEnemy, enemy) {
-        alert("ice block hit other enemy");
         switch (thisEnemy.iceState) {
             case EnemyIceState.ICESTATE_NORMAL:
                 //WalkingBadguy::collision_badguy(badguy, hit);
@@ -322,22 +320,6 @@ class MrIceBlock extends WalkingEnemy {
         this.anims.play(key, true);
     }
 
-    //playerHit(enemy, player) {
-    //    if (enemy.sliding && !enemy.verticalHit(enemy, player) && !player.invincible) {
-    //        enemy.hurtPlayer(enemy, player);
-    //        enemy.slide(player);
-    //    } else if (enemy.stomped) {
-    //        enemy.slide(player);
-    //    } else if (enemy.verticalHit(enemy, player)) {
-    //        player.bounce(enemy);
-    //        enemy.makeStomped();
-    //    } else if (player.invincible) {
-    //        enemy.makeStomped();
-    //    } else {
-    //        enemy.hurtPlayer(enemy, player);
-    //    }
-    //}
-
     enemyHit(thisEnemy, enemy) {
         if (thisEnemy.sliding) {
             enemy.slideKill();
@@ -346,16 +328,4 @@ class MrIceBlock extends WalkingEnemy {
             thisEnemy.walkAndTurnCollideEnemy(enemy);
         }
     }
-
-    //slide(player) {
-    //    this.direction = (player.body.x < this.body.x ? this.DIRECTION_RIGHT : this.DIRECTION_LEFT);
-    //    this.body.velocity.x = this.direction * 300;
-    //    this.sliding = true;
-    //}
-
-    
-
-    //slideKillOther(thisEnemy, other) {
-    //    other.slideKill();
-    //}
 }
