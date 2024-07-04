@@ -13,9 +13,12 @@
     }
 ];
 
+var currentSceneKey = "";
+
 class SectorSwapper {
     static newSector(sector, currentScene) {
         sector.makeCurrent();
+        
         this.createNewSectorScene(currentScene);
     }
 
@@ -26,7 +29,7 @@ class SectorSwapper {
         sector.makeCurrent();
 
         if (sectorSlotFound != null) {
-            currentScene.scene.resume(sectorSlot.key);
+            game.scene.start(sectorSlot.key);
         } else {
             this.createNewSectorScene();
         }
@@ -51,18 +54,17 @@ class SectorSwapper {
         var firstFreeSectorSlot = this.getFirstFreeSectorSlot();
 
         if (firstFreeSectorSlot != null) {
-            var sectorScene = currentScene.scene.add(firstFreeSectorSlot.key, SectorSwapper.getSectorSceneFromSlot(firstFreeSectorSlot), false); //autostart = true/false;
-
+            //var sectorScene = currentScene.scene.add(firstFreeSectorSlot.key, SectorSwapper.getSectorSceneFromSlot(firstFreeSectorSlot), false); //autostart = true/false;
             var sector = Sector.getCurrentSector();
-
-            currentScene.scene.pause();
-            currentScene.scene.launch(firstFreeSectorSlot.key);
+            
+            game.scene.pause(currentScene.key);
+            game.scene.start(firstFreeSectorSlot.key);
             firstFreeSectorSlot.loadedSector = sector;
-            sector.scene = sectorScene;
         }
     }
 
     static getFirstFreeSectorSlot() {
+        console.log(SectorScenesSlots);
         for (var i = 0; i < SectorScenesSlots.length; i++) {
             var sectorSlot = SectorScenesSlots[i];
             if (sectorSlot.loadedSector == null) {
@@ -77,10 +79,10 @@ class SectorSwapper {
         var sectorScene = null;
 
         switch (sectorSlot.key) {
-            case "SectorSlot2":
+            case "SectorScene2":
                 sectorScene = SectorScene2;
                 break;
-            case "SectorSlot3":
+            case "SectorScene3":
                 sectorScene = SectorScene3;
                 break;
             default:

@@ -34,6 +34,10 @@
         return this.sectorData;
     }
 
+    getInvisibleWalls() {
+        return this.sectorData.invisibleBlocks;
+    }
+
     makeCurrent() {
         Level.currentLevel = this.level;
         Sector.currentSector = this;

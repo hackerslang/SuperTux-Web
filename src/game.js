@@ -15,7 +15,9 @@ const config = {
     },
     scene: [
         LevelSelectScene,
-        //SectorScene,
+        SectorScene1,
+        SectorScene2,
+        SectorScene3,
         PauseScene
     ],
     powerPreference: "high-performance"

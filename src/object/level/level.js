@@ -14,7 +14,7 @@ class Level {
         this.TILE_DIMENSION = 32;
         //this.TOTAL_NUMBER_OF_COINS = this.getTotalNumberofCoins();
         this.playerTotalCoinsCollected = 0;
-
+        this.isPaused = false;
         
         this.activeSectors = [];
     }

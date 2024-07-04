@@ -13,10 +13,10 @@
     SPIKE_UP: 'spk-up',
     SPIKE_LEFT: 'spk-lft',
     SPIKE_RIGHT: 'spk-rght',
-    WAY_ARROW_UP: 'arrow-up',
-    WAY_ARROW_DOWN: 'arrow-down',
-    WAY_ARROW_LEFT: 'arrow-left',
-    WAY_ARROW_RIGHT: 'arrow-right',
+    DOUBLE_ARROW_UP: 'double-arrow-up',
+    DOUBLE_ARROW_DOWN: 'double-arrow-down',
+    DOUBLE_ARROW_LEFT: 'double-arrow-left',
+    DOUBLE_ARROW_RIGHT: 'double-arrow-right',
     INDUSTRIAL_START_PART: 'ind-',
     ICE_BRIDGE: 'ibr',
     BILLBOARD_RUNJUMP: 'expl-rj',
@@ -98,13 +98,13 @@ class TilemapParser {
                 } else if (currentTile.startsWith(TilemapConstants.ENEMY_START_PART)) {
                     this.createPreloadedEnemy(i, j, currentTile);
                 } else if (currentTile == ">>") {
-                    this.createPreloadedObject(i, j, SpriteKeyConstants.DOUBLE_ARROW_RIGHT);
+                    this.createPreloadedBackgroundObject(i, j, 0, 0, SpriteKeyConstants.DOUBLE_ARROW_RIGHT);
                 } else if (currentTile == "<<") {
-                    this.createPreloadedObject(i, j, SpriteKeyConstants.DOUBLE_ARROW_LEFT);
+                    this.createPreloadedBackgroundObject(i, j, 0, 0, SpriteKeyConstants.DOUBLE_ARROW_LEFT);
                 } else if (currentTile == "^^") {
-                    this.createPreloadedObject(i, j, SpriteKeyConstants.DOUBLE_ARROW_UP);
+                    this.createPreloadedBackgroundObject(i, j, 0, 0, SpriteKeyConstants.DOUBLE_ARROW_UP);
                 } else if (currentTile == "vv") {
-                    this.createPreloadedObject(i, j, SpriteKeyConstants.DOUBLE_ARROW_DOWN);
+                    this.createPreloadedBackgroundObject(i, j, 0, 0, SpriteKeyConstants.DOUBLE_ARROW_DOWN);
                 } else if (currentTile == TilemapConstants.HOME) {
                     this.createPreloadedHome(i, j);
                 }

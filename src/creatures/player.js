@@ -619,9 +619,7 @@ class Tux extends Phaser.GameObjects.Sprite {
     }
 
     handleInput(delta) {
-        if (this.getKeyController().pressed('menu')) {
-            this.level.pause();
-        }
+
 
         this.handleHorizontalInput(delta);
 

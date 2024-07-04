@@ -1,21 +1,12 @@
 class SectorScene extends Phaser.Scene {
-    constructor() {
-        super();
+    constructor(config) {
+        super({ key: config.key });
+        this.key = config.key;
         this.imageLoader = new ImageLoader({ scene: this });
         this.animationLoader = new AnimationLoader({ scene: this });
 
         this.DEFAULT_FRAMERATE = 10;
         this.REPEAT_INFINITELY = -1;
-
-        this.sector = Sector.getCurrentSector();
-        this.creatures = this.sector.sectorData.creatures;
-        this.sectorCoinsCollected = 0;
-
-        if (this.creatures == null) {
-            this.creatures = [];
-        }
-
-        this.player = {};
     }
 
     generateKeyController() {
@@ -25,7 +16,10 @@ class SectorScene extends Phaser.Scene {
             'left': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
             'right': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
             'duck': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN),
-            'menu': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC)
+            'menu': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC),
+            'pause': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P),
+            'quicksave': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+            'quickload': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.L)
         };
 
         this.keyController = new KeyController(this.keys, this);
@@ -50,7 +44,7 @@ class SectorScene extends Phaser.Scene {
     }
 
     destroyPrevious(sectorScene) {
-        sectorSCene.stop();
+        sectorScene.stop();
     }
 
     addHealthBar() {
@@ -87,48 +81,80 @@ class SectorScene extends Phaser.Scene {
         return this.keyController;
     }
 
+    initCursor() {
+        this.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor.png), pointer');
+
+        this.input.on('pointerdown', (pointer, gameObjects) => {
+            this.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor-click.png), pointer');
+        });
+
+        this.input.on('pointerup', (pointer, gameObjects) => {
+            this.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor.png), pointer');
+        });
+    }
+
     preload() {
-        this.loadImages();
-        this.loadTilemaps();
-        this.loadCoinTiles();
-        this.loadBackgroundImage(this.sector.getBackgroundImage());
-        this.loadSounds();
-        this.generateKeyController();
+        this.sector = Sector.getCurrentSector();
+
+        if (this.sector != null) {
+            this.creatures = this.sector.sectorData.creatures;
+            this.sectorCoinsCollected = 0;
+
+            if (this.creatures == null) {
+                this.creatures = [];
+            }
+
+            this.hasPaused = false;
+            this.player = {};
+        }
+
+        if (this.sector != null) {
+            this.loadImages();
+            this.loadTilemaps();
+            this.loadCoinTiles();
+            this.loadBackgroundImage(this.sector.getBackgroundImage());
+            this.loadSounds();
+            this.generateKeyController();
+            this.initCursor();
+        }
     }
 
     create() {
-        this.sector.parseTilemaps();
-        this.createDynamicForeGrounds();
-        this.createStaticForegrounds();
-        this.createBackground();
-        this.parseBackgroundImages();
-        this.parseLava();
-        this.parseAntarcticWater();
-        this.makeAnimations();
-        this.makeSounds();
-        this.createMap();
-        this.addPlayer();
+        if (this.sector != null) {
+            this.sector.parseTilemaps();
+            this.createDynamicForeGrounds();
+            this.createStaticForegrounds();
+            this.createBackground();
+            this.parseBackgroundImages();
+            this.parseLava();
+            this.parseAntarcticWater();
+            this.makeAnimations();
+            this.makeSounds();
+            this.createMap();
+            this.addPlayer();
+            this.parseInvisibleWallBlocks();
 
-        this.addHealthBar();
-        this.addCoinsDisplay();
-        this.initCamera();
+            this.addHealthBar();
+            this.addCoinsDisplay();
+            this.initCamera();
 
-        this.createCoinSpritesGroup();
-        this.createEnemySpritesGroup();
-        this.createHurtableTilesGroup();
-        this.createCollisionTilesGroup();
-        this.createPowerupGroup();
+            this.createCoinSpritesGroup();
+            this.createEnemySpritesGroup();
+            this.createHurtableTilesGroup();
+            this.createCollisionTilesGroup();
+            this.createPowerupGroup();
 
-        this.physics.add.collider(this.coinGroup, this.groundLayer);
-        this.playerGroundCollider = this.physics.add.collider(this.player, this.groundLayer);
-        this.woodCollider = this.physics.add.collider(this.player, this.collisionTilesGroup, this.woodHit);
+            this.physics.add.collider(this.coinGroup, this.groundLayer);
+            this.playerGroundCollider = this.physics.add.collider(this.player, this.groundLayer);
+            this.woodCollider = this.physics.add.collider(this.player, this.collisionTilesGroup, this.woodHit);
 
-        this.physics.world.bounds.width = this.groundLayer.width;
-        this.physics.world.bounds.height = this.groundLayer.height;
-        this.groundLayer.setCollisionByExclusion(0, true);
+            this.physics.world.bounds.width = this.groundLayer.width;
+            this.physics.world.bounds.height = this.groundLayer.height;
+            this.groundLayer.setCollisionByExclusion(0, true);
 
-        this.physics.world.enable(this.player);
-        this.physics.world.setBoundsCollision(true, true, true, true);
+            this.physics.world.enable(this.player);
+            this.physics.world.setBoundsCollision(true, true, true, true);
+        }
     }
 
     createMap() {
@@ -527,6 +553,26 @@ class SectorScene extends Phaser.Scene {
         }
     }
 
+    parseInvisibleWallBlocks() {
+        this.invisibleWalls = [];
+
+        var sectorInvisibleWalls = this.sector.getInvisibleWalls();
+
+        if (sectorInvisibleWalls != null) {
+            for (var i = 0; i < sectorInvisibleWalls.length; i++) {
+                var invisibleBlockPoint = sectorInvisibleWalls[i];
+                var invisibleBlock = new InvisibleWallBlock({
+                    scene: this,
+                    player: this.player,
+                    x: invisibleBlockPoint.x,
+                    y: invisibleBlockPoint.y
+                });
+
+                this.invisibleWalls.push(invisibleBlock);
+            }
+        }
+    }
+
     loadBackgroundImage(backgroundImage) {
         this.preloadImage('background', backgroundImage);
     }
@@ -562,7 +608,7 @@ class SectorScene extends Phaser.Scene {
     }
 
     loadNecessaryImages() {
-        var keys = ["arrow", "UI", "tux", "backgrounds", "coin", "powerup"];
+        var keys = ["arrow", "invisible-wall", "UI", "tux", "backgrounds", "coin", "powerup"];
 
         this.loadImagesForKeys(keys);
     }
@@ -787,7 +833,10 @@ class SectorScene extends Phaser.Scene {
     }
 
     update(time, delta) {
+        if (this.sector == null) { return; }
+
         this.getKeyController().update();
+        this.handleOptionsKeys();
         this.player.update(time, delta);
         this.player.draw(time, delta);
         this.healthBar.update(time, delta);
@@ -799,6 +848,31 @@ class SectorScene extends Phaser.Scene {
         this.forceUpdateSprites(this.particleSprites, time, delta);
         this.forceUpdateSprites(this.blockSprites, time, delta);
         this.updatePowerups(time, delta);
+    }
+
+    handleOptionsKeys() {
+        if (this.getKeyController().pressed('menu')) {
+            this.level.pause();
+        }
+
+        if (this.getKeyController().pressed('quicksave')) {
+            alert("save");
+        }
+
+        if (this.getKeyController().pressed('quickload')) {
+            alert("load");
+        }
+
+        if (this.getKeyController().pressed('pause')) {
+            this.pause();
+        }
+    }
+
+    pause() {
+        currentSceneKey = this.key;
+
+        game.scene.pause(this.key);
+        game.scene.start("PauseScene");
     }
 
     validateCurrentSectorEnds() {

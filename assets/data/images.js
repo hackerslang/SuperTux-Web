@@ -84,6 +84,14 @@
                 }
             ]
         },
+        "invisible-wall": {
+            "sprites": [
+                {
+                    "name": "invisible-wall",
+                    "value": "./assets/images/level/invisible-wall"
+                }
+            ]
+        },
         "backgrounds": {    
             "sprites": [
                 {
