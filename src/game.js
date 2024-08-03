@@ -18,7 +18,8 @@ const config = {
         SectorScene1,
         SectorScene2,
         SectorScene3,
-        PauseScene
+        PauseScene,
+        MenuScene
     ],
     powerPreference: "high-performance"
 };

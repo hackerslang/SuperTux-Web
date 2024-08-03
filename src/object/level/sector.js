@@ -97,10 +97,6 @@
     getTilesets() {
         return this.sectorData.tilesets;
     }
-    
-
-
-    
 
     createPreloadedBackGroundObject(i, j, offsetI, offsetJ, type) {
         let backgrounObject = {

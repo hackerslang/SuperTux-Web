@@ -19,8 +19,11 @@
         rect.setOrigin(0, 0);
         rect.setInteractive();
 
-        var fontLoader = new FontLoader();
+        this.createPauseRect();
+    }
 
+    createPauseRect() {
+        var fontLoader = new FontLoader();
         var text1 = "Game Paused";
         var text2 = "Press P to unpause ...";
         var text1X = (CANVAS_WIDTH / 2) - (22 * text1.length / 2);
@@ -32,8 +35,6 @@
         var pauseX2 = text2X + (18 * text2.length);
         var pauseY1 = textY1 - padding;
         var pauseY2 = textY2 + padding;
-
-
         var pauseRect = this.add.rectangle(pauseX1, pauseY1, pauseX2 - pauseX1, pauseY2 - pauseY1, 0x000000, 0.5);
 
         pauseRect.setOrigin(0, 0);

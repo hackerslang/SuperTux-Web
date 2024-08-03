@@ -1,0 +1,6 @@
+﻿{
+    "name": "antarctica-the-beginning",
+    "title": "Antarctica, The Beginning",
+    "slopes": ["snow"],
+    "sectors": [ "home", "exploration"]
+}

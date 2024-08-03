@@ -1,9 +1,11 @@
 class Level {
     constructor(config) {
         this.scene = config.scene;
-        this.levelData = config.levelData;
-        this.activeSectorsData = config.levelData.sectors.sort((a, b) => a.orderWeight - b.orderWeight);
-        console.log(this.activeSectorsData);
+        this.levelDataKey = config.levelDataKey;
+        
+
+        //console.log(this.levelData);
+        //this.activeSectorsData = config.levelData.sectors.sort((a, b) => a.orderWeight - b.orderWeight);
         this.landscape = 'snow';
         this.LAVA_ALPHA = 0.7;
         
@@ -19,9 +21,11 @@ class Level {
         this.activeSectors = [];
     }
 
-    initialize() {
+    async initialize() {
         Level.currentLevel = this;
-        this.createSector(0);
+
+        this.levelData = await JsonFetcher.getJsonObject("./assets/data/levels/" + this.levelDataKey + "/0index.js");
+        await this.createSector(0);
         this.activeSectors[0].makeCurrent();
     }
 
@@ -50,8 +54,9 @@ class Level {
         Level.currentLevel = this;
     }
 
-    createSector(index) {
-        var sectorData = this.levelData.sectors[index];
+    async createSector(index) {
+        var sectorDataKey = this.levelData.sectors[index];
+        var sectorData = await this.getSectorDataByKey(sectorDataKey);
         var sector = this.createSectorByData(sectorData);
 
         return sector;
@@ -98,24 +103,24 @@ class Level {
         return null;
     }
 
-    getNextSector(key) {
-        for (var i = 0; i < this.activeSectorsData.length; i++) {
-            if (this.activeSectorsData[i].key.toLowerCase() == key.toLowerCase()) {
-                if (i < this.activeSectorsData.length - 1) {
-                    return this.activeSectorsData[i + 1];
-                }
-            }
+    async getNextSector(key) {
+
+        var index = this.levelData.sectors.indexOf(key);
+
+        if (index >= 0) {
+            var sectorDataKey = this.levelData.sectors[index + 1];
+            var sectorData = await this.getSectorDataByKey(sectorDataKey);
+            
+            return sectorData;
         }
 
         return null;
     }
 
-    getSectorDataByKey(key) {
-        var sector = this.levelData.sectors.find(s => {
-            return s.key == key
-        });
+    async getSectorDataByKey(sectorDataKey) {
+        var sectorData = await JsonFetcher.getJsonObject("./assets/data/levels/" + this.levelDataKey + "/" + sectorDataKey + ".js");
 
-        return sector;
+        return sectorData;
     }
 
     addCollectedCoin() {

@@ -1,4 +1,5 @@
-﻿class RandomLevelFactory {
+﻿
+class RandomLevelFactory {
     constructor(scene) {
         this.levels = [];
         this.index = 0;
@@ -32,24 +33,42 @@ class LevelSelectScene extends Phaser.Scene {
             key: 'LevelSelectScene'
         });
 
-        this.world1Levels = [
-            new Level({ levelData: levelNTheLavaWorld, scene: this }),
-            new Level({ levelData: levelTheBeginningData, scene: this })
-        ];
+        this.levels = [];
 
+        var self = this;
+
+        var arr = [];
+
+        //for (var i = 0; i < world1LevelKeys.length; i++) {
+        //    fetch("./assets/data/levels/" + world1LevelKeys[i] + ".js")
+        //        .then(function (response) {
+        //            if (response.ok) {
+        //                return response.json();
+        //            }
+        //        })
+        //        .then(function (json) {
+        //            self.levels.pushnew Level({ levelData: json, scene: this });
+        //        });
+
+        
+        
+    }
+
+    async preload() {
 
     }
 
-    preload() {
+     async create() {
+        this.levels = [
+            new Level({ levelDataKey: worldLevels[0], scene: this })/*,
+            new Level({ levelDataKey: worldLevels[1], scene: this })*/
+         ];
 
-    }
+         gameSession = GameSession.newGame();
 
-    create() {
-        gameSession = GameSession.newGame();
-
-        this.world1Levels[1].initialize();
-        this.scene.stop("LevelSelectScene");
-        SectorSwapper.newSector(Sector.getCurrentSector(), this);
+         await this.levels[0].initialize();
+         this.scene.stop("LevelSelectScene");
+         SectorSwapper.newSector(Sector.getCurrentSector(), this);
     }
 
     changeSector() {
