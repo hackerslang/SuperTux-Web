@@ -1,4 +1,4 @@
-﻿class JsonLoader {
+﻿export class JsonLoader {
     get(url) {
         var self = this;
         fetch(url)

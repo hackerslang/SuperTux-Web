@@ -1,4 +1,4 @@
-﻿var SpriteKeyConstants = {
+﻿export var SpriteKeyConstants = {
     ICE_BRIDGE_START: 'icebridge-start',
     ICE_BRIDGE_MID: 'icebridge-mid',
     ICE_BRIDGE_END: 'icebridge-end',

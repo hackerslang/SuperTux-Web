@@ -1,4 +1,6 @@
-class ImageLoader {
+import { imagesData } from '../../assets/data/images.js';
+
+export class ImageLoader {
     constructor(config) {
         this.scene = config.scene;
         this.imagesData = imagesData;

@@ -1,4 +1,6 @@
-class Tux extends Phaser.GameObjects.Sprite {
+import { Level } from '../object/level/Level.js';
+
+export class Tux extends Phaser.GameObjects.Sprite {
     constructor(config) {
         super(config.scene, config.x, config.y, config.key);
         config.scene.physics.world.enable(this);

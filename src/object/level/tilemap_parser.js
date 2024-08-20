@@ -1,4 +1,6 @@
-﻿var TilemapConstants = {
+﻿import { SpriteKeyConstants } from './tile_creator.js';
+
+export var TilemapConstants = {
     COIN: 'c',
     CLOUD: 'cloud',
     PILE_OF_SNOW: 'pile-of-snow',
@@ -24,7 +26,7 @@
     HOME: '(home)'
 }
 
-class TilemapParser {
+export class TilemapParser {
     constructor(sector, sectorData) {
         this.level = sector.level;
         this.tileData = sectorData.data;

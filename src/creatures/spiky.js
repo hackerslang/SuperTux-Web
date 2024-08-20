@@ -1,10 +1,12 @@
-﻿SpikyState = {
+﻿import { WalkingEnemy } from './walking_enemy.js';
+
+export var SpikyState = {
     STATE_SLEEPING: 0,
     STATE_WAKING: 1,
     STATE_WALKING: 2
 }
 
-class Spiky extends WalkingEnemy {
+export class Spiky extends WalkingEnemy {
     constructor(config) {
         config.walkSpeed = 45;
 

@@ -1,4 +1,9 @@
-﻿class PauseScene extends Phaser.Scene {
+﻿import { game, CANVAS_WIDTH, CANVAS_HEIGHT } from '../game.js';
+import { FontLoader } from '../object/ui/fontloader.js';
+import { KeyController } from '../object/controller.js';
+import { currentSceneKey } from './sectorscene.js';
+
+export class PauseScene extends Phaser.Scene {
     constructor() {
         super({
             key: 'PauseScene'

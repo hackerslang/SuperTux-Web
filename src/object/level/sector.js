@@ -1,4 +1,7 @@
-﻿class Sector {
+﻿import { TilemapParser } from './tilemap_parser.js';
+import { Level } from './level.js';
+
+export class Sector {
     constructor(sectorData, level) {
         this.name = sectorData.name;
         this.sectorData = sectorData;

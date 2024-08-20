@@ -1,4 +1,4 @@
-﻿var animationsData = {
+﻿export var animationsData = {
     "animations": {
         "antarctic-water": {
             "animations": [

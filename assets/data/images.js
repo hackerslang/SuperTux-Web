@@ -1,4 +1,4 @@
-﻿var imagesData = {
+﻿export var imagesData = {
     "images": {
         "tux": {
             "path": "./assets/images/creatures/tux/",

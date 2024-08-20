@@ -1,4 +1,4 @@
-class KeyController {
+export class KeyController {
     constructor(keys, scene) {
         this.keys = keys;
         this.scene = scene;

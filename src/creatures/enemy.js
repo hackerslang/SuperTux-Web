@@ -1,4 +1,6 @@
-﻿EnemyState = {
+﻿import { Level } from '../object/level/level.js';
+
+export var EnemyState = {
     STATE_INIT: 0,
     STATE_INACTIVE: 1,
     STATE_ACTIVE: 2,
@@ -11,7 +13,7 @@
     STATE_GEAR: 9
 }
 
-class Enemy extends Phaser.GameObjects.Sprite {
+export class Enemy extends Phaser.GameObjects.Sprite {
     constructor(config) {
         super(config.scene, config.x, config.y, config.key);
         config.scene.physics.world.enable(this);

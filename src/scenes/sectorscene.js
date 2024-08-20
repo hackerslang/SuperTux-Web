@@ -1,4 +1,31 @@
-class SectorScene extends Phaser.Scene {
+import { game, CANVAS_WIDTH, CANVAS_HEIGHT } from '../game.js';
+import { ImageLoader } from '../helpers/imageloader.js';
+import { AnimationLoader } from '../helpers/animationloader.js';
+import { AnimationCreator } from '../helpers/animationcreator.js';
+import { FontLoader } from '../object/ui/fontloader.js';
+import { KeyController } from '../object/controller.js';
+import { SpriteKeyConstants } from '../object/level/tile_creator.js';
+import { Level } from '../object/level/level.js';
+import { Sector } from '../object/level/sector.js';
+import { GameSession } from '../object/game_session.js';
+import { gameSession } from './levelselectscene.js';
+import { SectorSwapper } from '../object/level/sector_swapper.js';
+import { Tux } from '../creatures/player.js';
+import { MrIceBlock } from '../creatures/mr_iceblock.js';
+import { SnowBall } from '../creatures/snowball.js';
+import { BouncingSnowBall } from '../creatures/bouncing_snowball.js';
+import { FlyingSnowBall } from '../creatures/flying_snowball.js';
+import { Spiky } from '../creatures/spiky.js';
+import { Coin } from '../object/coin.js';
+import { PlusPowerUp } from '../object/powerup/plus.js';
+import { EggPowerUp } from '../object/powerup/egg.js';
+import { HealthBar } from '../object/ui/healthbar.js';
+import { CoinsDisplay } from '../object/ui/coinsdisplay.js';
+import { InvisibleWallBlock } from '../object/blocks/invisiblewallblock.js';
+
+export var currentSceneKey = "";
+
+export class SectorScene extends Phaser.Scene {
     constructor(config) {
         super({ key: config.key });
         this.key = config.key;
@@ -180,14 +207,31 @@ class SectorScene extends Phaser.Scene {
     }
 
     addPlayer() {
+        var playerPositionX = this.sector.sectorData.playerPosition.x * 32;
+        var playerPositionY = this.sector.sectorData.playerPosition.y * 32;
+
+        if (GameSession.session.sectorKey == this.sector.sectorData.key) {
+            if (GameSession.session.playerPosition != null) {
+                playerPositionX = GameSession.session.playerPosition.x;
+                playerPositionY = GameSession.session.playerPosition.y;
+            }
+        }
+
         this.player = new Tux({
             key: "tux",
             scene: this,
-            x: gameSession.playerPosition.x != null ? gameSession.playerPosition.x: this.sector.sectorData.playerPosition.x * 32,
-            y: gameSession.playerPosition.y != null ? gameSession.playerPosition.y : this.sector.sectorData.playerPosition.y * 32,
-            health: gameSession.health,
+            x: playerPositionX,
+            y: playerPositionY,
+            health: GameSession.session.health,
             level: Level.getCurrentLevel()
         });
+
+        if (GameSession.session.sectorKey == this.sector.sectorData.key) {
+            if (GameSession.session.playerVelocity != null) {
+                this.player.body.velocity.x = GameSession.session.playerVelocity.x;
+                this.player.body.velocity.y = GameSession.session.playerVelocity.y;
+            }
+        }
 
         this.player.body.setCollideWorldBounds(true);
     }
@@ -606,7 +650,7 @@ class SectorScene extends Phaser.Scene {
     }
 
     async loadTilemaps() {
-        var self = this; console.log(this.sector);
+        var self = this;
         var tilesets = this.sector.getTilesets();
         
         tilesets.forEach(function (tileset, idx) {
@@ -657,7 +701,11 @@ class SectorScene extends Phaser.Scene {
     }
 
     loadAnimationsFromData(key) {
-        this.animationLoader.loadAnimationsFromData(key);
+        this.animationLoader.loadAnimationsFromData(key, this);
+    }
+
+    animationIsLoaded(key) {
+        return this.anims.anims.entries != null && this.anims.anims.entries.length > 0 && this.anims.exists(key) != null;
     }
 
     loadSlopeImages() {
@@ -700,10 +748,17 @@ class SectorScene extends Phaser.Scene {
         this.makeAnimationsForKeys(animationKeys);
     }
 
+    static loadedAnimations = [];
+
     makeAnimationsForKeys(animationKeys) {
         var self = this;
 
-        animationKeys.forEach(animationKey => self.loadAnimationsFromData(animationKey));
+        animationKeys.forEach(animationKey => {
+            if (SectorScene.loadedAnimations.indexOf(animationKey) === -1) {
+                self.loadAnimationsFromData(animationKey);
+                SectorScene.loadedAnimations.push(animationKey);
+            }
+        });
 
         this.createAnimation(
             {
@@ -846,6 +901,9 @@ class SectorScene extends Phaser.Scene {
 
         this.getKeyController().update();
         this.handleOptionsKeys();
+
+        if (this.interruptUpdate) { return; }
+
         this.player.update(time, delta);
         this.player.draw(time, delta);
         this.healthBar.update(time, delta);
@@ -860,6 +918,8 @@ class SectorScene extends Phaser.Scene {
     }
 
     handleOptionsKeys() {
+        this.interruptUpdate = false;
+
         if (this.getKeyController().pressed('menu')) {
             this.launchMenu();
         }
@@ -870,6 +930,7 @@ class SectorScene extends Phaser.Scene {
 
         if (this.getKeyController().pressed('quickload')) {
             this.quickLoad();
+            this.interruptUpdate = true;
         }
 
         if (this.getKeyController().pressed('pause')) {
@@ -883,9 +944,10 @@ class SectorScene extends Phaser.Scene {
 
         session.totalCoins = 0;
         session.totalScore = 0;
-        session.levelName = Level.getCurrentLevel().levelData.name;
-        session.sectorName = Sector.getCurrentSector().sectorData.name;
+        session.levelKey = Level.getCurrentLevel().levelData.key;
+        session.sectorKey = Sector.getCurrentSector().sectorData.key;
         session.playerPosition = { "x": this.player.body.x, "y": this.player.body.y };
+        session.playerVelocity = { "x": this.player.body.velocity.x, "y": this.player.body.velocity.y };
 
         GameSession.quickSaveGame(session);
         var fontLoader = new FontLoader();
@@ -894,7 +956,11 @@ class SectorScene extends Phaser.Scene {
     }
 
     quickLoad() {
+        var session = GameSession.quickLoadGame();
 
+        this.scene.stop(currentSceneKey);
+        SectorSwapper.clearAllSectors();
+        this.scene.start("LoadGameScene", "SuperTuxWeb-QuickSave", false);
     }
 
     pause() {
@@ -933,7 +999,6 @@ class SectorScene extends Phaser.Scene {
                     } else {
                         //endx or startx
                         if (sectorExit.x == "endx") {
-                            console.log(tileX + " " + remainderX + " " + remainderMarginX);
                             if (tileX == this.sector.sectorData.data[0].length - 1 && 32 - remainderX > remainderMarginX) {
                                 //load next sector endx
                                 this.loadSector(sectorExit);
@@ -1074,7 +1139,7 @@ class SectorScene extends Phaser.Scene {
     }
 }
 
-class SectorScene1 extends SectorScene {
+export class SectorScene1 extends SectorScene {
     constructor(config) {
         super({ key: "SectorScene1" });
     }
@@ -1084,7 +1149,7 @@ class SectorScene1 extends SectorScene {
     }
 }
 
-class SectorScene2 extends SectorScene {
+export class SectorScene2 extends SectorScene {
     constructor(config) {
         super({ key: "SectorScene2" });
     }
@@ -1094,7 +1159,7 @@ class SectorScene2 extends SectorScene {
     }
 }
 
-class SectorScene3 extends SectorScene {
+export class SectorScene3 extends SectorScene {
     constructor(config) {
         super({ key: "SectorScene3" });
     }

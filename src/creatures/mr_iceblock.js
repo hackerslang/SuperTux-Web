@@ -1,4 +1,7 @@
-﻿EnemyIceState = {
+﻿import { WalkingEnemy } from './walking_enemy.js';
+import { EnemyState } from './enemy.js';
+
+export var EnemyIceState = {
     ICESTATE_NORMAL: 0,
     ICESTATE_FLAT: 1,
     ICESTATE_GRABBED: 2,
@@ -6,7 +9,7 @@
     ICESTATE_WAKING: 4
 };
 
-class MrIceBlock extends WalkingEnemy {
+export class MrIceBlock extends WalkingEnemy {
     constructor(config) {
         config.walkSpeed = 80;
 

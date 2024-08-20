@@ -1,4 +1,4 @@
-﻿class JsonFetcher {
+﻿export class JsonFetcher {
     static async getJsonObject(path) {
         var jsonObject = {};
         const response = await fetch(path);

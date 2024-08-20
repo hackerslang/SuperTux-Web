@@ -1,4 +1,4 @@
-class AnimationCreator {
+export class AnimationCreator {
     constructor(config) {
         this.scene = config.scene;
 

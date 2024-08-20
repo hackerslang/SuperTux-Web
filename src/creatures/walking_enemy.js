@@ -1,4 +1,6 @@
-class WalkingEnemy extends Enemy { //everything implemented except collision and flipX sprite
+import { Enemy } from './enemy.js';
+
+export class WalkingEnemy extends Enemy { //everything implemented except collision and flipX sprite
     constructor(config, self) {
         super(config);
         this.enemy = self;

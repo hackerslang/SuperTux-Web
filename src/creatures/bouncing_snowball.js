@@ -1,4 +1,7 @@
-﻿class BouncingSnowBall extends Enemy {
+﻿import { Enemy } from './enemy.js';
+import { Level } from '../object/level/level.js';
+
+export class BouncingSnowBall extends Enemy {
     constructor(config) {
         super(config);
 

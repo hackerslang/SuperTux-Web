@@ -1,4 +1,4 @@
-﻿var fontsData = {
+﻿export var fontsData = {
     "fonts": {
         "SuperTuxSmallFont": {
             "name": "SuperTuxSmallWhite",
@@ -27,7 +27,7 @@
     }
 };
 
-class FontLoader {
+export class FontLoader {
     loadFont(scene, fontName, fade, fadeFactor) {
         var font = fontsData.fonts[fontName];
         var endChar = font.glyphChars.length - 1;

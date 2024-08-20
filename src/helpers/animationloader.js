@@ -1,4 +1,7 @@
-﻿class AnimationLoader {
+﻿import { animationsData } from '../../assets/data/animations.js';
+
+
+export class AnimationLoader {
     constructor(config) {
         this.scene = config.scene;
         this.animationsData = animationsData;
@@ -6,7 +9,7 @@
         this.REPEAT_INFINITELY = -1;
     }
 
-    loadAnimationsFromData(key) {
+    loadAnimationsFromData(key, scene) {
         var entities = this.animationsData.animations[key];
 
         entities.animations.forEach(animation => this.loadAnimationFromData(animation));

@@ -1,4 +1,7 @@
-class Level {
+import { JsonFetcher } from '../json_fetcher.js';
+import { Sector } from './sector.js';
+
+export class Level {
     constructor(config) {
         this.scene = config.scene;
         this.levelDataKey = config.levelDataKey;
@@ -21,11 +24,11 @@ class Level {
         this.activeSectors = [];
     }
 
-    async initialize() {
+    async initialize(gameSession) {
         Level.currentLevel = this;
 
         this.levelData = await JsonFetcher.getJsonObject("./assets/data/levels/" + this.levelDataKey + "/0index.js");
-        await this.createSector(0);
+        await this.createSector(gameSession.sectorKey);
         this.activeSectors[0].makeCurrent();
     }
 
@@ -54,8 +57,37 @@ class Level {
         Level.currentLevel = this;
     }
 
-    async createSector(index) {
+    async createSector(key) {
+        var sectorData = await this.getSectorData(key);
+        var sector = this.createSectorByData(sectorData);
+
+        return sector;
+    }
+
+    async getSectorDataByIndex(index) {
         var sectorDataKey = this.levelData.sectors[index];
+        var sectorData = await this.getSectorDataByKey(sectorDataKey);
+
+        return sectorData;
+    }
+
+    async getSectorData(key) {
+        var sectorData;
+
+        if (key != null && key != "") {
+            if (!isNaN(key)) {
+                sectorData = await this.getSectorDataByIndex(parseInt(key));
+            } else {
+                sectorData = await this.getSectorDataByKey(key);
+            }
+        } else {
+            sectorData = await this.getSectorDataByIndex(0);
+        }
+
+        return sectorData;
+    }
+
+    async loadSector(sectorDataKey) {
         var sectorData = await this.getSectorDataByKey(sectorDataKey);
         var sector = this.createSectorByData(sectorData);
 
@@ -104,7 +136,6 @@ class Level {
     }
 
     async getNextSector(key) {
-
         var index = this.levelData.sectors.indexOf(key);
 
         if (index >= 0) {

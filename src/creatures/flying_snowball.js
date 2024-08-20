@@ -1,4 +1,6 @@
-class FlyingSnowBall extends Enemy {
+import { Enemy } from './enemy.js';
+
+export class FlyingSnowBall extends Enemy {
     constructor(config) {
         super(config);
 

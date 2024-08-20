@@ -1,4 +1,9 @@
-﻿class MenuScene extends Phaser.Scene {
+﻿import { game, CANVAS_WIDTH, CANVAS_HEIGHT } from '../game.js';
+import { FontLoader } from '../object/ui/fontloader.js';
+import { KeyController } from '../object/controller.js';
+import { currentSceneKey } from './sectorscene.js';
+
+export class MenuScene extends Phaser.Scene {
     constructor(config) {
         super({ key: 'MenuScene' });
     }

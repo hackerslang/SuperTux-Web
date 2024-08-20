@@ -1,4 +1,7 @@
-﻿var SectorScenesSlots = [
+﻿import { Sector } from './sector.js';
+import { game } from '../../game.js';
+
+export var SectorScenesSlots = [
     {
         "key": "SectorScene1",
         "loadedSector": null
@@ -13,13 +16,20 @@
     }
 ];
 
-var currentSceneKey = "";
-
-class SectorSwapper {
+export class SectorSwapper {
     static newSector(sector, currentScene) {
         sector.makeCurrent();
         
         this.createNewSectorScene(currentScene);
+    }
+
+    static clearAllSectors() {
+        for (var i = 0; i < SectorScenesSlots.length; i++) {
+            if (SectorScenesSlots[i].loadedSector != null) {
+                game.scene.stop("SectorScene" + (i + 1));
+                SectorScenesSlots[i].loadedSector = null;
+            }
+        }
     }
 
     static swapSector(sector, currentScene) {

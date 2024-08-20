@@ -1,4 +1,6 @@
-﻿class HealthBar extends Phaser.GameObjects.Sprite {
+﻿import { HealthBarBorder } from './healthbarborder.js';
+
+export class HealthBar extends Phaser.GameObjects.Sprite {
     constructor(config) {
         super(config.scene, config.x, config.y, config.key);
         config.scene.add.existing(this);

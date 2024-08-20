@@ -1,4 +1,6 @@
-﻿class SnowBall extends WalkingEnemy {
+﻿import { WalkingEnemy } from './walking_enemy.js';
+
+export class SnowBall extends WalkingEnemy {
     constructor(config) {
         config.walkSpeed = 80;
 

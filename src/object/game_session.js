@@ -1,60 +1,49 @@
-﻿class GameSession {
-    constructor() {
-        this.saveSlots = 3;
-    }
+﻿export class GameSession {
+    static session = {};
 
     static newGame() {
-        var gameSession = {};
+        GameSession.session.totalCoins = 0;
+        GameSession.session.totalScore = 0;
+        GameSession.session.health = 3;
+        GameSession.session.levelName = "";
+        GameSession.session.sectorKey = "";
+        GameSession.session.playerPosition = {};
+        GameSession.session.timestamp = new Date().toLocaleString("en-US");
 
-        gameSession.totalCoins = 0;
-        gameSession.totalScore = 0;
-        gameSession.health = 3;
-        gameSession.levelName = "";
-        gameSession.sectorName = "";
-        gameSession.playerPosition = { };
-
-        return gameSession;
+        return GameSession.session;
     }
 
-    static loadGame(gameSession) {
-
+    static getCurrent() {
+        return GameSession.session;
     }
 
-    createTuxPlayer(scene,x, y) {
-        this.tuxPlayer = new Tux({
-            key: "tux",
-            scene: scene,
-            x: x,
-            y: y
-        });
-
-        return this.tuxPlayer;       
+    static quickSaveGame(gameSession) {
+        GameSession.saveGame(gameSession, "SuperTuxWeb-QuickSave");
     }
 
-    addPlayerToSector(sector) {
-
+    static quickLoadGame() {
+        return GameSession.loadGame("SuperTuxWeb-QuickSave");
     }
 
-    static quickSaveGame(session) {
-        var cookieValue = JSON.stringify(session);
+    static saveGame(gameSession, slot) {
+        gameSession.timestamp = new Date().toLocaleString("en-US");
 
-        CookieSave.setCookie("SuperTuxWeb-QuickSave", cookieValue);
-    }
+        var cookieValue = JSON.stringify(gameSession);
 
-    static saveGame(slot) {
-        //Save to cookie!
-        //CookieSave.setCookie("SuperTuxWeb-QuickSave", )
+        CookieSave.setCookie(slot, cookieValue);
     }
 
     static loadGame(slot) {
-        var cookieValue = CookieSave.getCookie("SuperTuxWeb-QuickSave");
-        var session = JSON.parse(cookieValue);
+        var cookieValue = CookieSave.getCookie(slot);
+        var gameSession = JSON.parse(cookieValue);
 
-        GameSession.loadGame(session);
+        GameSession.session = gameSession;
+
+        return gameSession;
     }
 }
 
-class CookieSave {
+export class CookieSave {
 
     static setCookie(name, value) {
         var expires = "";
@@ -74,7 +63,7 @@ class CookieSave {
 
             currentCookie = currentCookie.trim(' ');
 
-            if (c.startsWith(name + "=")) {
+            if (currentCookie.startsWith(name + "=")) {
                 cookie = currentCookie.substring(name.length + 1, currentCookie.length);
             }
         }
