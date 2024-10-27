@@ -43,8 +43,8 @@ export class Enemy extends Phaser.GameObjects.Sprite {
 
         this.prevTurnAround = false;
 
-        this.PADDING_ENEMY_COLLISION = 2; /**/
-        this.ENEMY_COLLISION_TURN_TIMER = 400; /**/
+        this.PADDING_ENEMY_COLLISION = 2;
+        this.ENEMY_COLLISION_TURN_TIMER = 400;
         this.KILL_AT = 2500;
 
         this.direction = this.DIRECTION_LEFT;
@@ -70,6 +70,17 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         this.squishable = false;
         this.body.pushable = false;
         this.setDepth(101);
+    }
+
+    initWithGameSession(enemyFromGameSession) {
+        console.log(this.x);
+        console.log("now");
+        console.log(enemyFromGameSession.x);
+        this.x = enemyFromGameSession.x;
+        this.y = enemyFromGameSession.y;
+        this.body.velocity.x = enemyFromGameSession.velocityX;
+        this.body.velocity.y = enemyFromGameSession.velocityY;
+        this.direction = enemyFromGameSession.direction;
     }
 
     activated() {
@@ -644,6 +655,8 @@ export class Enemy extends Phaser.GameObjects.Sprite {
     }
 
     remove() {
+        if (this.killed) { return; }
+
         this.scene.removeEnemy(this);
         this.destroy();
 

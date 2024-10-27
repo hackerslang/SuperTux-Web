@@ -4,7 +4,6 @@
         config.scene.physics.world.enable(this);
         config.scene.add.existing(this);
 
-        this.body.setAllowGravity(false);
         this.player = config.player;
         this.level = config.level;
         this.scene = config.scene;

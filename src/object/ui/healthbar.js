@@ -9,7 +9,13 @@ export class HealthBar extends Phaser.GameObjects.Sprite {
         this.currentHealth = 100;
         this.scrollFactorX = 0;
         this.scrollFactorY = 0;
-        this.setTexture("healthbar-100");
+
+        if (config.initHealth != null) {
+            this.setHealth(config.initHealth * 33 + (config.initHealth > 1 ? 1 : 0), false);
+        } else {
+            this.setHealth(100, false);
+        }
+
         this.healthChanged = 0;
         this.passedDelta = 0;
         this.toggleBorder = false;
@@ -23,29 +29,24 @@ export class HealthBar extends Phaser.GameObjects.Sprite {
         });
     }
 
-    //decreaseHealh(newHealth) {
-    //    this.decreaseHealth = true;
-    //    this.newHealth = newHealth;
-    //}
+    setHealth(health, animation) {
+        var newHealth = health * 33;
 
-    //increaseHealth(newHealth) {
-    //    this.increaseHealth = true;
-    //    this.newHealth = newHealth;
-    //}
-
-    setHealth(newHealth) {
-        if (newHealth == 67) {
+        if (newHealth >= 99) {
+            newHealth = 100;
+        } else if (newHealth == 67) {
             newHealth = 66;
         } else if (newHealth == 34) {
             newHealth = 33;
         }
 
-        console.log(newHealth);
-
         var image = "healthbar-" + newHealth;
 
         this.setTexture(image);
-        this.healthChanged = 450;
+
+        if (animation == null || animation) {
+            this.healthChanged = 450;
+        }
     }
 
     update(time, delta) {
@@ -55,7 +56,6 @@ export class HealthBar extends Phaser.GameObjects.Sprite {
 
             if (this.passedDelta >= 90) {
                 this.passedDelta = 0;
-
                 this.toggleBorder = !this.toggleBorder;
             }
 
@@ -63,7 +63,5 @@ export class HealthBar extends Phaser.GameObjects.Sprite {
         } else {
             this.healthBarBorder.alpha = 0;
         }
-
-        
     }
 }

@@ -1,7 +1,7 @@
 ﻿import { game, CANVAS_WIDTH, CANVAS_HEIGHT } from '../game.js';
 import { FontLoader } from '../object/ui/fontloader.js';
 import { KeyController } from '../object/controller.js';
-import { currentSceneKey } from './sectorscene.js';
+import { SectorSwapper } from '../object/level/sector_swapper.js';
 
 export class MenuScene extends Phaser.Scene {
     constructor(config) {
@@ -173,7 +173,7 @@ export class MenuScene extends Phaser.Scene {
 
     resumeGame() {
         game.scene.stop("MenuScene");
-        game.scene.resume(currentSceneKey);
+        game.scene.resume(SectorSwapper.getCurrentSceneKey());
     }
 }
 

@@ -1,4 +1,6 @@
+import { GameSession } from '../object/game_session.js';
 import { Level } from '../object/level/Level.js';
+import { Sector } from '../object/level/sector.js';
 
 export class Tux extends Phaser.GameObjects.Sprite {
     constructor(config) {
@@ -8,6 +10,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
 
         this.level = config.level;
         this.originalLevel = config.level;
+        this.scene = config.scene;
         this.anims.play("tux-stand");
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
 
@@ -110,6 +113,8 @@ export class Tux extends Phaser.GameObjects.Sprite {
         this.hasPlayerJump = false;
 
         this.KICK_TIME = 300;
+
+        this.killAt = 0;
     }
 
     getOriginalLevel() {
@@ -189,10 +194,8 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     jump() {
-        this.setVelocityY(-100);
+        this.setVelocityY(-200);
         this.playAnimation('tux-jump');
-        //this.body.setSize(59, 70, true);
-        //this.body.setOffset(0, 5);
     }
 
     run(velocity, frameRate) {
@@ -205,13 +208,24 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     update(time, delta) {
+        if (this.killAt > 0) {
+            this.killAt -= delta;
+        }
+
         if (this.killed) {
+            if (this.killAt <= 0) {
+                this.scene.restartCurrentSector();
+            }
+
             return;
         }
 
+        this.stayInStaticsIfNeeded();
         this.body.y = Math.ceil(this.body.y);
 
-        //this.setTexture("tux-walk-1");
+        //this.setTexture("tux-skid");
+        //this.adjustBody(64, 63, 1, 13);
+        //return;
         //this.adjustBody(53, 66, 7, 13);//
         //return;
 
@@ -338,7 +352,9 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     setCollisionBoxesForAnimations() {
-        if (this.anims.getName() == 'tux-stand') {
+        if (this.texture.key  == "tux-skid") {
+            this.adjustBody(64, 63, 1, 14);
+        } else if (this.anims.getName() == 'tux-stand') {
             this.adjustBodyStanding();
         } else if (this.anims.getName() == 'tux-walk') {
             let textureKey = this.anims.currentFrame.textureKey;
@@ -500,12 +516,15 @@ export class Tux extends Phaser.GameObjects.Sprite {
     dieWithoutRemovingColliders() {
         this.scene.setHealthBar(0);
         this.killed = true;
+        this.killAt = 3000;
         this.tint = 0xFFFFFF;
         this.alpha = 1;
         this.playAnimation("tux-gameover");
         this.setVelocityX(0);
         this.setVelocityY(-550);
         this.setAccelerationX(0);
+
+        GameSession.playerDied(this.level);
     }
 
     removeColliders() {
@@ -621,8 +640,6 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     handleInput(delta) {
-
-
         this.handleHorizontalInput(delta);
 
         if (this.isClimbing) {
@@ -807,6 +824,17 @@ export class Tux extends Phaser.GameObjects.Sprite {
         return this.x >= sector.sectorWidth - 32;
     }
 
+    stayInStaticsIfNeeded() {
+        var tileBelowX = Math.floor(this.body.x / 32);
+        var tileBelowY = Math.floor(this.body.bottom / 32);
+
+        if (!this.scene.isFreeOfMovingStatics(tileBelowX, tileBelowY) ||
+            !Level.isFreeOfObjects(tileBelowX, tileBelowY)) {
+            this.body.setVelocityY(Math.min(this.body.velocity.y, 0));
+            this.body.y -= this.body.bottom % 32;
+        }
+    }
+
     fallIfMightAlmostFallOverEdge() {
         var halfX = this.direction == this.DIRECTION_RIGHT ? this.body.width / 2 : -this.body.width / 2;
         var halfY = this.body.height / 2;
@@ -821,6 +849,8 @@ export class Tux extends Phaser.GameObjects.Sprite {
 
         if (this.forceDrawWalking <= 0 && !this.jumping) {
             if (overEdge > 16 &&
+                this.scene.isFreeOfMovingStatics(tileBelowX, tileBelowY + 1) &&
+                !this.scene.isFreeOfMovingStatics(tileBelowX - 1, tileBelowY + 1) &&
                 Level.isFreeOfObjects(tileBelowX, tileBelowY+1) &&
                 !Level.isFreeOfObjects(tileBelowX-1, tileBelowY+1) &&
                 !this.isSkidding() && Math.abs(this.getVelocityX()) <= this.WALK_SPEED) {
@@ -829,6 +859,8 @@ export class Tux extends Phaser.GameObjects.Sprite {
                 this.fallingDirection = this.DIRECTION_RIGHT;
                 this.setVelocityX(this.WALK_SPEED);
             } else if (overEdge < 16 &&
+                this.scene.isFreeOfMovingStatics(tileBelowX, tileBelowY + 1) && 
+                !this.scene.isFreeOfMovingStatics(tileBelowX + 1, tileBelowY + 1) &&
                 Level.isFreeOfObjects(tileBelowX, tileBelowY + 1) &&
                 !Level.isFreeOfObjects(tileBelowX+1, tileBelowY+1) &&
                 !this.isSkidding() && Math.abs(this.getVelocityX()) <= this.WALK_SPEED) {
@@ -894,7 +926,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
             if (controller.pressed('jump')) {
                 this.fallingFlagStart = true;
                 this.fallingStartTimer = 0;
-                this.doJump(Math.abs(vx) > this.MAX_WALK_XM ? -580 : -520);
+                this.doJump(Math.abs(vx) > this.MAX_WALK_XM ? -620 : -550);
             } 
         }
 
@@ -1083,19 +1115,11 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     hurtBy(enemy) {
-        if (this.wasHurt > 0) {
+        if (this.killed || this.wasHurt > 0) {
             return;
         }
 
-        this.health = Math.max(0, this.health - 1);
-        
-        var newHealth = this.health * 33;
-
-        if (newHealth >= 99) {
-            newHealth = 100;
-        }
-
-        this.scene.setHealthBar(newHealth);
+        this.setHealth(Math.max(0, this.health - 1));
 
         if (this.health <= 0) {
             this.die();
@@ -1104,21 +1128,16 @@ export class Tux extends Phaser.GameObjects.Sprite {
         }   
     }
 
-    addHealth(health) {
-        if (this.killed) {
-            return;
-        }
+    setHealth(health) {
+        this.health = health;
+        GameSession.session.health = health;
+        this.scene.setHealthBar(this.health);
+    }
 
+    addHealth(health) {
         this.health += health;
         this.health = Math.min(3, this.health);
-
-        let newHealth = this.health * 33;
-
-        if (newHealth >= 99) {
-            newHealth = 100;
-        }
-
-        this.scene.setHealthBar(newHealth);
+        this.setHealth(this.health);
     }
 
     getGrabbedObject() {

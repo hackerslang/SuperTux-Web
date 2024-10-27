@@ -1,7 +1,11 @@
-﻿export class GameSession {
+﻿import { Level } from '../object/level/level.js';
+import { Sector } from '../object/level/sector.js';
+
+export class GameSession {
     static session = {};
 
     static newGame() {
+        GameSession.session.lives = 5; //easy
         GameSession.session.totalCoins = 0;
         GameSession.session.totalScore = 0;
         GameSession.session.health = 3;
@@ -15,6 +19,38 @@
 
     static getCurrent() {
         return GameSession.session;
+    }
+
+    static setLives(lives) {
+        GameSession.session.lives = lives;
+    }
+
+    static getLives() {
+        return GameSession.session.lives;
+    }
+
+    static totalCoins(totalCoins) {
+        GameSession.session.totalCoins = totalCoins;
+    }
+
+    static setScore(score) {
+        GameSession.session.totalScore = score;
+    }
+
+    static addScore(score) {
+        GameSession.session.totalScore += score;
+    }
+
+    static setHealth(health) {
+        GameSession.session.health = health;
+    }
+
+    static setLevel(level) {
+        GameSession.session.levelName = level;
+    }
+
+    static setSector(sector) {
+        GameSession.session.sectorKey = sector;
     }
 
     static quickSaveGame(gameSession) {
@@ -40,6 +76,52 @@
         GameSession.session = gameSession;
 
         return gameSession;
+    }
+
+    static playerDied(level) {
+        GameSession.session.lives--;
+        GameSession.session.levelKey = level.levelDataKey;
+        GameSession.session.sectorKey = Sector.getCurrentSector().sectorData.key;
+        GameSession.session.playerPosition = null;
+        GameSession.session.playerVelocity = null;
+        GameSession.enemiesPositions = null;
+    }
+
+    //We store current game stats inside the GameSession.session, because:
+    //1. Player can save between Levels
+    //2. Player can be destroyed and regenerated (different char, ...)
+    static updateSessionAfterLevel(player, nextLevel) {
+        GameSession.session.levelName = nextLevel;
+        GameSession.session.sectorKey = null;
+        GameSession.session.playerPosition = null;
+        GameSession.session.playerVelocity = null;
+        GameSession.enemiesPositions = null;
+    }
+
+    static createSaveSessionDuringScene(scene) {
+        GameSession.session.levelKey = Level.getCurrentLevel().levelData.key;
+        GameSession.session.sectorKey = Sector.getCurrentSector().sectorData.key;
+        GameSession.session.playerPosition = { "x": scene.player.body.x, "y": scene.player.body.y };
+        GameSession.session.playerVelocity = { "x": scene.player.body.velocity.x, "y": scene.player.body.velocity.y };
+        GameSession.session.enemiesPositions = [];
+
+        for (var i = 0; i < scene.creatureObjects.length; i++) {
+            var enemy = scene.creatureObjects[i];
+            var enemyPosition = {};
+
+            if (enemy != null) {
+                enemyPosition.id = enemy.id;
+                enemyPosition.x = enemy.x;
+                enemyPosition.y = enemy.y;
+                enemyPosition.velocityX = enemy.body.velocity.x;
+                enemyPosition.velocityY = enemy.body.velocity.y;
+                enemyPosition.direction = enemy.direction;
+
+                GameSession.session.enemiesPositions.push(enemyPosition);
+            }
+        }
+        
+        return GameSession.session;
     }
 }
 
@@ -75,4 +157,3 @@ export class CookieSave {
         setCookie(name, "");
     }
 }
-

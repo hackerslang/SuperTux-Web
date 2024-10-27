@@ -13,7 +13,6 @@
 
     update(time, delta) {
         if (!this.activated()) {
-
             return;
         }
 

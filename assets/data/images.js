@@ -63,6 +63,19 @@
                 }
             ]
         },
+        "acid-rain": {
+            "path": "./assets/images/level/weather/",
+            "sprites": [
+                {
+                    "name": "acid-rain0",
+                    "value": "acid-rain0"
+                },
+                {
+                    "name": "acid-rain1",
+                    "value": "acid-rain1"
+                }
+            ]
+        },
         "arrow": {
             "path": "./assets/images/level/arrow/",
             "sprites": [
@@ -463,6 +476,10 @@
                     "value": "exitbg"
                 },
                 {
+                    "name": "cracked-snow-1",
+                    "value": "cracked-snow-1"
+                },
+                {
                     "name": "antarctic-water",
                     "value": "antarctic"
                 },
@@ -549,6 +566,10 @@
                 {
                     "name": "coins",
                     "value": "coins"
+                },
+                {
+                    "name": "lives",
+                    "value": "lives",
                 },
                 {
                     "name": "medium-font-",

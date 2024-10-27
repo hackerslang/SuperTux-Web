@@ -4,6 +4,7 @@ import { Level } from '../object/level/level.js';
 import { Sector } from '../object/level/sector.js';
 import { SectorSwapper } from '../object/level/sector_swapper.js';
 
+
 export class LoadGameScene extends Phaser.Scene {
     constructor(config) {
         super({
@@ -11,20 +12,25 @@ export class LoadGameScene extends Phaser.Scene {
         });
     }
 
-    init(loadSlot, isNewGame) {
-        this.loadSlot = loadSlot;
-        this.isNewGame = isNewGame;
+    init(config) {
+        this.loadSlot = config.loadSlot;
+        this.loadGameType = config.loadGameType;
     }
 
     preload() {
 
     }
 
-    create() {
-        if (this.isNewGame) {
+    create(config) {
+        this.loadSlot = config.loadSlot;
+        this.loadGameType = config.loadGameType;
+
+        if (this.loadGameType == "newgame") {
             this.newGame();
-        } else if (this.loadSlot != null) {
+        } else if (this.loadGameType == "loadgame" && this.loadSlot != null) {
             this.loadGame();
+        } else if (this.loadGameType == "resetsector") {
+            this.reloadLastSector();
         }
     }
 
@@ -42,12 +48,16 @@ export class LoadGameScene extends Phaser.Scene {
         this.initLevelAndSector(level);
     }
 
-    async initLevelAndSector(level, gameSession) {
-        await level.initialize(gameSession);
-        this.scene.stop("LoadGameScene");
-        SectorSwapper.newSector(Sector.getCurrentSector(), this);
+    reloadLastSector() {
+        this.initLevelAndSector(Level.currentLevel, GameSession.session);
     }
 
+    async initLevelAndSector(level, gameSession) {
+        SectorSwapper.clearAllSectors();
+        await level.initialize(gameSession);
+        this.scene.stop("LoadGameScene");
 
-    
+        console.log(Sector.getCurrentSector());
+        SectorSwapper.newSector(Sector.getCurrentSector(), this);
+    }
 }

@@ -1,5 +1,6 @@
 ﻿import { Sector } from './sector.js';
 import { game } from '../../game.js';
+import { Level } from '../../object/level/level.js';
 
 export var SectorScenesSlots = [
     {
@@ -58,6 +59,12 @@ export class SectorSwapper {
         }
 
         return null;
+    }
+
+    static getCurrentSceneKey() {
+        var sectorSlot = SectorSwapper.findSectorSlotForSector(Sector.getCurrentSector());
+
+        return sectorSlot.key;
     }
 
     static createNewSectorScene(currentScene) {

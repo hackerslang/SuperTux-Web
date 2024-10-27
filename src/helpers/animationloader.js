@@ -1,5 +1,6 @@
 ﻿import { animationsData } from '../../assets/data/animations.js';
 
+var loadedAnimationGroups = [];
 
 export class AnimationLoader {
     constructor(config) {
@@ -9,10 +10,18 @@ export class AnimationLoader {
         this.REPEAT_INFINITELY = -1;
     }
 
-    loadAnimationsFromData(key, scene) {
+    loadAnimationsFromData(key) {
+        if (!loadedAnimationGroups.includes(key)) {
+            this.doLoadAnimationsFromData(key);
+        }
+    }
+
+    doLoadAnimationsFromData(key) {
         var entities = this.animationsData.animations[key];
 
         entities.animations.forEach(animation => this.loadAnimationFromData(animation));
+
+        loadedAnimationGroups.push(key);
     }
 
     loadAnimationFromData(entity) {

@@ -1,4 +1,6 @@
-﻿class Fish extends Enemy {
+﻿import { Enemy } from './enemy.js';
+
+export class Fish extends Enemy {
     constructor(config) {
         super(config);
 

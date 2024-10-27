@@ -15,13 +15,18 @@ import { MrIceBlock } from '../creatures/mr_iceblock.js';
 import { SnowBall } from '../creatures/snowball.js';
 import { BouncingSnowBall } from '../creatures/bouncing_snowball.js';
 import { FlyingSnowBall } from '../creatures/flying_snowball.js';
+import { Jumpy } from '../creatures/jumpy.js';
 import { Spiky } from '../creatures/spiky.js';
+import { Fish } from '../creatures/fish.js';
 import { Coin } from '../object/coin.js';
 import { PlusPowerUp } from '../object/powerup/plus.js';
 import { EggPowerUp } from '../object/powerup/egg.js';
 import { HealthBar } from '../object/ui/healthbar.js';
+import { LivesDisplay } from '../object/ui/livesdisplay.js';
 import { CoinsDisplay } from '../object/ui/coinsdisplay.js';
+import { FallingPlatform } from '../object/blocks/fallingplatform.js';
 import { InvisibleWallBlock } from '../object/blocks/invisiblewallblock.js';
+import { Lava } from '../object/lava.js';
 
 export var currentSceneKey = "";
 
@@ -34,6 +39,8 @@ export class SectorScene extends Phaser.Scene {
 
         this.DEFAULT_FRAMERATE = 10;
         this.REPEAT_INFINITELY = -1;
+
+        this.canSaveOrLoad = false;
     }
 
     generateKeyController() {
@@ -79,7 +86,8 @@ export class SectorScene extends Phaser.Scene {
             key: 'healthbar',
             scene: this,
             x: 90,
-            y: 20
+            y: 20,
+            initHealth: GameSession.session.sectorKey == this.sector.sectorData.key ? GameSession.session.health : null
         });
     }
 
@@ -90,6 +98,15 @@ export class SectorScene extends Phaser.Scene {
         });
 
         this.coinsDisplay.create();
+    }
+
+    addLivesDisplay() {
+        this.livesDisplay = new LivesDisplay({
+            scene: this,
+            level: this.currentLevel
+        });
+
+        this.livesDisplay.create();
     }
 
     setCollectedCoins(coins) {
@@ -127,9 +144,10 @@ export class SectorScene extends Phaser.Scene {
     }
 
     async preload() {
+        this.canSaveOrLoad = false;
         this.sector = Sector.getCurrentSector();
-
-        if (this.sector != null) {
+        
+;        if (this.sector != null) {
             this.creatures = this.sector.sectorData.creatures;
             this.sectorCoinsCollected = 0;
 
@@ -152,22 +170,28 @@ export class SectorScene extends Phaser.Scene {
     }
 
     create() {
+        this.canSaveOrLoad = false;
         if (this.sector != null || !levelsLoaded) {
+            this.staticObjects = [];
             this.textsToUpdate = [];
             this.sector.parseTilemaps();
-            this.createDynamicForeGrounds();
-            this.createStaticForegrounds();
             this.createBackground();
             this.parseBackgroundImages();
-            this.parseLava();
-            this.parseAntarcticWater();
             this.makeAnimations();
+
+            this.addPlayer();
+
+            
+            this.parseAntarcticWater();
+            
             this.makeSounds();
             this.createMap();
-            this.addPlayer();
+            
             this.parseInvisibleWallBlocks();
+            this.createFallingPlatforms();
 
             this.addHealthBar();
+            this.addLivesDisplay();
             this.addCoinsDisplay();
             this.initCamera();
 
@@ -187,6 +211,10 @@ export class SectorScene extends Phaser.Scene {
 
             this.physics.world.enable(this.player);
             this.physics.world.setBoundsCollision(true, true, true, true);
+            
+            this.createDynamicForeGrounds();
+            this.createStaticForegrounds();
+            this.parseLava();
         }
     }
 
@@ -194,7 +222,7 @@ export class SectorScene extends Phaser.Scene {
         var tileData = this.sector.getTileData();
         var map = this.make.tilemap({ key: 'map', data: tileData, width: tileData[0].length, height: 21, tileWidth: 32, tileHeight: 32 });
         var sectorTilesets = this.sector.getTilesets();
-        var tilesets = [];
+        var tilesetNames = sectorTilesets.map(tileset => tileset.name);
 
         for (var i = 0; i < sectorTilesets.length; i++) {
             var tilesetObject = sectorTilesets[i];
@@ -203,7 +231,7 @@ export class SectorScene extends Phaser.Scene {
             tileset.firstgid = tilesetObject.firstgid;
         }
 
-        this.groundLayer = map.createLayer(0, ['snow1', 'snow2', 'snow3'], 0, 0);
+        this.groundLayer = map.createLayer(0, tilesetNames, 0, 0);
     }
 
     addPlayer() {
@@ -216,13 +244,13 @@ export class SectorScene extends Phaser.Scene {
                 playerPositionY = GameSession.session.playerPosition.y;
             }
         }
-
+        
         this.player = new Tux({
             key: "tux",
             scene: this,
             x: playerPositionX,
             y: playerPositionY,
-            health: GameSession.session.health,
+            health: GameSession.session.sectorKey == this.sector.sectorData.key ? GameSession.session.health : null,
             level: Level.getCurrentLevel()
         });
 
@@ -244,6 +272,7 @@ export class SectorScene extends Phaser.Scene {
     createEnemySpritesGroup() {
         this.enemyGroupCreated = false;
         this.enemyGroup = this.add.group();
+        
         this.parseEnemyLayer();
         this.enemyGroupCreated = true;
     }
@@ -303,13 +332,24 @@ export class SectorScene extends Phaser.Scene {
         enemies.forEach((enemy) => self.creatures.push(enemy));
 
         for (var i = 0; i < this.creatures.length; i++) {
+            this.creatures[i].id = i;
+        }
+
+        if (this.sector.sectorData.key == GameSession.session.sectorKey) {
+            if (GameSession.session.enemiesPositions != null && GameSession.session.enemiesPositions.length > 0) {
+                this.creatures = this.creatures.filter((creature) =>
+                    GameSession.session.enemiesPositions.findIndex((ep) => ep.id == creature.id) > -1);
+            }
+        }
+
+        for (var i = 0; i < this.creatures.length; i++) {
             var creature = this.creatures[i];
             var creatureObject;
 
             switch (creature.name) {
                 case "snowball":
                     creatureObject = new SnowBall({
-                        id: i,
+                        id: creature.id,
                         scene: this,
                         key: "snowball",
                         x: creature.position.x * 32,
@@ -321,24 +361,24 @@ export class SectorScene extends Phaser.Scene {
                     });
 
                     break;
-                case "bouncing-snowball":
-                    creatureObject = new BouncingSnowBall({
-                        id: i,
-                        scene: this,
-                        key: "bouncing-snowball",
-                        x: creature.position.x * 32,
-                        y: creature.position.y * 32,
-                        realY: creature.position.realY,
-                        player: this.player,
-                        sector: this.sector,
-                        powerUps: creature.powerUps
-                    });
+                //case "bouncing-snowball":
+                //    creatureObject = new BouncingSnowBall({
+                //        id: creature.id,
+                //        scene: this,
+                //        key: "bouncing-snowball",
+                //        x: creature.position.x * 32,
+                //        y: creature.position.y * 32,
+                //        realY: creature.position.realY,
+                //        player: this.player,
+                //        sector: this.sector,
+                //        powerUps: creature.powerUps
+                //    });
 
-                    break;
+                //    break;
 
                 case "flying-snowball":
                     creatureObject = new FlyingSnowBall({
-                        id: i,
+                        id: creature.id,
                         scene: this,
                         key: "flying-snowball",
                         x: creature.position.x * 32,
@@ -351,7 +391,7 @@ export class SectorScene extends Phaser.Scene {
                     break;
                 case "iceblock":
                     creatureObject = new MrIceBlock({
-                        id: i,
+                        id: creature.id,
                         scene: this,
                         key: "mriceblock",
                         x: creature.position.x * 32,
@@ -366,7 +406,7 @@ export class SectorScene extends Phaser.Scene {
 
                 case "jumpy":
                     creatureObject = new Jumpy({
-                        id: i,
+                        id: creature.id,
                         scene: this,
                         key: "jumpy",
                         x: creature.position.x * 32,
@@ -380,7 +420,7 @@ export class SectorScene extends Phaser.Scene {
 
                 case "plasma-gun":
                     creatureObject = new PlasmaGun({
-                        id: i,
+                        id: creature.id,
                         scene: this,
                         key: "plasma-gun",
                         x: creature.position.x * 32,
@@ -393,7 +433,7 @@ export class SectorScene extends Phaser.Scene {
 
                 //case "krosh":
                 //    creatureObject = new Krosh({
-                //        id: i,
+                //        id: creature.id,
                 //        scene: this,
                 //        key: "krosh",
                 //        x: creature.position.x * 32,
@@ -408,7 +448,7 @@ export class SectorScene extends Phaser.Scene {
 
                 case "fish":
                     creatureObject = new Fish({
-                        id: i,
+                        id: creature.id,
                         scene: this,
                         key: "fish",
                         x: creature.position.x * 32,
@@ -425,7 +465,7 @@ export class SectorScene extends Phaser.Scene {
                 /*
                 case "ghoul":
                     creatureObject = new Ghoul({
-                        id: i,
+                        id: creature.id,
                         scene: this,
                         key: "ghoul",
                         x: creature.position.x * 32,
@@ -439,7 +479,7 @@ export class SectorScene extends Phaser.Scene {
 
                 case "spiky":
                     creatureObject = new Spiky({
-                        id: i,
+                        id: creature.id,
                         scene: this,
                         key: "spiky",
                         x: creature.position.x * 32,
@@ -456,10 +496,16 @@ export class SectorScene extends Phaser.Scene {
                 creatureObjects.push(creatureObject);
                 this.enemyGroup.add(creatureObject);
             }
-
         }
 
         this.creatureObjects = creatureObjects;
+
+        if (this.sector.sectorData.key == GameSession.session.sectorKey) {
+            if (GameSession.session.enemiesPositions != null && GameSession.session.enemiesPositions.length > 0) {
+                this.creatureObjects.forEach((creature) =>
+                    creature.initWithGameSession(GameSession.session.enemiesPositions.find((ep) => ep.id == creature.id)));
+            }
+        }
     }
 
     parseHurtableTiles() {
@@ -549,13 +595,16 @@ export class SectorScene extends Phaser.Scene {
     }
 
     parseLava() {
-        var lavaSprites = [];
         var lavaTiles = this.sector.getLava();
+
+        if (this.lavaSprites == null) {
+            this.lavaSprites = [];
+        }
 
         for (var i = 0; i < lavaTiles.length; i++) {
             var preloadedLava = lavaTiles.lava[i];
             let lava = {};
-
+            
             if (preloadedLava.type == 'plain') {
                 lava = this.add.sprite(preloadedLava.x, preloadedLava.y, 'lava');
                 lava.setOrigin(0, 0);
@@ -565,19 +614,17 @@ export class SectorScene extends Phaser.Scene {
                 lava = new Lava({
                     id: i,
                     key: 'lava-' + i,
-                    player: this.sector.player,
-                    scene: this.scene,
+                    player: this.player,
+                    scene: this,
                     x: preloadedLava.x,
                     y: preloadedLava.y,
-                    level: this,
+                    level: Level.currentLevel,
                     alpha: this.LAVA_ALPHA
                 });
 
-                lavaSprites.push(lava);
+                this.lavaSprites.push(lava);
             }
         }
-
-        this.lavaSprites = lavaSprites;
     }
 
     parseAntarcticWater() {
@@ -619,6 +666,7 @@ export class SectorScene extends Phaser.Scene {
                 });
 
                 this.invisibleWalls.push(invisibleBlock);
+                this.staticObjects.push(invisibleBlock);
             }
         }
     }
@@ -647,12 +695,13 @@ export class SectorScene extends Phaser.Scene {
         this.loadParticleImages();
         this.loadTileImages();
         this.loadSlopeImages();
+        this.loadWeatherImages();
     }
 
     async loadTilemaps() {
         var self = this;
         var tilesets = this.sector.getTilesets();
-        
+
         tilesets.forEach(function (tileset, idx) {
             self.preloadImage(tileset.name, tileset.value);//correct
         });
@@ -665,7 +714,13 @@ export class SectorScene extends Phaser.Scene {
     }
 
     loadTileImages() {
-        var keys = ["coin", "blocks", "industrial", "snow", "lava", "home-exit"];
+        var keys = ["coin", "blocks", "industrial", "snow", "lava", "home-exit", "acid-rain"];
+
+        this.loadImagesForKeys(keys);
+    }
+
+    loadWeatherImages() {
+        var keys = ["acid-rain"];
 
         this.loadImagesForKeys(keys);
     }
@@ -701,7 +756,7 @@ export class SectorScene extends Phaser.Scene {
     }
 
     loadAnimationsFromData(key) {
-        this.animationLoader.loadAnimationsFromData(key, this);
+        this.animationLoader.loadAnimationsFromData(key);
     }
 
     animationIsLoaded(key) {
@@ -740,7 +795,7 @@ export class SectorScene extends Phaser.Scene {
 
     makeAnimations() {
         var animationKeys = [
-            "mr-bomb", "sparkle", "smoke", "tux", "ghoul",
+            "mr-bomb", "sparkle", "smoke", "tux", "ghoul", "lava",
             "bouncing-snowball", "flying-snowball", "snowball", "mr-iceblock", "spiky",
             "fish", "lava-fish", "antarctic-water", "star-moving", "plus-flickering", "coin"
         ];
@@ -782,7 +837,14 @@ export class SectorScene extends Phaser.Scene {
         var i = 0;
         var level = this;
         var self = this;
-        sectorDynamicForegrounds.forEach(function (foreground, ids) {
+        var player = self.player;
+
+        if (this.lavaSprites == null) {
+            this.lavaSprites = [];
+        }
+
+        for (var i = 0; i < sectorDynamicForegrounds.length; i++) {
+            var foreground = sectorDynamicForegrounds[i];
             var foregroundImage = {};
 
             if (foreground.startX == null) {
@@ -790,7 +852,7 @@ export class SectorScene extends Phaser.Scene {
             }
 
             if (foreground.width == null) {
-                foreground.width = level.levelData[0].length;
+                foreground.width = self.sector.sectorData.data[0].length;
             }
 
             foreground.endX = foreground.startX + foreground.width;
@@ -799,7 +861,7 @@ export class SectorScene extends Phaser.Scene {
                 for (var x = foreground.startX; x < foreground.endX; x++) {
                     for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
                         if (self.sector.getTileDataValue(x, y) != -1) {
-                            self.sector.level.createDynamicForeGroundStillTile(level, x, y, 'lava', level.LAVA_ALPHA, 120);
+                            self.createDynamicForeGroundStillTile(level, x, y, 'lava', level.LAVA_ALPHA, 120);
                         }
                     }
                 }
@@ -813,34 +875,47 @@ export class SectorScene extends Phaser.Scene {
                         }
                     }
                 }
+                /*
+                lava = new Lava({
+                    id: i,
+                    key: 'lava-' + i,
+                    player: this.player,
+                    scene: this,
+                    x: preloadedLava.x,
+                    y: preloadedLava.y,
+                    level: Level.currentLevel,
+                    alpha: this.LAVA_ALPHA
+                });
+                */
             } else if (foreground.tile == "la2") {
                 for (var x = foreground.startX; x < foreground.endX; x += 4) {
                     for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
                         if (self.sector.getTileDataValue(x, y) != -1) {
-                            var foregroundImage = new Lava({
+                            var lavaForeground = new Lava({
                                 id: i,
                                 key: 'lava-' + i,
-                                player: level.player,
-                                scene: level.scene,
+                                player: this.player,
+                                scene: this,
                                 x: x * 32,
                                 y: y * 32,
-                                level: level,
-                                alpha: level.LAVA_ALPHA
+                                alpha: Level.currentLevel.LAVA_ALPHA
                             });
+
+                            this.lavaSprites.push(lavaForeground);
 
                             i++;
                         }
                     }
                 }
             }
-        });
+        }
     }
 
     createDynamicForeGroundStillTile(level, x, y, key, alpha, depth) {
-        var foregroundImage = level.scene.add.sprite(x * 32, y * 32, key);
+        var foregroundImage = this.add.sprite(x * 32, y * 32, key);
 
         foregroundImage.setOrigin(0, 0);
-        foregroundImage.alpha = level.LAVA_ALPHA;
+        foregroundImage.alpha = Level.currentLevel.LAVA_ALPHA;
 
         if (depth != null) {
             foregroundImage.setDepth(120);
@@ -894,8 +969,38 @@ export class SectorScene extends Phaser.Scene {
         });
     }
 
+    createFallingPlatforms() {
+        this.fallingPlatformSprites = [];
+
+        var fallingPlatforms = this.sector.getFallingPlatforms();
+
+        if (fallingPlatforms == null) { return; }
+
+        var level = this;
+        var self = this;
+
+        fallingPlatforms.forEach(function (platform, idx) {
+            var platformImage = new FallingPlatform({
+                id: idx + 10000,
+                key: "falling-platform-" + idx,
+                player: self.player,
+                scene: self,
+                texture: platform.texture,
+                x: platform.x * 32,
+                y: platform.y * 32,
+                width: platform.width,
+                height: platform.height
+            });
+
+            self.fallingPlatformSprites.push(platformImage);
+            self.staticObjects.push(platformImage);
+        });
+    }
+
     update(time, delta) {
         if (this.sector == null) { return; }
+
+        this.canSaveOrLoad = true;
 
         if (this.quickSaveGameText != null) { this.quickSaveGameText.update(time, delta); }
 
@@ -914,6 +1019,7 @@ export class SectorScene extends Phaser.Scene {
         this.forceUpdateSprites(this.lavaSprites, time, delta);
         this.forceUpdateSprites(this.particleSprites, time, delta);
         this.forceUpdateSprites(this.blockSprites, time, delta);
+        this.forceUpdateSprites(this.fallingPlatformSprites, time, delta);
         this.updatePowerups(time, delta);
     }
 
@@ -939,41 +1045,49 @@ export class SectorScene extends Phaser.Scene {
     }
 
     quickSave() {
-        var session = {};
+        if (!this.canSaveOrLoad) { return; }
+
+        var fontLoader = new FontLoader();
+        var session = GameSession.createSaveSessionDuringScene(this);
         var saved = "Saved ...";
 
-        session.totalCoins = 0;
-        session.totalScore = 0;
-        session.levelKey = Level.getCurrentLevel().levelData.key;
-        session.sectorKey = Sector.getCurrentSector().sectorData.key;
-        session.playerPosition = { "x": this.player.body.x, "y": this.player.body.y };
-        session.playerVelocity = { "x": this.player.body.velocity.x, "y": this.player.body.velocity.y };
-
         GameSession.quickSaveGame(session);
-        var fontLoader = new FontLoader();
 
         this.quickSaveGameText = fontLoader.displayText(this, "SuperTuxSmallFont", CANVAS_WIDTH - 30 - (saved.length * 18), 70, saved, true, 1);
     }
 
-    quickLoad() {
-        var session = GameSession.quickLoadGame();
+    createSaveSession() {
 
-        this.scene.stop(currentSceneKey);
-        SectorSwapper.clearAllSectors();
-        this.scene.start("LoadGameScene", "SuperTuxWeb-QuickSave", false);
     }
 
-    pause() {
-        currentSceneKey = this.key;
 
-        game.scene.pause(this.key);
+
+    quickLoad() {
+        if (!this.canSaveOrLoad) { return; }
+        
+        var session = GameSession.quickLoadGame();
+
+        this.scene.start("LoadGameScene", { loadSlot: "SuperTuxWeb-QuickSave", loadGameType: "loadgame" });
+    }
+
+    restartCurrentSector() {
+        var sceneKey = SectorSwapper.getCurrentSceneKey();
+
+        this.scene.stop(sceneKey);
+        this.scene.start("LoadGameScene", { loadGameType: "resetsector" });
+    }
+    
+    pause() {
+        var sceneKey = SectorSwapper.getCurrentSceneKey();
+
+        game.scene.pause(sceneKey);
         game.scene.start("PauseScene");
     }
 
     launchMenu() {
-        currentSceneKey = this.key;
+        var sceneKey = SectorSwapper.getCurrentSceneKey();
 
-        game.scene.pause(this.key);
+        game.scene.pause(sceneKey);
         game.scene.start("MenuScene");
     }
 
@@ -1057,6 +1171,17 @@ export class SectorScene extends Phaser.Scene {
     createNewSectorScene(sector) {
         sector.makeCurrent();
         SectorSwapper.createNewSectorScene(this);
+    }
+
+    isFreeOfMovingStatics(x, y) {
+        for (var staticObject in this.staticObjects) {
+            if (staticObject.left <= x && staticObject.right >= x &&
+                staticObject.top <= y && staticObject.bottom >= y) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     forceUpdateSprites(sprites, time, delta) {

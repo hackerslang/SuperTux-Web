@@ -1,4 +1,6 @@
-﻿class Jumpy extends Enemy {
+﻿import { Enemy } from './enemy.js';
+
+export class Jumpy extends Enemy {
     constructor(config) {
         super(config);
 

@@ -195,6 +195,18 @@
                 }
             ]
         },
+        "lava": {
+            "animations": [
+                {
+                    key: "lava-flow",
+                    caption: "lava-",
+                    start: 1,
+                    end: 8,
+                    frameRate: 8,
+                    repeat: -1
+                }
+            ]
+        },
         "lava-fish": {
             "animations": [
                 {

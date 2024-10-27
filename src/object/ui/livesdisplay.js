@@ -1,46 +1,41 @@
-﻿export class CoinsDisplay {
+﻿import { GameSession } from '../../object/game_session.js';
+
+export class LivesDisplay {
     constructor(config) {
-        //super(config.scene, config.x, config.y, config.key);
-        //config.scene.add.existing(this);
         this.scene = config.scene;
         this.level = config.level;
         this.scrollFactorX = 0;
         this.scrollFactorY = 0;
         this.toggleBorder = false;
-        this.START_COINS_TEXT_X = 54;
-        this.Y = 85;
-
-        var coinsDisplayImage = this.scene.add.sprite(30, this.Y, "coins");
-
-        coinsDisplayImage.scrollFactorX = 0;
-        coinsDisplayImage.scrollFactorY = 0;
-
-        this.coins = 0;
+        this.START_COINS_TEXT_X = 73;
+        this.Y = 50;
         this.digitImages = [];
     }
 
     create() {
-        this.setCollectedCoins(0);
+        this.initLivesSprite();
+        this.setLives(GameSession.getLives());
     }
 
-    addCollectedCoin() {
-        this.setCollectedCoins(++this.coins);
+    initLivesSprite() {
+        var livesDisplayImage = this.scene.add.sprite(40, this.Y, "lives");
+
+        livesDisplayImage.scrollFactorX = 0;
+        livesDisplayImage.scrollFactorY = 0;
     }
 
-    setCollectedCoins(n) {
-        var collectedCoinsString = n.toString();
+    setLives(n) {
+        var livesString = n.toString();
+        var livesChars = livesString.split("");
         var startX = this.START_COINS_TEXT_X;
 
         this.clearDigitImages();
         this.digitImages = [];
-        this.collectedCoinsChars = collectedCoinsString.split("");
 
-        for (var i = 0; i < this.collectedCoinsChars.length; i++) {
-            var currentChar = this.collectedCoinsChars[i];
-
+        for (var i = 0; i < livesChars.length; i++) {
+            var currentChar = livesChars[i];
             var charImage = this.scene.add.sprite(startX, this.Y, "medium-font-" + currentChar);
             this.scene.add.existing(charImage);
-            charImage.key = "azdkapzkpazkd";
 
             charImage.scrollFactorX = 0;
             charImage.scrollFactorY = 0;

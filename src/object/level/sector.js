@@ -9,7 +9,6 @@ export class Sector {
         this.level = level;
         this.tilemapParser = new TilemapParser(this, this.sectorData);
         this.sectorWidth = this.sectorData.data[0].length * 32;
-        //this.setCurrentSectorEnds();
     }
 
     static currentSector = null;
@@ -47,6 +46,7 @@ export class Sector {
     }
 
     preload() {
+
     }
 
     create() {
@@ -67,6 +67,10 @@ export class Sector {
 
     getBackgroundObjects() {
         return this.additionalTiles.backgroundObjects;
+    }
+
+    getFallingPlatforms() {
+        return this.sectorData.fallingPlatforms;
     }
 
     getEnemyObjects() {

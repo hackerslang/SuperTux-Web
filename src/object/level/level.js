@@ -5,10 +5,6 @@ export class Level {
     constructor(config) {
         this.scene = config.scene;
         this.levelDataKey = config.levelDataKey;
-        
-
-        //console.log(this.levelData);
-        //this.activeSectorsData = config.levelData.sectors.sort((a, b) => a.orderWeight - b.orderWeight);
         this.landscape = 'snow';
         this.LAVA_ALPHA = 0.7;
         
@@ -17,7 +13,6 @@ export class Level {
         }
 
         this.TILE_DIMENSION = 32;
-        //this.TOTAL_NUMBER_OF_COINS = this.getTotalNumberofCoins();
         this.playerTotalCoinsCollected = 0;
         this.isPaused = false;
         
@@ -27,7 +22,7 @@ export class Level {
     async initialize(gameSession) {
         Level.currentLevel = this;
 
-        this.levelData = await JsonFetcher.getJsonObject("./assets/data/levels/" + this.levelDataKey + "/0index.js");
+        this.levelData = await JsonFetcher.getJsonObject("./assets/data/levels/" + this.levelDataKey + "/0index.json");
         await this.createSector(gameSession.sectorKey);
         this.activeSectors[0].makeCurrent();
     }
@@ -149,7 +144,7 @@ export class Level {
     }
 
     async getSectorDataByKey(sectorDataKey) {
-        var sectorData = await JsonFetcher.getJsonObject("./assets/data/levels/" + this.levelDataKey + "/" + sectorDataKey + ".js");
+        var sectorData = await JsonFetcher.getJsonObject("./assets/data/levels/" + this.levelDataKey + "/" + sectorDataKey + ".json");
 
         return sectorData;
     }
