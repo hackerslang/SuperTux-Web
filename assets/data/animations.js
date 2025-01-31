@@ -402,6 +402,14 @@
                     end: 7,
                     frameRate: 12,
                     repeat: -1
+                },
+                {
+                    key: "hellspiky-walk",
+                    caption: "hellspiky-walk-",
+                    start: 0,
+                    end: 7,
+                    frameRate: 12,
+                    repeat: -1
                 }
             ]
         },

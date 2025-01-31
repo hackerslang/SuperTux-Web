@@ -27,6 +27,12 @@ export class Level {
         this.activeSectors[0].makeCurrent();
     }
 
+    static async getLevelName(levelKey) {
+        var levelData = await JsonFetcher.getJsonObject("./assets/data/levels/" + levelKey + "/0index.json");
+
+        return levelData.title;
+    }
+
     static currentLevel = null;
     static getCurrentLevel() {
         return Level.currentLevel;

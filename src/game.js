@@ -3,6 +3,7 @@ import { LevelSelectScene } from './scenes/levelselectscene.js'
 import { SectorScene1, SectorScene2, SectorScene3 } from './scenes/sectorscene.js';
 import { PauseScene } from './scenes/pausescene.js';
 import { MenuScene } from './scenes/menuscene.js';
+import { SaveGameMenuScene } from './scenes/savegamemenuscene.js';
 
 export const CANVAS_WIDTH = 1024;
 export const CANVAS_HEIGHT = 768;
@@ -26,7 +27,8 @@ const config = {
         SectorScene3,
         LoadGameScene,
         PauseScene,
-        MenuScene
+        MenuScene,
+        SaveGameMenuScene
     ],
     powerPreference: "high-performance"
 };

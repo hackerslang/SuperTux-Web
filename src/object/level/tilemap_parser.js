@@ -343,6 +343,8 @@ export class TilemapParser {
                 break;
             case '9':
                 this.addSpleepingSpiky(i, j);
+            case '10':
+                this.addHellSpiky(i, j);
             default:
                 break;
         }
@@ -379,6 +381,20 @@ export class TilemapParser {
 
     addSpiky(i, j) {
         this.createSpiky(i, j, false);
+    }
+
+    addHellSpiky(i, j) {
+        var spiky =
+        {
+            name: "hellspiky",
+            direction: "left",
+            position: {
+                x: i,
+                y: j
+            }
+        };
+
+        this.enemies.push(spiky);
     }
 
     addSpleepingSpiky(i, j) {

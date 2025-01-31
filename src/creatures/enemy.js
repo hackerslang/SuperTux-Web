@@ -25,6 +25,8 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         this.enemyType = config.key;
         this.powerUps = config.powerUps;
 
+        this.collidesWithOtherEnmies = config.collidesWithOtherEnmies;
+
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
         this.body.allowGravity = true;
         this.hasBeenSeen = false;
@@ -70,6 +72,11 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         this.squishable = false;
         this.body.pushable = false;
         this.setDepth(101);
+
+        //Collides with moving tiles, such as platforms or industrial tiles??
+        this.collidesWithExtraTiles = true;
+
+        this.collidesWithOtherEnmies = true;
     }
 
     initWithGameSession(enemyFromGameSession) {
@@ -143,7 +150,7 @@ export class Enemy extends Phaser.GameObjects.Sprite {
             return;
         }
 
-        this.scene.physics.world.collide(this, this.scene.enemyGroup, this.enemyHit);
+        this.scene.physics.world.collide(this, this.scene.enemyCollisionGroup, this.enemyHit);
         this.scene.physics.world.collide(this, this.scene.groundLayer);
 
         if (this.turnAroundWaitTimer > 0) {

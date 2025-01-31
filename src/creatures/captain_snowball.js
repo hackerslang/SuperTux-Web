@@ -40,8 +40,6 @@
             x1 = right + 1;
             x2 = right + width;
         }
-
-        if (this.level.level)
     }
 
     canBeSquished() {

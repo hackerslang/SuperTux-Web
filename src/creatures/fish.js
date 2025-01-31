@@ -18,7 +18,12 @@ export class Fish extends Enemy {
         this.flip = config.flip;
         this.anims.play(this.animUp);
         this.jumping = true;
-        this.setDepth(100);
+        this.setDepth(110);
+
+        //Collides with moving tiles, such as platforms or industrial tiles??
+        this.collidesWithExtraTiles = false;
+
+        this.collidesWithOtherEnemies = false;
     }
 
     update(time, delta) {

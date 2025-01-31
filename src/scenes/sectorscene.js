@@ -16,7 +16,7 @@ import { SnowBall } from '../creatures/snowball.js';
 import { BouncingSnowBall } from '../creatures/bouncing_snowball.js';
 import { FlyingSnowBall } from '../creatures/flying_snowball.js';
 import { Jumpy } from '../creatures/jumpy.js';
-import { Spiky } from '../creatures/spiky.js';
+import { Spiky, HellSpiky } from '../creatures/spiky.js';
 import { Fish } from '../creatures/fish.js';
 import { Coin } from '../object/coin.js';
 import { PlusPowerUp } from '../object/powerup/plus.js';
@@ -41,6 +41,11 @@ export class SectorScene extends Phaser.Scene {
         this.REPEAT_INFINITELY = -1;
 
         this.canSaveOrLoad = false;
+    }
+
+    static currentSectorScene = null;
+    static getCurrentSectorScene() {
+        return Sector.currentSectorScene;
     }
 
     generateKeyController() {
@@ -155,6 +160,8 @@ export class SectorScene extends Phaser.Scene {
                 this.creatures = [];
             }
 
+            this.enemyCollisionExtraTilesGroup = this.add.group();;
+
             this.hasPaused = false;
             this.player = {};
 
@@ -180,7 +187,6 @@ export class SectorScene extends Phaser.Scene {
             this.makeAnimations();
 
             this.addPlayer();
-
             
             this.parseAntarcticWater();
             
@@ -204,6 +210,7 @@ export class SectorScene extends Phaser.Scene {
             this.physics.add.collider(this.coinGroup, this.groundLayer);
             this.playerGroundCollider = this.physics.add.collider(this.player, this.groundLayer);
             this.woodCollider = this.physics.add.collider(this.player, this.collisionTilesGroup, this.woodHit);
+            this.enemyCollisionTilesCollider = this.physics.add.collider(this.enemyCollisionExtraTilesGroup, this.collisionTilesGroup, this.woodHit);
 
             this.physics.world.bounds.width = this.groundLayer.width;
             this.physics.world.bounds.height = this.groundLayer.height;
@@ -272,6 +279,7 @@ export class SectorScene extends Phaser.Scene {
     createEnemySpritesGroup() {
         this.enemyGroupCreated = false;
         this.enemyGroup = this.add.group();
+        this.enemyCollisionGroup = this.add.group();
         
         this.parseEnemyLayer();
         this.enemyGroupCreated = true;
@@ -477,6 +485,19 @@ export class SectorScene extends Phaser.Scene {
 
                     break;*/
 
+                case "hellspiky":
+                    creatureObject = new HellSpiky({
+                        id: creature.id,
+                        scene: this,
+                        key: "hellspiky",
+                        x: creature.position.x * 32,
+                        y: creature.position.y * 32,
+                        player: this.player,
+                        sector: this.sector,
+                    });
+
+                    break;
+
                 case "spiky":
                     creatureObject = new Spiky({
                         id: creature.id,
@@ -495,6 +516,14 @@ export class SectorScene extends Phaser.Scene {
             if (creatureObject != null) {
                 creatureObjects.push(creatureObject);
                 this.enemyGroup.add(creatureObject);
+
+                if (creatureObject.collidesWithExtraTiles) {
+                    this.enemyCollisionExtraTilesGroup.add(creatureObject);
+                }
+
+                if (creatureObject.collidesWithOtherEnemies) {
+                    this.enemyCollisionGroup.add(creatureObject);
+                }
             }
         }
 
@@ -1026,11 +1055,11 @@ export class SectorScene extends Phaser.Scene {
     handleOptionsKeys() {
         this.interruptUpdate = false;
 
-        if (this.getKeyController().pressed('menu')) {
+        if (this.getKeyController().pressed('menu') && !this.player.killed) {
             this.launchMenu();
         }
 
-        if (this.getKeyController().pressed('quicksave')) {
+        if (this.getKeyController().pressed('quicksave') && !this.player.killed) {
             this.quickSave();
         }
 
@@ -1053,14 +1082,12 @@ export class SectorScene extends Phaser.Scene {
 
         GameSession.quickSaveGame(session);
 
-        this.quickSaveGameText = fontLoader.displayText(this, "SuperTuxSmallFont", CANVAS_WIDTH - 30 - (saved.length * 18), 70, saved, true, 1);
+        this.quickSaveGameText = fontLoader.displayText({ scene: this, fontName: "SuperTuxSmallFont", x: CANVAS_WIDTH - 30 - (saved.length * 18), y: 70, text: saved, fade: true, fadeFactor: 1 });
     }
 
     createSaveSession() {
 
     }
-
-
 
     quickLoad() {
         if (!this.canSaveOrLoad) { return; }
@@ -1086,6 +1113,8 @@ export class SectorScene extends Phaser.Scene {
 
     launchMenu() {
         var sceneKey = SectorSwapper.getCurrentSceneKey();
+
+        Sector.currentSectorScene = this;
 
         game.scene.pause(sceneKey);
         game.scene.start("MenuScene");

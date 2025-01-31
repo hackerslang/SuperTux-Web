@@ -1,4 +1,5 @@
 ﻿import { TilemapParser } from './tilemap_parser.js';
+import { JsonFetcher } from '../json_fetcher.js';
 import { Level } from './level.js';
 
 export class Sector {
@@ -9,6 +10,12 @@ export class Sector {
         this.level = level;
         this.tilemapParser = new TilemapParser(this, this.sectorData);
         this.sectorWidth = this.sectorData.data[0].length * 32;
+    }
+
+    static async getSectorName(levelKey, sectorKey) {
+        var sectorData = await JsonFetcher.getJsonObject("./assets/data/levels/" + levelKey + "/" + sectorKey + ".json");
+
+        return sectorData.name;
     }
 
     static currentSector = null;

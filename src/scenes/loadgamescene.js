@@ -4,7 +4,6 @@ import { Level } from '../object/level/level.js';
 import { Sector } from '../object/level/sector.js';
 import { SectorSwapper } from '../object/level/sector_swapper.js';
 
-
 export class LoadGameScene extends Phaser.Scene {
     constructor(config) {
         super({

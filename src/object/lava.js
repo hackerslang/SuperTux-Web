@@ -27,7 +27,7 @@
         var playerHeight = this.player.height;
 
         if (playerX >= this.x && playerX <= this.x + 128 && playerY >= this.y - playerHeight && playerY <= this.y) {
-            this.player.dieWithoutRemovingColliders();
+            this.player.die();
         }
     }
 }

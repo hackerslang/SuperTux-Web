@@ -537,6 +537,16 @@
                     "value": "spiky_sleep-",
                     "start": 0,
                     "end": 3
+                },
+                {
+                    "name": "hellspiky-walk-",
+                    "value": "hellspiky-",
+                    "start": 0,
+                    "end": 7
+                },
+                {
+                    "name": "hellspiky-motionblur",
+                    "value": "hellspiky-motionblur"
                 }
             ]
         },
@@ -576,6 +586,28 @@
                     "value": "fonts/",
                     "start": 0,
                     "end": 9
+                }
+                
+            ]
+        },
+        "menu": {
+            "path": "./assets/images/ui/menu/",
+            "sprites": [
+                {
+                    "name": "back-button",
+                    "value": "back"
+                },
+                {
+                    "name": "back-button-hover",
+                    "value": "back-hover"
+                },
+                {
+                    "name": "save-game",
+                    "value": "save-game"
+                },
+                {
+                    "name": "save-game-slot",
+                    "value": "save-game-slot"
                 }
             ]
         }

@@ -61,12 +61,20 @@ export class GameSession {
         return GameSession.loadGame("SuperTuxWeb-QuickSave");
     }
 
+    static saveGameSlot(gameSession, n) {
+        GameSession.saveGame(gameSession, "SuperTuxWeb-SaveSlot-" + n);
+    }
+
     static saveGame(gameSession, slot) {
         gameSession.timestamp = new Date().toLocaleString("en-US");
 
         var cookieValue = JSON.stringify(gameSession);
 
         CookieSave.setCookie(slot, cookieValue);
+    }
+
+    static loadGameSlot(n) {
+        return GameSession.loadGame("SuperTuxWeb-SaveSlot-" + n);
     }
 
     static loadGame(slot) {
@@ -76,6 +84,23 @@ export class GameSession {
         GameSession.session = gameSession;
 
         return gameSession;
+    }
+
+    static getLoadSaveGameSlotsSessions() {
+        var gameSessions = [];
+
+        for (var i = 0; i < 3; i++) {
+            var slotName = "SuperTuxWeb-SaveSlot-" + i;
+            var slotCookie = CookieSave.getCookie(slotName);
+
+            if (slotCookie != null) {
+                gameSessions.push(JSON.parse(slotCookie));
+            } else {
+                gameSessions.push(null);
+            }
+        }
+
+        return gameSessions;
     }
 
     static playerDied(level) {
@@ -99,8 +124,17 @@ export class GameSession {
     }
 
     static createSaveSessionDuringScene(scene) {
-        GameSession.session.levelKey = Level.getCurrentLevel().levelData.key;
-        GameSession.session.sectorKey = Sector.getCurrentSector().sectorData.key;
+        if (GameSession.session == null) {
+            GameSession.session = {};
+        }
+
+        var level = Level.getCurrentLevel();
+        var sector = Sector.getCurrentSector();
+
+        GameSession.session.levelKey = level.levelData.key;
+        GameSession.session.levelName = level.levelData.title;
+        GameSession.session.sectorKey = sector.sectorData.key;
+        GameSession.session.sectorName = sector.sectorData.name;
         GameSession.session.playerPosition = { "x": scene.player.body.x, "y": scene.player.body.y };
         GameSession.session.playerVelocity = { "x": scene.player.body.velocity.x, "y": scene.player.body.velocity.y };
         GameSession.session.enemiesPositions = [];

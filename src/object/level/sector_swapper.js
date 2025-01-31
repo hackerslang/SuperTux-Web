@@ -1,6 +1,5 @@
 ﻿import { Sector } from './sector.js';
 import { game } from '../../game.js';
-import { Level } from '../../object/level/level.js';
 
 export var SectorScenesSlots = [
     {

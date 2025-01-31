@@ -2,6 +2,7 @@
 import { FontLoader } from '../object/ui/fontloader.js';
 import { KeyController } from '../object/controller.js';
 import { SectorSwapper } from '../object/level/sector_swapper.js';
+import { ClickableHoverableRecangle } from '../object/ui/menu.js';
 
 export class MenuScene extends Phaser.Scene {
     constructor(config) {
@@ -55,104 +56,107 @@ export class MenuScene extends Phaser.Scene {
         this.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor-click.png), pointer');
     }
 
-
     makeGameMenu() {
         var fontLoader = new FontLoader();
         var glyphWidth = 22;
         var glyphHeight = 24;
-        var text1 = 'Resume game';
-        var text2 = 'Load game';
-        var text3 = 'Save game';
-        var text4 = 'Exit to main menu';
 
-        var text1X1 = (CANVAS_WIDTH / 2) - (glyphWidth * text1.length / 2);
-        var text2X1 = (CANVAS_WIDTH / 2) - (glyphWidth * text2.length / 2);
-        var text3X1 = (CANVAS_WIDTH / 2) - (glyphWidth * text3.length / 2);
-        var text4X1 = (CANVAS_WIDTH / 2) - (glyphWidth * text4.length / 2);
-
-        var menuItemPadding = 20;
-        var text2Y1 = (CANVAS_HEIGHT - glyphHeight) / 2;
-        var text1Y1 = text2Y1 - ((glyphHeight + menuItemPadding) / 2) - menuItemPadding;
-        var text3Y1 = text2Y1 + ((glyphHeight + menuItemPadding) / 2) + menuItemPadding;
-        var text4Y1 = text3Y1 + ((glyphHeight + menuItemPadding) / 2) + menuItemPadding;
+        var items = [
+            {
+                "text": "Resume game",
+                "callBack": this.resumeGame
+            },
+            {
+                "text": "Load game",
+                "callBack": null
+            },
+            {
+                "text": "Save game",
+                "callBack": this.launchSaveGameMenu
+            },
+            {
+                "text": "Exit to main menu",
+                "callBack": null
+            }
+        ];
 
         var padding = 30;
-        var menuRectX = text4X1 - padding;
-        var menuRectY = text1Y1 - padding;
-        var menuRectWidth = (glyphWidth * text4.length) + padding;
+        var menuItemPadding = 20;
+        var longestText = this.getLongestMenuItemName(items);
+        var longestTextWidth = fontLoader.preCalculateTextDimensions({ fontName: "SuperTuxBigFont", text: longestText }).totalWidth;
+        var menuRectWidth = longestTextWidth + (padding * 2);
         var menuRectHeight = (glyphHeight * 4) + (menuItemPadding * 3) + padding;
+        var menuRectX = (CANVAS_WIDTH / 2) - (menuRectWidth / 2);
+        var menuRectY = (CANVAS_HEIGHT / 2) - (menuRectHeight / 2);
+
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            var textWidth = fontLoader.preCalculateTextDimensions({ fontName: "SuperTuxBigFont", text: item.text }).totalWidth;
+
+            item.textX1 = ((CANVAS_WIDTH / 2) - (textWidth / 2));
+            item.textY1 = menuRectY + (i * menuItemPadding) + padding + (i * glyphHeight);
+        }
 
         var rect = this.add.rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, 0xffffff, 0);
 
         rect.setOrigin(0, 0);
         rect.setInteractive();
 
-        var menuRect = this.add.rectangle(menuRectX, menuRectY, menuRectWidth, menuRectHeight, 0x000000, 0.5);
+        var graphics = this.add.graphics();
 
-        menuRect.setOrigin(0, 0);
-        menuRect.setInteractive();
+        this.menuRect = this.add.rectangle(menuRectX, menuRectY, menuRectWidth, menuRectHeight, 0x000000, 0.37);
 
-        var menuItems = [];
+        this.menuRect.setOrigin(0, 0);
+        this.menuRect.setInteractive();
 
-        menuItems.push(new MenuItem({ scene: this, x: text1X1, y: text1Y1, glyphWidth: glyphWidth, glyphHeight: glyphHeight, text: text1, callBack: this.resumeGame }));
-        menuItems.push(new MenuItem({ scene: this, x: text2X1, y: text2Y1, glyphWidth: glyphWidth, glyphHeight: glyphHeight, text: text2, callBack: null }));
-        menuItems.push(new MenuItem({ scene: this, x: text3X1, y: text3Y1, glyphWidth: glyphWidth, glyphHeight: glyphHeight, text: text3, callBack: null }));
-        menuItems.push(new MenuItem({ scene: this, x: text4X1, y: text4Y1, glyphWidth: glyphWidth, glyphHeight: glyphHeight, text: text4, callBack: null }))
+        graphics.lineStyle(0.3, 0x000000);
+        graphics.strokeRectShape(this.menuRect);
+
+        this.menuItems = [];
 
         var self = this;
 
-        menuRect.on('pointerdown', function (pointer) {
-            for (var i = 0; i < menuItems.length; i++) {
-                var currentMenuItem = menuItems[i];
-                if (currentMenuItem.cursorIsHover(pointer.x, pointer.y)) {
-                    self.setCursorLink(false);
-                    self.setCursorLinkDown();
-                    currentMenuItem.callBack();
-                }
+        items.forEach(item =>
+            self.menuItems.push(
+                new MenuItem({
+                    scene: this,
+                    x: item.textX1,
+                    y: item.textY1,
+                    glyphWidth: glyphWidth,
+                    glyphHeight: glyphHeight,
+                    text: item.text,
+                    callBack: item.callBack
+                })));
+    }
+
+
+    menuItemDown(menuItem) {
+        this.setCursorLink(false);
+        this.setCursorLinkDown();
+        this.currentMenuItemPointerDown = menuItem;
+    }
+
+    menuItemClick(menuItem) {
+        menuItem.hover();
+        this.setCursorLink(true);
+
+        if (this.currentMenuItemPointerDown != null) {
+            if (this.currentMenuItemPointerDown.text == menuItem.text) {
+                menuItem.callBack();
+            }
+        }
+    }
+
+    getLongestMenuItemName(items) {
+        var longestText = "";
+
+        items.forEach((item) => {
+            if (item.text.length > longestText.length) {
+                longestText = item.text;
             }
         });
 
-        menuRect.on('pointerup', function (pointer) {
-            for (var i = 0; i < menuItems.length; i++) {
-                var currentMenuItem = menuItems[i];
-                if (currentMenuItem.cursorIsHover(pointer.x, pointer.y)) {
-                    currentMenuItem.hover();
-                    self.setCursorLink(true);
-                    break;
-                } else {
-                    currentMenuItem.unHover();
-                    self.setCursorLink(false);
-                }
-            }
-        });
-
-        rect.on(Phaser.Input.Events.GAMEOBJECT_POINTER_MOVE, function (pointer) {
-            for (var i = 0; i < menuItems.length; i++) {
-                var currentMenuItem = menuItems[i];
-                if (currentMenuItem.cursorIsHover(pointer.x, pointer.y)) {
-                    currentMenuItem.hover();
-                    self.setCursorLink(true);
-                    break;
-                } else {
-                    currentMenuItem.unHover();
-                    self.setCursorLink(false);
-                }
-            }
-        });        
-
-        menuRect.on(Phaser.Input.Events.GAMEOBJECT_POINTER_MOVE, function (pointer) {
-            for (var i = 0; i < menuItems.length; i++) {
-                var currentMenuItem = menuItems[i];
-                if (currentMenuItem.cursorIsHover(pointer.x, pointer.y)) {
-                    currentMenuItem.hover();
-                    self.setCursorLink(true);
-                    break;
-                } else {
-                    currentMenuItem.unHover();
-                    self.setCursorLink(false);
-                }
-            }
-        });   
+        return longestText;
     }
 
     generateKeyController() {
@@ -175,6 +179,11 @@ export class MenuScene extends Phaser.Scene {
         game.scene.stop("MenuScene");
         game.scene.resume(SectorSwapper.getCurrentSceneKey());
     }
+
+    launchSaveGameMenu() {
+        game.scene.stop("MenuScene");
+        game.scene.start("SaveGameMenuScene");
+    }
 }
 
 class MenuItem {
@@ -191,26 +200,44 @@ class MenuItem {
         this.callBack = config.callBack;
         this.wasAlreadyInThis = false;
 
-        var fontLoader = new FontLoader();
-
-        this.menuHoverText = fontLoader.displayText(this.scene, "SuperTuxBigFontColored", this.x, this.y, this.text, 0xab4242);
-        this.menuText = fontLoader.displayText(this.scene, "SuperTuxBigFont", this.x, this.y, this.text);
+        this.init();
     }
 
-    cursorIsHover(x, y) {
-        return x >= this.x - this.glyphWidth / 2 && y >= this.y - this.glyphHeight / 2 && x <= this.x - this.glyphWidth / 2 + this.width && y <= this.y - this.glyphHeight / 2 + this.height;
+    init() {
+        this.createTexts();
+        this.createRect();
+    }
+
+    createTexts() {
+        var fontLoader = new FontLoader();
+
+        this.menuHoverText = fontLoader.displayText({ scene: this.scene, fontName: "SuperTuxBigFontColored", x: this.x, y: this.y, text: this.text });
+        this.menuText = fontLoader.displayText({ scene: this.scene, fontName: "SuperTuxBigFont", x: this.x, y: this.y, text: this.text });
+    }
+
+    createRect() {
+        this.rect = new ClickableHoverableRecangle({
+            x: this.x,
+            y: this.y,
+            width: this.width,
+            height: this.height,
+            clickCallBack: this.callBack,
+            scene: this.scene,
+            item: this
+        });
     }
 
     hover() {
-        //this.tint = 0x0000FF;this.tint = [0xFFFFFF, 0xFF0000, 0xFFFFFF, 0x00FF00, 0xFFFFFF, 0x0000FF][this.invincibleIndex];
         this.menuText.hide();
         this.menuHoverText.show();
         this.wasAlreadyInThis = true;
+        this.scene.setCursorLink(true);
     }
 
     unHover() {
         this.menuText.show();
         this.menuHoverText.hide();
         this.wasAlreadyInThis = false;
+        this.scene.setCursorLink(false);
     }
 }
