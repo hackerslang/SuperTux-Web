@@ -344,7 +344,9 @@ export class TilemapParser {
             case '9':
                 this.addSpleepingSpiky(i, j);
             case '10':
-                this.addHellSpiky(i, j);
+                this.addHellSpiky(i, j, false);
+            case '11':
+                this.addHellSpiky(i, j, true);
             default:
                 break;
         }
@@ -383,11 +385,12 @@ export class TilemapParser {
         this.createSpiky(i, j, false);
     }
 
-    addHellSpiky(i, j) {
+    addHellSpiky(i, j, angry) {
         var spiky =
         {
             name: "hellspiky",
             direction: "left",
+            angry: angry,
             position: {
                 x: i,
                 y: j

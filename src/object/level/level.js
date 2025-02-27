@@ -47,7 +47,28 @@ export class Level {
     }
 
     static isFreeOfObjects(x, y) {
-        return Sector.getCurrentSector().getOriginalTileData(x, y) == 0;
+        return Sector.getCurrentSector().getOriginalTileData(x, y) == 0 && !Level.isOnTopOfFallingPlatform(x, y);
+    }
+
+    static isOnTopOfFallingPlatform(x, y) {
+        var platforms = Sector.getCurrentSector().sectorData.fallingPlatforms;
+
+        if (platforms == null || platforms.length == 0) {
+            return false;
+        }
+
+        for (var i = 0; i < platforms.length; i++) {
+            var platform = platforms[i];
+            var platformX = platform.x;
+            var platformX2 = platformX + (platform.width / 32);
+            var platformY = platform.y;
+
+            if (x >= platformX && x <= platformX2 && y == platformY) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     static isFreeOfStatics(x, y) {

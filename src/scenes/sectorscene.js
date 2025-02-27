@@ -160,7 +160,7 @@ export class SectorScene extends Phaser.Scene {
                 this.creatures = [];
             }
 
-            this.enemyCollisionExtraTilesGroup = this.add.group();;
+            this.enemyCollisionExtraTilesGroup = this.add.group();
 
             this.hasPaused = false;
             this.player = {};
@@ -492,6 +492,7 @@ export class SectorScene extends Phaser.Scene {
                         key: "hellspiky",
                         x: creature.position.x * 32,
                         y: creature.position.y * 32,
+                        angry: creature.angry,
                         player: this.player,
                         sector: this.sector,
                     });
@@ -1028,7 +1029,7 @@ export class SectorScene extends Phaser.Scene {
 
     update(time, delta) {
         if (this.sector == null) { return; }
-
+        
         this.canSaveOrLoad = true;
 
         if (this.quickSaveGameText != null) { this.quickSaveGameText.update(time, delta); }
@@ -1117,7 +1118,7 @@ export class SectorScene extends Phaser.Scene {
         Sector.currentSectorScene = this;
 
         game.scene.pause(sceneKey);
-        game.scene.start("MenuScene");
+        game.scene.start("GameMenuScene");
     }
 
     validateCurrentSectorEnds() {

@@ -221,6 +221,8 @@ export class Tux extends Phaser.GameObjects.Sprite {
         }
 
         this.stayInStaticsIfNeeded();
+
+        //rounding bug phaser
         this.body.y = Math.ceil(this.body.y);
 
         //this.setTexture("tux-skid");
@@ -321,7 +323,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
 
         this.resetHurtIfNeeded();
 
-        if (this.jumping && this.body.blocked.down && this.body.velocity.y == 0) {
+        if (this.jumping && (this.body.blocked.down || this.onGround())) {
             this.jumping = false;
             this.canJump = true;
             this.jumpButtonTimer = this.JUMP_GRACE_TIME;
@@ -563,7 +565,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     onGround() {
-        return (this.getVelocityY() == 0 && !this.jumping) || this.slightlyAboveGround() || this.onObject();
+        return (this.getVelocityY() == 0 && !this.jumping) || this.slightlyAboveGround() || this.onObject() || this.slightlyAboveObject();
     }
 
     slightlyAboveGround() {
@@ -586,6 +588,14 @@ export class Tux extends Phaser.GameObjects.Sprite {
         }
 
         return isOnObject;
+    }
+
+    slightlyAboveObject() {
+        var tileBelowX = Math.floor(this.body.x / 32);
+        var bottomY = Math.floor((this.body.bottom - 5) / 32);
+        var tileBelowY = bottomY + 1;
+
+        return !Level.isFreeOfObjects(tileBelowX, tileBelowY);
     }
 
     onTopOfBlock() {
@@ -640,7 +650,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     handleInput(delta) {
-        this.handleHorizontalInput(delta);
+        this.handleHorizontalInput();
 
         if (this.isClimbing) {
             this.handleInputClimbing();
@@ -702,17 +712,11 @@ export class Tux extends Phaser.GameObjects.Sprite {
 
     }
 
-    handleHorizontalInput(delta) { //done, FULLY OK!  
+    handleHorizontalInput() {
         let vx = this.getVelocityX();
         let vy = this.getVelocityY();
         let ax = this.getAccelerationX();
         let ay = this.getAccelerationY();
-
-        let leftKey = this.getLeftKey();
-        let rightKey = this.getRightKey();
-        let fireKey = this.getFireKey();
-        let jumpKey = this.getJumpKey();
-        let duckKey = this.getDuckKey();
 
         let controller = this.getKeyController();
 
@@ -957,7 +961,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
             this.drawSkid();
         } else if (this.kickTimer > 0) {
             this.drawKicking();
-        } else if ((!this.onGround() || this.fallMode != this.ON_GROUND) && !this.body.blocked.down) {
+        } else if (((!this.onGround() && !this.slightlyAboveGround()) || this.fallMode != this.ON_GROUND) && !this.body.blocked.down) {
             this.drawJumping();
         } else if (Math.abs(this.getVelocityX()) < 1) {
             this.drawStanding();

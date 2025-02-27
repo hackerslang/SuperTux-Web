@@ -527,6 +527,10 @@
             "path": "./assets/images/creatures/spiky/",
             "sprites": [
                 {
+                    "name": "hellspiky-angry",
+                    "value": "angry"
+                },
+                {
                     "name": "spiky-walk-",
                     "value": "spiky-",
                     "start": 0,
@@ -600,6 +604,10 @@
                 {
                     "name": "back-button-hover",
                     "value": "back-hover"
+                },
+                {
+                    "name": "load-game",
+                    "value": "load-game"
                 },
                 {
                     "name": "save-game",
