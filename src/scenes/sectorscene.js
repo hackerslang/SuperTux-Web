@@ -45,7 +45,7 @@ export class SectorScene extends Phaser.Scene {
 
     static currentSectorScene = null;
     static getCurrentSectorScene() {
-        return Sector.currentSectorScene;
+        return SectorSwapper.getCurrentSectorScene();
     }
 
     generateKeyController() {
@@ -207,6 +207,8 @@ export class SectorScene extends Phaser.Scene {
             this.createCollisionTilesGroup();
             this.createPowerupGroup();
 
+            this.createPlayerCollisionObjectsGroup();
+
             this.physics.add.collider(this.coinGroup, this.groundLayer);
             this.playerGroundCollider = this.physics.add.collider(this.player, this.groundLayer);
             this.woodCollider = this.physics.add.collider(this.player, this.collisionTilesGroup, this.woodHit);
@@ -297,6 +299,34 @@ export class SectorScene extends Phaser.Scene {
 
     createPowerupGroup() {
         this.powerupGroup = this.add.group();
+    }
+
+    createPlayerCollisionObjectsGroup() {
+        var self = this;
+        this.playerCollisionObjectsGroup = this.add.group();
+
+        for (var i = 0; i < this.enemyGroup.children.length; i++) {
+            var enemy = this.enemyGroup.children[i];
+            if (enemy.playerCollides) {
+                this.playerCollisionObjectsGroup.add(enemy);
+            }
+        }
+
+        for (var i = 0; i < this.hurtableTilesGroup.children.length; i++) {
+            var hurtableTile = this.hurtableTilesGroup.children[i];
+
+            this.playerCollisionObjectsGroup.add(hurtableTile);
+        }
+
+        //for (var i = 0; i < this.staticObjects.children.length; i++) {
+        //    var staticObject = this.staticObjects.children[i];
+
+        //    this.playerCollisionObjectsGroup.add(staticObject);
+        //}
+    }
+
+    getPlayerCollisionObjectsGroup() {
+        return this.playerCollisionObjectsGroup;
     }
 
     parseCoinLayer() {

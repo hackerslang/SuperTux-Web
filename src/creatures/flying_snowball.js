@@ -1,4 +1,5 @@
 import { Enemy } from './enemy.js';
+import { Particle } from '../object/particles/sparkle.js';
 
 export class FlyingSnowBall extends Enemy {
     constructor(config) {

@@ -108,4 +108,10 @@ export class SectorSwapper {
 
         return sectorScene;
     }
+
+    static getCurrentSectorScene() {
+        var sectorSlot = SectorSwapper.getCurrentSceneKey();
+
+        return SectorSwapper.getSectorSceneFromSlot(sectorSlot);
+    }
 }

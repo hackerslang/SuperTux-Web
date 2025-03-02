@@ -113,13 +113,13 @@ export class Sector {
     }
 
     createPreloadedBackGroundObject(i, j, offsetI, offsetJ, type) {
-        let backgrounObject = {
+        let backgroundObject = {
             type: type,
             x: i * 32 + offsetI,
             y: j * 32 + offsetJ
         }
 
-        this.preloadedBackgroundImages.push(backgrounObject);
+        this.preloadedBackgroundImages.push(backgroundObject);
         this.level[j][i] = 0;
     }
 

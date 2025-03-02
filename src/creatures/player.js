@@ -198,11 +198,6 @@ export class Tux extends Phaser.GameObjects.Sprite {
         this.playAnimation('tux-jump');
     }
 
-    run(velocity, frameRate) {
-        this.setVelocityX(velocity);
-        this.playAnimation('tux-run');
-    }
-
     isActiveAndAlive() {
         return !this.isDying && !this.isDeactivated;
     }
@@ -224,16 +219,6 @@ export class Tux extends Phaser.GameObjects.Sprite {
 
         //rounding bug phaser
         this.body.y = Math.ceil(this.body.y);
-
-        //this.setTexture("tux-skid");
-        //this.adjustBody(64, 63, 1, 13);
-        //return;
-        //this.adjustBody(53, 66, 7, 13);//
-        //return;
-
-        //this.setTexture("tux-walk-2");
-        //this.adjustBody(53, 60, 7, 18);//ok
-        //return;
 
         if (this.body.y >= Math.floor(Level.getMaxLevelHeightY() * 32 - this.body.height) && !this.killed) {
             this.die();
@@ -345,7 +330,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
 
             if (this.y > this.lastGroundY) {
                 this.fallMode = this.FALLING;
-            } else if (this.fallMode === this.ON_GROUND) {
+            } else /*if (this.fallMode === this.ON_GROUND)*/ {
                 this.fallMode = this.JUMPING;
             }
         }
@@ -565,21 +550,20 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     onGround() {
-        return (this.getVelocityY() == 0 && !this.jumping) || this.slightlyAboveGround() || this.onObject() || this.slightlyAboveObject();
+        return (this.getVelocityY() == 0 && !this.jumping) || this.slightlyAboveGround() || this.onObject(); //|| this.slightlyAboveObject();
     }
 
     slightlyAboveGround() {
-        var tileBelowX = Math.floor(this.body.x / 32);
-        var bottomY = Math.floor((this.body.bottom - 5) / 32);
-        var tileBelowY = bottomY + 1;
-
-        return !Level.isFreeOfObjects(tileBelowX, tileBelowY);
+        var x = this.body.x;
+        var bottomY = this.body.y - 10;
+        var bottomY2 = this.body.y + 10;
+        var y = this.body.y + 32;
+        
+        return Level.isOnTopOfObjects(x, y, this.scene) || Level.isOnTopOfPlayerCollisionObject(x, bottomY, bottomY2, this.scene);
     }
 
     onObject() {
         var isOnObject = false;
-        var playerX = this.x;
-        var playerY = Math.floor(this.y / 32);
 
         if (this.onTopOfBlock()) {
             isOnObject = true;
@@ -591,11 +575,11 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     slightlyAboveObject() {
-        var tileBelowX = Math.floor(this.body.x / 32);
-        var bottomY = Math.floor((this.body.bottom - 5) / 32);
-        var tileBelowY = bottomY + 1;
+        var tileBelowX = this.body.x;
+        var bottomY = this.body.bottom - 5;
+        var tileBelowY = bottomY + 32;
 
-        return !Level.isFreeOfObjects(tileBelowX, tileBelowY);
+        return Level.isFreeOfObjects(tileBelowX, tileBelowY, this.scene);
     }
 
     onTopOfBlock() {
@@ -784,17 +768,6 @@ export class Tux extends Phaser.GameObjects.Sprite {
             vx = this.directionSign * this.WALK_SPEED;
         }
 
-        ////Check speedlimit.
-        //if (m_speedlimit > 0 && vx * dirsign >= m_speedlimit) {
-        //    vx = dirsign * m_speedlimit;
-        //    ax = 0;
-        //}
-
-        if (this.directionSign != 0) {
-            //console.log("dir sign" + this.directionSign + " " + vx);
-            //console.log("ONGROUND" + this.onGround());
-        }
-
         if ((vx < 0 && controller.hold('right') && !controller.hold('left')) || (vx > 0 && controller.hold('left') && !controller.hold('right'))) {
             if (this.onGround()) {
                 if (Math.abs(vx) > this.SKID_XM && this.skiddingTimer <= 0) { //use time, delta update function!
@@ -829,11 +802,11 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     stayInStaticsIfNeeded() {
-        var tileBelowX = Math.floor(this.body.x / 32);
-        var tileBelowY = Math.floor(this.body.bottom / 32);
+        var tileBelowX = this.body.x;
+        var tileBelowY = this.body.bottom;
 
         if (!this.scene.isFreeOfMovingStatics(tileBelowX, tileBelowY) ||
-            !Level.isFreeOfObjects(tileBelowX, tileBelowY)) {
+            !Level.isFreeOfObjects(tileBelowX, tileBelowY, this.scene)) {
             this.body.setVelocityY(Math.min(this.body.velocity.y, 0));
             this.body.y -= this.body.bottom % 32;
         }
@@ -843,30 +816,30 @@ export class Tux extends Phaser.GameObjects.Sprite {
         var halfX = this.direction == this.DIRECTION_RIGHT ? this.body.width / 2 : -this.body.width / 2;
         var halfY = this.body.height / 2;
         var overEdge = this.body.x % 32;
-        var tileBelowX = Math.floor((this.body.x + halfX) / 32);
-        var tileBelowY = Math.floor((this.body.bottom - 10) / 32);
+        var tileBelowX = this.body.x + halfX;
+        var tileBelowY = this.body.bottom - 10;
 
-        if (this.forceDrawWalking > 0) {
+        if (this.forceDrawWalking > 0 && !this.jumping) {
             this.setVelocityX(this.fallingDirection * this.WALK_SPEED);
             this.playAnimation("tux-walk");
-        } 
+        }
 
-        if (this.forceDrawWalking <= 0 && !this.jumping) {
+        if (this.forceDrawWalking <= 0 && this.falling) {
             if (overEdge > 16 &&
-                this.scene.isFreeOfMovingStatics(tileBelowX, tileBelowY + 1) &&
-                !this.scene.isFreeOfMovingStatics(tileBelowX - 1, tileBelowY + 1) &&
-                Level.isFreeOfObjects(tileBelowX, tileBelowY+1) &&
-                !Level.isFreeOfObjects(tileBelowX-1, tileBelowY+1) &&
+                this.scene.isFreeOfMovingStatics(tileBelowX, tileBelowY + 32) &&
+                !this.scene.isFreeOfMovingStatics(tileBelowX - 32, tileBelowY + 32) &&
+                Level.isFreeOfObjects(tileBelowX, tileBelowY+32, this.scene) &&
+                !Level.isFreeOfObjects(tileBelowX-32, tileBelowY+32, this.scene) &&
                 !this.isSkidding() && Math.abs(this.getVelocityX()) <= this.WALK_SPEED) {
 
                 this.forceDrawWalking = 300;
                 this.fallingDirection = this.DIRECTION_RIGHT;
                 this.setVelocityX(this.WALK_SPEED);
             } else if (overEdge < 16 &&
-                this.scene.isFreeOfMovingStatics(tileBelowX, tileBelowY + 1) && 
-                !this.scene.isFreeOfMovingStatics(tileBelowX + 1, tileBelowY + 1) &&
-                Level.isFreeOfObjects(tileBelowX, tileBelowY + 1) &&
-                !Level.isFreeOfObjects(tileBelowX+1, tileBelowY+1) &&
+                this.scene.isFreeOfMovingStatics(tileBelowX, tileBelowY + 32) && 
+                !this.scene.isFreeOfMovingStatics(tileBelowX + 32, tileBelowY + 32) &&
+                Level.isFreeOfObjects(tileBelowX, tileBelowY + 32, this.scene) &&
+                !Level.isFreeOfObjects(tileBelowX+32, tileBelowY+32, this.scene) &&
                 !this.isSkidding() && Math.abs(this.getVelocityX()) <= this.WALK_SPEED) {
 
                 this.forceDrawWalking = 300;
@@ -886,7 +859,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
             this.setAccelerationX(0);
         } else {
             var friction = this.WALK_ACCELERATION_X * (this.onIce ? this.ICE_FRICTION_MULTIPLIER : this.NORMAL_FRICTION_MULTIPLIER);
-;
+
             if (this.getVelocityX() < 0) {
                 this.setAccelerationX(friction);
             } else if (this.getVelocityX() > 0) {
@@ -953,15 +926,15 @@ export class Tux extends Phaser.GameObjects.Sprite {
         if (this.killed) {
 
             return;
-        } 
-
+        }
+        console.log("GR: " + this.onGround());
         if (this.ducked && this.isBig) {
             this.drawDuck();
         } else if (this.skiddingTimer > 0) {
             this.drawSkid();
         } else if (this.kickTimer > 0) {
             this.drawKicking();
-        } else if (((!this.onGround() && !this.slightlyAboveGround()) || this.fallMode != this.ON_GROUND) && !this.body.blocked.down) {
+        } else if ((!this.onGround() || this.fallMode != this.ON_GROUND) && !this.body.blocked.down) {
             this.drawJumping();
         } else if (Math.abs(this.getVelocityX()) < 1) {
             this.drawStanding();
@@ -1037,14 +1010,14 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     drawFalling() {
-        if (this.forceDrawWalking > 0) { return; }
+        //if (this.forceDrawWalking > 0) { return; }
 
         this.flipDraw();
         this.setTexture("tux-jump-0");
     }
 
     drawJumping() {
-        if (this.forceDrawWalking > 0) { return; }
+        //if (this.forceDrawWalking > 0) { return; }
 
         this.flipDraw();
 

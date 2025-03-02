@@ -1,4 +1,4 @@
-﻿class Particle extends Phaser.GameObjects.Sprite {
+﻿export class Particle extends Phaser.GameObjects.Sprite {
     constructor(config) {
         super(config.scene, config.x, config.y, config.key);
         config.scene.physics.world.enable(this);
@@ -38,7 +38,7 @@
     }
 }
 
-class Sparkle extends Phaser.GameObjects.Sprite {
+export class Sparkle extends Phaser.GameObjects.Sprite {
     constructor(config) {
         super(config.scene, config.x, config.y, config.key);
         config.scene.physics.world.enable(this);

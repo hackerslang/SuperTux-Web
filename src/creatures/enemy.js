@@ -25,6 +25,8 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         this.enemyType = config.key;
         this.powerUps = config.powerUps;
 
+        this.playerCollides = true;
+
         this.collidesWithOtherEnmies = config.collidesWithOtherEnmies;
 
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
@@ -228,8 +230,6 @@ export class Enemy extends Phaser.GameObjects.Sprite {
                 if (this.stateTimer <= 0) {
                     this.remove();
                 }
-
-                
 
                 break;
 
@@ -585,25 +585,31 @@ export class Enemy extends Phaser.GameObjects.Sprite {
     }
 
     isAtEdgeLeft() {
-        var tileX = Math.ceil(this.body.x / 32);
-        var tileY = Math.ceil(this.body.y / 32);
-        
+        var x = this.body.x + 32;
+        var y = this.body.y + 32;
+
+        var tileX = Math.floor(x / 32);
+        var tileY = Math.floor(y / 32);
+
         if (tileX <= 0 || tileY >= Level.getMaxLevelHeightY() - 1) {
             return false;
         }
 
-        return (Level.isFreeOfObjects(tileX-1, tileY+1)/* || this.body.blocked.left /*|| this.body.touching.left*/);
+        return (Level.isFreeOfObjects(x-32, y+32, this.scene)/* || this.body.blocked.left /*|| this.body.touching.left*/);
     }
 
     isAtEdgeRight() {
-        var tileX = Math.floor(this.body.x / 32);
-        var tileY = Math.ceil(this.body.y / 32);
+        var x = this.body.x;
+        var y = this.body.y + 32;
+
+        var tileX = Math.floor(x / 32);
+        var tileY = Math.floor(y / 32);
 
         if (tileX >= Level.getMaxLevelWidthX() - 1 || tileY >= Level.getMaxLevelHeightY() - 1) {
             return false;
         }
 
-        return (Level.isFreeOfObjects(tileX + 1, tileY + 1)/* || this.body.blocked.right /*|| this.body.touching.right*/);
+        return (Level.isFreeOfObjects(x + 32, y + 32, this.scene)/* || this.body.blocked.right /*|| this.body.touching.right*/);
     }
 
     verticalHit(enemy, player) {

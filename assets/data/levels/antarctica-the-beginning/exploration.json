@@ -1,6 +1,6 @@
 ﻿{
     "key": "exploration",
-    "name": "sector1",
+    "name": "sector3",
     "orderWeight": 10,
     "backgroundImage": "../assets/images/level/snow/arctic-background.png",
     "tilesets": [

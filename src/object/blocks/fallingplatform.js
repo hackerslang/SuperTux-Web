@@ -30,6 +30,9 @@ export class FallingPlatform extends Phaser.GameObjects.Sprite {
         this.originalX = config.x;
         this.originalY = config.y;
         this.initFall = true;
+        this.pushable = false;
+
+        this.playerCollides = true;
     }
 
     update(time, delta) {

@@ -1,5 +1,6 @@
 import { JsonFetcher } from '../json_fetcher.js';
 import { Sector } from './sector.js';
+import { SectorScene } from '../../scenes/sectorscene.js';
 
 export class Level {
     constructor(config) {
@@ -46,12 +47,22 @@ export class Level {
         return Sector.getCurrentSector().getTileData()[0].length;
     }
 
-    static isFreeOfObjects(x, y) {
-        return Sector.getCurrentSector().getOriginalTileData(x, y) == 0 && !Level.isOnTopOfFallingPlatform(x, y);
+    static isFreeOfObjects(x, y, scene) {
+        var tileX = Math.floor(x / 32);
+        var tileY = Math.floor(y / 32);
+
+        return Sector.getCurrentSector().getOriginalTileData(tileX, tileY) == 0 && !Level.isInPlayerCollisionObject(x, y, scene);
     }
 
-    static isOnTopOfFallingPlatform(x, y) {
-        var platforms = Sector.getCurrentSector().sectorData.fallingPlatforms;
+    static isOnTopOfObjects(x, y, scene) {
+        var tileX = Math.floor(x / 32);
+        var tileY = Math.floor(y / 32);
+
+        return Sector.getCurrentSector().getOriginalTileData(tileX, tileY) != 0;
+    }
+
+    static isOnTopOfPlayerCollisionObject(x, y, y2, scene) {
+        var platforms = scene.fallingPlatformSprites;
 
         if (platforms == null || platforms.length == 0) {
             return false;
@@ -60,10 +71,34 @@ export class Level {
         for (var i = 0; i < platforms.length; i++) {
             var platform = platforms[i];
             var platformX = platform.x;
-            var platformX2 = platformX + (platform.width / 32);
+            var platformX2 = platformX + platform.width;
             var platformY = platform.y;
 
-            if (x >= platformX && x <= platformX2 && y == platformY) {
+            if (x >= platformX && x <= platformX2 && platformY >= y && platformY <= y2) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static isInPlayerCollisionObject(x, y, scene) {
+        //var staticObjects = scene.staticObjects;
+
+        var platforms = scene.fallingPlatformSprites;
+
+        if (platforms == null || platforms.length == 0) {
+            return false;
+        }
+
+        for (var i = 0; i < platforms.length; i++) {
+            var platform = platforms[i];
+            var platformX = platform.x;
+            var platformX2 = platformX + platform.width;
+            var platformY = platform.y;
+            var platformY2 = platformY + platform.height;
+
+            if (x >= platformX && x <= platformX2 && y >= platformY && y <= platformY2) {
                 return true;
             }
         }
