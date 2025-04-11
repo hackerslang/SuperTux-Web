@@ -54,11 +54,7 @@ export class PauseScene extends Phaser.Scene {
     }
 
     generateKeyController() {
-        this.keys = {
-            'pause': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P)
-        };
-
-        this.keyController = new KeyController(this.keys, this);
+        this.keyController = new KeyController(this);
     }
 
     update(time, delta) {

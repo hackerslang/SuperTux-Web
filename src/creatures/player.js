@@ -555,10 +555,10 @@ export class Tux extends Phaser.GameObjects.Sprite {
 
     slightlyAboveGround() {
         var x = this.body.x;
-        var bottomY = this.body.y - 10;
-        var bottomY2 = this.body.y + 10;
+        var bottomY = this.body.bottom - 10;
+        var bottomY2 = this.body.bottom + 15;
         var y = this.body.y + 32;
-        
+
         return Level.isOnTopOfObjects(x, y, this.scene) || Level.isOnTopOfPlayerCollisionObject(x, bottomY, bottomY2, this.scene);
     }
 
@@ -927,7 +927,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
 
             return;
         }
-        console.log("GR: " + this.onGround());
+
         if (this.ducked && this.isBig) {
             this.drawDuck();
         } else if (this.skiddingTimer > 0) {

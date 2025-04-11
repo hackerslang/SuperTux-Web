@@ -49,19 +49,8 @@ export class SectorScene extends Phaser.Scene {
     }
 
     generateKeyController() {
-        this.keys = {
-            'jump': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP),
-            'fire': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.CTRL),
-            'left': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
-            'right': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
-            'duck': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN),
-            'menu': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC),
-            'pause': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P),
-            'quicksave': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
-            'quickload': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.L)
-        };
+        this.keyController = new KeyController(this);
 
-        this.keyController = new KeyController(this.keys, this);
     }
 
     activateAndPausePrevious(sectorScene) {

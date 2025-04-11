@@ -1,5 +1,6 @@
 ﻿import { Level } from '../object/level/level.js';
 import { Sector } from '../object/level/sector.js';
+import { DefaultKeyBindings } from './controller.js';
 
 export class GameSession {
     static session = {};
@@ -185,6 +186,10 @@ export class CookieSave {
         }
 
         return cookie;
+    }
+
+    static cookieExists(name) {
+        return CookieSave.getCookie(name) != null;
     }
 
     static clearSave(name) {

@@ -15,11 +15,7 @@ export class MenuScene extends Phaser.Scene {
     }
 
     generateKeyController() {
-        this.keys = {
-            'menu': this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC)
-        };
-
-        this.keyController = new KeyController(this.keys, this);
+        this.keyController = new KeyController(this);
     }
 
     preloadFonts() {
