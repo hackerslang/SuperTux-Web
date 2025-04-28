@@ -65,6 +65,39 @@
         }
     ],
 
+    "events": [
+      {
+        "delay": 50,
+        "callBackObject": "CameraTrembleScene",
+        "args": {
+          "innerDelay": 10,
+          "tremblePattern": [
+            {
+              "x": 2,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": -4,
+              "y": 1
+            },
+            {
+              "x": 0,
+              "y": -2
+            },
+            {
+              "x": 3,
+              "y": -1
+            }
+          ]
+          ";",
+        }
+      }
+    ],
+
     "invisibleBlocks": [
         { "x": 300, "y": 425 },
         { "x": 300, "y": 457 },

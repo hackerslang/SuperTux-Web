@@ -78,7 +78,6 @@ export class HellSpiky extends WalkingEnemy {
         if (!this.angry) {
             super.walk();
         } 
-        
     }
 
     roundContinuousWalk() {

@@ -105,7 +105,7 @@
                 }
             ]
         },
-        "backgrounds": {    
+        "backgrounds": {
             "sprites": [
                 {
                     "name": "pile-of-snow",
@@ -261,7 +261,8 @@
                 },
                 {
                     "name": "flying-snowball-squished",
-                    "value": "squished-left" }
+                    "value": "squished-left"
+                }
             ]
         },
         "ghoul": {
@@ -434,7 +435,7 @@
         "slopes": {
             "path": "./assets/tilemaps/slopes/",
             "sprites": [
-                { 
+                {
                     "name": "snow-slope-1",
                     "value": "snow-slope1"
                 },
@@ -591,7 +592,28 @@
                     "start": 0,
                     "end": 9
                 }
-                
+
+            ]
+        },
+        "debug-camera": {
+            "path": "./assets/images/ui/debug/camera/",
+            "sprites": [
+                {
+                    "name": "camera-down",
+                    "value": "camera-down"
+                },
+                {
+                    "name": "camera-up",
+                    "value": "camera-up"
+                },
+                {
+                    "name": "camera-left",
+                    "value": "camera-left"
+                },
+                {
+                    "name": "camera-right",
+                    "value": "camera-right"
+                }
             ]
         },
         "menu": {

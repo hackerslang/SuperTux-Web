@@ -1,6 +1,5 @@
 ﻿import { Level } from '../object/level/level.js';
 import { Sector } from '../object/level/sector.js';
-import { DefaultKeyBindings } from './controller.js';
 
 export class GameSession {
     static session = {};

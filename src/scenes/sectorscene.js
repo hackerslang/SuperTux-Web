@@ -27,6 +27,8 @@ import { CoinsDisplay } from '../object/ui/coinsdisplay.js';
 import { FallingPlatform } from '../object/blocks/fallingplatform.js';
 import { InvisibleWallBlock } from '../object/blocks/invisiblewallblock.js';
 import { Lava } from '../object/lava.js';
+import { GlobalGameConfig } from '../game.js';
+import { CameraButtons } from '../object/ui/debug/camerabuttons.js';
 
 export var currentSceneKey = "";
 
@@ -213,7 +215,17 @@ export class SectorScene extends Phaser.Scene {
             this.createDynamicForeGrounds();
             this.createStaticForegrounds();
             this.parseLava();
+
+            this.cameraDebugButtons = null;
+
+            if (this.isDebug()) {
+                this.cameraDebugButtons = new CameraButtons({ scene: this });
+            }
         }
+    }
+
+    isDebug() {
+        return GlobalGameConfig.physics.arcade.debug;
     }
 
     createMap() {
@@ -757,7 +769,7 @@ export class SectorScene extends Phaser.Scene {
     }
 
     loadNecessaryImages() {
-        var keys = ["arrow", "invisible-wall", "UI", "tux", "backgrounds", "coin", "powerup"];
+        var keys = ["arrow", "invisible-wall", "UI", "debug-camera", "tux", "backgrounds", "coin", "powerup"];
 
         this.loadImagesForKeys(keys);
     }
@@ -1069,7 +1081,14 @@ export class SectorScene extends Phaser.Scene {
         this.forceUpdateSprites(this.particleSprites, time, delta);
         this.forceUpdateSprites(this.blockSprites, time, delta);
         this.forceUpdateSprites(this.fallingPlatformSprites, time, delta);
+        this.updateCameraButtonsIfNeeded(time, delta);
         this.updatePowerups(time, delta);
+    }
+
+    updateCameraButtonsIfNeeded(time, delta) {
+        if (this.cameraDebugButtons !== null) {
+            this.cameraDebugButtons.update(time, delta);
+        }
     }
 
     handleOptionsKeys() {

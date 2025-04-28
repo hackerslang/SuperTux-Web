@@ -12,7 +12,7 @@ export var DefaultKeyBindings = [
     { 'caption': 'grab', 'expl': 'Grab Enemy;Grab for Climbing;Toggle Grab', 'key': Phaser.Input.Keyboard.KeyCodes.G },
     { 'caption': 'jumpalways', 'expl': 'Always Jump;Jump when Climbing', 'key': Phaser.Input.Keyboard.KeyCodes.SPACE },
     { 'caption': 'quicksave', 'expl': 'Quick Save', 'key': Phaser.Input.Keyboard.KeyCodes.K },
-    { 'caption': 'quickload', 'expl': 'Quick Load', 'key': Phaser.Input.Keyboard.KeyCodes.L }
+    { 'caption': 'quickload', 'expl': 'Quick Load', 'key': Phaser.Input.Keyboard.KeyCodes.L },
 ];
 
 export class KeyController {

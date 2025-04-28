@@ -8,7 +8,7 @@ import { GameSlotMenuScene } from './scenes/gameslotmenuscene.js';
 export const CANVAS_WIDTH = 1024;
 export const CANVAS_HEIGHT = 768;
 
-const config = {
+export const GlobalGameConfig = {
     type: Phaser.CANVAS,
     width: CANVAS_WIDTH,
     height: CANVAS_HEIGHT,
@@ -16,7 +16,7 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 750 }, //600
-            debug: false
+            debug: true
             //,fixedStep: false
         }
     },
@@ -33,4 +33,4 @@ const config = {
     powerPreference: "high-performance"
 };
 
-export const game = new Phaser.Game(config);
+export const game = new Phaser.Game(GlobalGameConfig);
