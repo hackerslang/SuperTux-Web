@@ -113,3 +113,94 @@
         }
     }
 }
+
+export var HellCrusherState = {
+    IDLE: 0,
+    THINKING: 1,
+    CRUSHING: 2
+}
+
+export class HellCrusher extends Krosh {
+    constructor(config) {
+        super(config);
+
+        this.originalX = this.x;
+        this.originalY = this.y;
+        this.idleTime = config.idleTime || 1500;
+        this.crushDelay = config.crushDelay || 1000;
+        this.thinkingTime = config.thinkingTime || 2500;
+        this.tremblePadding = config.tremblePadding || 2;
+        this.crushDelayTimer = this.crushDelay;
+        this.thinkingTimer = this.thinkingTime;
+        this.isThinking = false; 
+        this.setIdleState();
+        this.setTexture("hell-crusher");
+    }
+
+    startThinking() {
+        this.thinking = new Thinking({ scene: this.scene, creature: this, texture: "thinking-lightning" });   
+    }
+
+    stopThinking() {
+        this.thinking.destroy();
+        this.thinking = null;
+    }
+
+    setIdleState() {
+        this.state = HellCrusherState.IDLE;
+        this.stateTimer = this.idleTime;
+        this.body.setVelocity(0, 0);
+        this.body.setImmovable(true);
+        this.body.allowGravity = false;
+    }
+
+    setThinkingAngryState() {
+        this.state = HellCrusherState.THINKING;
+        this.stateTimer = this.thinkingTime;
+        this.startThinking();
+        this.trembleTween = this.scene.tweens.add({
+            targets: this,
+            x: {
+                getStart: () => this.x,
+                getEnd: () => this.x + Phaser.Math.Between(-this.tremblePadding, this.tremblePadding)
+            },
+            y: {
+                getStart: () => this.y,
+                getEnd: () => this.y + Phaser.Math.Between(-this.tremblePadding, this.tremblePadding)
+            },
+            repeat: -1,
+            yoyo: true
+        });
+    }
+
+    setCrushingState() {
+        this.state = HellCrusherState.CRUSHING;
+        this.stopThinking();
+        this.body.setVelocityY(300);
+        this.body.allowGravity = true;
+
+        if (this.trembleTween) {
+            this.trembleTween.remove();
+        }
+    }
+
+    update(time, delta) {
+        if (this.stateTimer > 0) {
+            this.stateTimer -= delta;
+        }
+
+        if (this.state == HellCrusherState.IDLE && this.stateTimer <= 0) {
+            this.setThinkingAngryState();
+        }
+
+        if (this.state = HellCrusherState.THINKING && this.stateTimer <= 0) {
+            this.setCrushingState();
+        }
+
+        if (this.thinking) {
+            this.thinking.update(time, delta);
+        }
+
+        super.update(time, delta);
+    }
+}

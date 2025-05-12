@@ -23,6 +23,17 @@
                     repeat: 0
                 },
                 {
+                    key: 'tux-climb-hang',
+                    frames: [{ key: 'tux-climb-0' }],
+                    frameRate: 24
+                },
+                {
+                    key: 'tux-climb',
+                    caption: 'tux-climb-',
+                    start: 0,
+                    end: 7,
+                },
+                {
                     key: "tux-fall",
                     frames: [{ key: 'tux-jump-2' }],
                     frameRate: 24

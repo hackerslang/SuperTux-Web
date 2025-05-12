@@ -24,6 +24,10 @@ export class Sector {
     }
 
     getOriginalTileData(x, y) {
+        if (y < 0 || y >= this.originalTileData.length || x < 0 || x >= this.originalTileData[0].length) {
+            return null;
+        }
+
         return this.originalTileData[y][x];
     }
 

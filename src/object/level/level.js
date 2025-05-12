@@ -1,6 +1,5 @@
 import { JsonFetcher } from '../json_fetcher.js';
 import { Sector } from './sector.js';
-import { SectorScene } from '../../scenes/sectorscene.js';
 
 export class Level {
     constructor(config) {
@@ -47,11 +46,109 @@ export class Level {
         return Sector.getCurrentSector().getTileData()[0].length;
     }
 
-    static isFreeOfObjects(x, y, scene) {
+    static isFreeOfObjects(x, y, scene, noClimb) {
         var tileX = Math.floor(x / 32);
         var tileY = Math.floor(y / 32);
+        var tile = Sector.getCurrentSector().getOriginalTileData(tileX, tileY);
 
-        return Sector.getCurrentSector().getOriginalTileData(tileX, tileY) == 0 && !Level.isInPlayerCollisionObject(x, y, scene);
+        return (tile == 0 || (noClimb === undefined && !noClimb && Sector.getCurrentSector().sectorData.climbableTiles && Sector.getCurrentSector().sectorData.climbableTiles.includes(tile))
+            && !Level.isInPlayerCollisionObject(x, y, scene));
+    }
+
+    static isInClimbingFence(creature, scene) {
+        var top = creature.body.top;
+        var bottom = creature.body.bottom;
+        var left = creature.body.left;
+        var right = creature.body.right;
+
+        var x = Math.floor(creature.x / 32);
+        var y = Math.floor(creature.y / 32);
+
+        var tile = Sector.getCurrentSector().getOriginalTileData(x, y);
+
+        if (tile === undefined) {
+            return false;
+        }
+
+        return (Sector.getCurrentSector().sectorData.climbableTiles && Sector.getCurrentSector().sectorData.climbableTiles.includes(tile)
+            && !Level.isInPlayerCollisionObject(x, y, scene));
+    }
+
+    static hasClimbingLeftToLeft(creature, scene) {
+        var left = creature.body.left;
+        var top = creature.body.top;
+        var bottom = creature.body.bottom;
+
+        var tiles = [
+            { x: left - 1, y: top },
+            { x: left - 1, y: top + ((bottom - top) / 2) },
+            { x: left - 1, y: bottom },
+        ];
+
+        return Level.anyTileHasClimbingSpaceLeft(tiles, scene);
+    }
+
+    static hasClimbingLeftToRight(creature, scene) {
+        var right = creature.body.right;
+        var top = creature.body.top;
+        var bottom = creature.body.bottom;
+
+        var tiles = [
+            { x: right + 1, y: top },
+            { x: right + 1, y: top + ((bottom - top) / 2) },
+            { x: right + 1, y: bottom },
+        ];
+
+        return Level.anyTileHasClimbingSpaceLeft(tiles, scene);
+    }
+
+    static hasClimbingLeftToTop(creature, scene) {
+        var left = creature.body.left;
+        var right = creature.body.right;
+        var top = creature.body.top;
+
+        var tiles = [
+            { x: left, y: top - 1 },
+            { x: left + ((right - left) / 2), y: top - 1 },
+            { x: right, y: top - 1}
+        ];
+
+        return Level.anyTileHasClimbingSpaceLeft(tiles, scene);
+    }
+
+    static hasClimbingLeftToBottom(creature, scene) {
+        var right = creature.body.right;
+        var left = creature.body.left;
+        var bottom = creature.body.bottom;
+
+        var tiles = [
+            { x: left, y: bottom + 1 },
+            { x: left + ((right - left) / 2), y: bottom + 1 },
+            { x: right, y: bottom + 1 }
+        ];
+
+        return Level.anyTileHasClimbingSpaceLeft(tiles, scene);
+    }
+
+    static anyTileHasClimbingSpaceLeft(tiles, scene) {
+        for (var i = 0; i < tiles.length; i++) {
+            var tile = tiles[i];
+            var x = Math.floor(tile.x / 32);
+            var y = Math.floor(tile.y / 32);
+
+            if (this.hasClimbingSpaceLeft(x, y, scene)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static hasClimbingSpaceLeft(x, y, scene) {
+        var tile = Sector.getCurrentSector().getOriginalTileData(x, y);
+
+        return (Sector.getCurrentSector().sectorData.climbableTiles && Sector.getCurrentSector().sectorData.climbableTiles.includes(tile)
+            && !Level.isInPlayerCollisionObject(x, y, scene));
     }
 
     static isOnTopOfObjects(x, y, scene) {
@@ -319,9 +416,6 @@ class SnowLevel extends Level {
     create() {
 
     }
-
-
-
 
     parseLevelEndLayer() {
         var iglooBg = this.scene.add.sprite(this.preloadedLevelEnd.x - 145, this.preloadedLevelEnd.y - 60, "igloo-bg");

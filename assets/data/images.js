@@ -60,6 +60,12 @@
                     "value": "kick-",
                     "start": 0,
                     "end": 5
+                },
+                {
+                    "name": "tux-climb-",
+                    "value": "climb-",
+                    "start": 0,
+                    "end": 7
                 }
             ]
         },
@@ -277,6 +283,15 @@
                 {
                     "name": "ghoul-squished",
                     "value": "d1"
+                }
+            ]
+        },
+        "hell-crusher": {
+            "path": "./assets/images/creatures/krosh/",
+            "sprites": [
+                {
+                    "name": "hell-crusher",
+                    "value": "hell-crusher"
                 }
             ]
         },
@@ -552,6 +567,27 @@
                 {
                     "name": "hellspiky-motionblur",
                     "value": "hellspiky-motionblur"
+                }
+            ]
+        },
+        "creature-thinking": {
+            "path": "./assets/images/objects/thinking/",
+            "sprites": [
+                {
+                    "name": "thinking-smaller",
+                    "value": "thinking-smaller"
+                },
+                {
+                    "name": "thinking-small",
+                    "value": "thinking-small"
+                },
+                {
+                    "name": "thinking-max",
+                    "value": "thinking-max"
+                },
+                {
+                    "name": "thinking-lightning",
+                    "value": "lightning"
                 }
             ]
         },

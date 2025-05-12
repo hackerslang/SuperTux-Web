@@ -26,6 +26,7 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         this.powerUps = config.powerUps;
 
         this.playerCollides = true;
+        this.canClimb = false;
 
         this.collidesWithOtherEnmies = config.collidesWithOtherEnmies;
 
@@ -82,9 +83,6 @@ export class Enemy extends Phaser.GameObjects.Sprite {
     }
 
     initWithGameSession(enemyFromGameSession) {
-        console.log(this.x);
-        console.log("now");
-        console.log(enemyFromGameSession.x);
         this.x = enemyFromGameSession.x;
         this.y = enemyFromGameSession.y;
         this.body.velocity.x = enemyFromGameSession.velocityX;
@@ -150,6 +148,12 @@ export class Enemy extends Phaser.GameObjects.Sprite {
 
         if (this.killFalling) {
             return;
+        }
+
+        if (!this.canClimb) {
+            this.scene.physics.world.collide(this, this.scene.climbableTilesGroup);
+        } else {
+            this.scene.physics.world.overlap(this, this.scene.climbableTilesGroup, this.climbHit);
         }
 
         this.scene.physics.world.collide(this, this.scene.enemyCollisionGroup, this.enemyHit);
@@ -260,6 +264,10 @@ export class Enemy extends Phaser.GameObjects.Sprite {
 
     //Must be overridden
     enemyHit(thisEnemy, enemy) {
+
+    }
+
+    climbHit(thisEnemy, climbable) {
 
     }
 
@@ -595,7 +603,7 @@ export class Enemy extends Phaser.GameObjects.Sprite {
             return false;
         }
 
-        return (Level.isFreeOfObjects(x-32, y+32, this.scene)/* || this.body.blocked.left /*|| this.body.touching.left*/);
+        return (Level.isFreeOfObjects(x-32, y+32, this.scene, !this.canClimb)/* || this.body.blocked.left /*|| this.body.touching.left*/);
     }
 
     isAtEdgeRight() {
@@ -609,7 +617,7 @@ export class Enemy extends Phaser.GameObjects.Sprite {
             return false;
         }
 
-        return (Level.isFreeOfObjects(x + 32, y + 32, this.scene)/* || this.body.blocked.right /*|| this.body.touching.right*/);
+        return (Level.isFreeOfObjects(x + 32, y + 32, this.scene, !this.canClimb)/* || this.body.blocked.right /*|| this.body.touching.right*/);
     }
 
     verticalHit(enemy, player) {

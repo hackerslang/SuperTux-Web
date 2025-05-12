@@ -10,7 +10,6 @@
     }
 
     initAnimation() {
-        // Tween to stretch and shrink the sprite vertically
         this.scene.tweens.add({
             targets: this,
             scaleY: { from: 1, to: 0.7 },
@@ -20,10 +19,18 @@
             ease: 'Sine.easeInOut'
         });
 
-        // Tween to rotate the sprite left and right
         this.scene.tweens.add({
             targets: this,
             angle: { from: -10, to: 10 },
+            duration: this.yoyoTime,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        this.scene.tweens.add({
+            targets: this,
+            alpha: { from: 1, to: 0 },
             duration: this.yoyoTime,
             yoyo: true,
             repeat: -1,

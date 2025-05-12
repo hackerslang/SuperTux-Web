@@ -28,6 +28,7 @@ export var TilemapConstants = {
 
 export class TilemapParser {
     constructor(sector, sectorData) {
+        this.sectorData = sectorData;
         this.level = sector.level;
         this.tileData = sectorData.data;
 
@@ -275,7 +276,7 @@ export class TilemapParser {
     }
 
     createPreloadedIndustrial(i, j, type) {
-        let industrialObject = this.createPreloadedObject(i, j, type.replace(TilemapConstants.INDUSTRIAL_START_PART, SpriteKeyConstants.INDUSTRIAL));
+        let industrialObject = this.createPreloadedObject(i, j, type.replace(TilemapConstants.INDUSTRIAL_START_PART, SpriteKeyConstants.INDUSTRIAL), type);
 
         this.collisionTiles.push(industrialObject);
     }
@@ -419,21 +420,25 @@ export class TilemapParser {
         this.enemies.push(spiky);
     }
 
-    createPreloadedObject(i, j, spriteType) {
+    createPreloadedObject(i, j, spriteType, originalType) {
+        let climbable = originalType && this.sectorData.climbableTiles && this.sectorData.climbableTiles.includes(originalType);
         let preloadedObject = {
             type: spriteType,
             x: i * 32,
-            y: j * 32
+            y: j * 32,
+            climbable: climbable
         };
 
         return preloadedObject;
     }
 
-    createPreloadedBackWithOffset(i, j, offsetI, offsetJ, type) {
+    createPreloadedBackWithOffset(i, j, offsetI, offsetJ, type, originalType) {
+        let climbable = originalType && this.sectorData.climbableTiles && this.sectorData.climbableTiles.includes(originalType);
         let preloadedObject = {
             type: type,
             x: i * 32 + offsetI,
-            y: j * 32 + offsetJ
+            y: j * 32 + offsetJ,
+            climbable: climbable
         };
 
         return preloadedObject;

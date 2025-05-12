@@ -54,6 +54,9 @@ export class Tux extends Phaser.GameObjects.Sprite {
         this.MAX_RUN_XM = 400;
         this.WALK_SPEED = 100;
 
+        this.MAX_CLIMB_XM = 50;
+        this.MAX_CLIMB_YM = 50;
+
         this.WALK_ACCELERATION_X = 300;
         this.RUN_ACCELERATION_X = 400; 
 
@@ -73,8 +76,11 @@ export class Tux extends Phaser.GameObjects.Sprite {
         this.JUMP_GRACE_TIME = 180;
         this.SKID_TIME = 100;
 
+        this.CLIMBING_PRESSED_TIME = 500;
+
         this.jumpButtonTimer = 0;
         this.fallingStartTimer = 0;
+        this.climbingPressedTimer = 0;
 
         this.flipped = false;
 
@@ -84,6 +90,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
         this.forceDrawWalking = 0;
 
         this.currentDelta = 0;
+        
 
         this.invincible = false;
         this.invincibleStep = 0;
@@ -111,6 +118,8 @@ export class Tux extends Phaser.GameObjects.Sprite {
         this.hasPlayedDuck = false;
         this.hasPlayedKick = false;
         this.hasPlayerJump = false;
+
+        this.isClimbing = false;
 
         this.KICK_TIME = 300;
 
@@ -218,7 +227,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
         this.stayInStaticsIfNeeded();
 
         //rounding bug phaser
-        this.body.y = Math.ceil(this.body.y);
+        if (!this.isClimbing) { this.body.y = Math.ceil(this.body.y); }
 
         if (this.body.y >= Math.floor(Level.getMaxLevelHeightY() * 32 - this.body.height) && !this.killed) {
             this.die();
@@ -318,7 +327,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
             this.jumpButtonTimer -= delta;
         }
 
-        if (this.onGround()) {
+        if (this.onGround() || Level.isInClimbingFence(this, this.scene)) {
             this.fallMode = this.ON_GROUND;
             this.lastGroundY = this.y;
             this.fallingFlagStart = false;
@@ -634,13 +643,13 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     handleInput(delta) {
-        this.handleHorizontalInput();
+        this.handleInputClimbing(delta);
 
         if (this.isClimbing) {
-            this.handleInputClimbing();
-
             return;
         }
+
+        this.handleHorizontalInput();
 
         if (this.getKeyController().pressed('duck') || (this.ducked && this.getKeyController().hold('duck'))) {
             this.doDuck();
@@ -651,49 +660,124 @@ export class Tux extends Phaser.GameObjects.Sprite {
         this.handleVerticalInput(delta); 
     }
 
-    handleInputClimbing() {
-        if (!this.isClimbing) {
-            return;
+    handleInputClimbing(delta) {
+        if (this.climbingPressedTimer > 0) {
+            this.climbingPressedTimer -= delta;
         }
 
+        if (!this.isClimbing) {
+            if (this.wantsToClimb()) {
+                this.startClimbing();
+            }
+        }
+
+        if (this.isHangingToClimb()) {
+            if (this.keyPressAlwaysJump()) {
+                this.jumpWhenHanging();
+            } else if (this.wantsToLetGoOfClimbing()) {
+                this.letGoOfClimbing();
+            } else {
+                this.handleClimbingInDirections();
+            }
+        } else if (this.isClimbing) {
+            this.handleClimbingInDirections();
+        }
+    }
+
+    wantsToClimb() {
+        return this.keyPressClimbing() && this.isInClimbingFence() && this.climbingPressedTimer <= 0;
+    }
+
+    startClimbing() {
+        this.isClimbing = true;
+        this.body.velocity.x = 0;
+        this.body.velocity.y = 0;
+        this.body.setAllowGravity(false);
+        this.climbingPressedTimer = this.CLIMBING_PRESSED_TIME;
+    }
+
+    wantsToLetGoOfClimbing() {
+        return this.keyPressClimbing() && this.climbingPressedTimer <= 0;
+    }
+
+    letGoOfClimbing() {
+        this.climbingPressedTimer = this.CLIMBING_PRESSED_TIME * 2;
+        this.isClimbing = false;
+        this.body.setAllowGravity(true);
+    }
+
+    isHangingToClimb() {
+        return this.isClimbing && this.isInClimbingFence();
+    }
+
+    jumpWhenHanging() {
+        this.climbingPressedTimer = this.CLIMBING_PRESSED_TIME;
+        this.body.setAllowGravity(true);
+        this.isClimbing = false;
+        this.doJump(-550);
+    }
+
+    handleClimbingInDirections() {
         var vx = 0;
         var vy = 0;
 
-        if (this.getKeyController().hold('left') && this.hasClimbableTileToTheLeft()) {
-            this.direction = this.DIRECTION_LEFT;
-            vx -= this.MAX_CLIMB_XM;
+        if (!((this.keyPressClimbingUp() && this.keyPressClimbingDown())
+            || (this.keyPressClimbingLeft() && this.keyPressClimbingRight()))) {
+            if (this.keyPressClimbingLeft() && Level.hasClimbingLeftToLeft(this, this.scene)) {
+                vx = -this.MAX_CLIMB_XM;
+            }
+
+            if (this.keyPressClimbingRight() && Level.hasClimbingLeftToRight(this, this.scene)) {
+                vx = this.MAX_CLIMB_XM;
+            }
+
+            if (this.keyPressClimbingUp() && Level.hasClimbingLeftToTop(this, this.scene)) {
+                vy = -this.MAX_CLIMB_YM;
+            }
+
+            if (this.keyPressClimbingDown() && Level.hasClimbingLeftToBottom(this, this.scene)) {
+                vy = this.MAX_CLIMB_YM;
+            }
         }
 
-        if (this.getKeyController().hold('right') && this.hasClimbableTileToTheRight()) {
-            this.direction = this.DIRECTION_RIGHT;
-            vx += this.MAX_CLIMB_XM;
+        this.body.setVelocityX(vx);
+        this.body.setVelocityY(vy);
+    }
+
+    stopClimbingButKeepHanging() {
+        if (this.isClimbing) {
+            this.body.setVelocityX(0);
+            this.body.setVelocityY(0);
         }
-
-        if (this.getKeyController().hold('jump') && this.hasClimbableTileAbove()) {
-            vy -= this.MAX_CLIMB_YM;
-        }
-
-        if (this.getKeyController().hold('duck') && this.hasClimbableTileBelow()) {
-            vy += this.MAX_CLIMB_YM;
-        }
-
     }
 
-    hasClimbableTileToTheLeft() {
-        var playerX = this.x;
-        var playerY = Math.floor(this.y / 32);
+    keyPressAlwaysJump() {
+        return this.getKeyController().pressed('jumpalways') || this.getKeyController().hold('jumpalways');
     }
 
-    hasClimbableTileToTheRight() {
-
+    keyPressClimbing() {
+        return this.getKeyController().pressed('use') || this.getKeyController().hold('use')
+            || this.getKeyController().pressed('grab') || this.getKeyController().hold('grab');
     }
 
-    hasClimbableTileAbove() {
-
+    keyPressClimbingUp() {
+        return this.getKeyController().hold('jump');
     }
 
-    hasClimbableTileBelow() {
+    keyPressClimbingDown() {
+        return this.getKeyController().hold('duck');
+    }
 
+    keyPressClimbingLeft() {
+        return this.getKeyController().hold('left');
+    }
+
+    keyPressClimbingRight() {
+        return this.getKeyController().hold('right');
+    }
+
+    isInClimbingFence() {
+        return Level.isInClimbingFence(this, this.scene);
     }
 
     handleHorizontalInput() {
@@ -805,8 +889,9 @@ export class Tux extends Phaser.GameObjects.Sprite {
         var tileBelowX = this.body.x;
         var tileBelowY = this.body.bottom;
 
-        if (!this.scene.isFreeOfMovingStatics(tileBelowX, tileBelowY) ||
-            !Level.isFreeOfObjects(tileBelowX, tileBelowY, this.scene)) {
+        if ((!this.scene.isFreeOfMovingStatics(tileBelowX, tileBelowY) ||
+            !Level.isFreeOfObjects(tileBelowX, tileBelowY, this.scene))// &&
+            /*Level.isInClimbingFence(this, this.scene)*/) {
             this.body.setVelocityY(Math.min(this.body.velocity.y, 0));
             this.body.y -= this.body.bottom % 32;
         }
@@ -934,6 +1019,12 @@ export class Tux extends Phaser.GameObjects.Sprite {
             this.drawSkid();
         } else if (this.kickTimer > 0) {
             this.drawKicking();
+        } else if (this.isClimbing) {
+            if (this.getVelocityX() == 0 && this.getVelocityY() == 0) {
+                this.drawClimingHanging();
+            } else {
+                this.drawClimbing();
+            }
         } else if ((!this.onGround() || this.fallMode != this.ON_GROUND) && !this.body.blocked.down) {
             this.drawJumping();
         } else if (Math.abs(this.getVelocityX()) < 1) {
@@ -1027,6 +1118,14 @@ export class Tux extends Phaser.GameObjects.Sprite {
         } else if (this.fallingStartTimer <= 0) {
             this.playAnimation("tux-fall");
         }
+    }
+
+    drawClimingHanging() {
+        this.playAnimation("tux-climb-hang");
+    }
+
+    drawClimbing() {
+        this.playAnimation("tux-climb");
     }
 
     drawStanding() {

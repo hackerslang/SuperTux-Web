@@ -295,6 +295,7 @@ export class SectorScene extends Phaser.Scene {
 
     createCollisionTilesGroup() {
         this.collisionTilesGroup = this.add.group();
+        this.climbableTilesGroup = this.add.group();
         this.parseCollisionTilesLayer();
     }
 
@@ -609,7 +610,7 @@ export class SectorScene extends Phaser.Scene {
             } else if (collisionTile.type == "wood-end") {
                 tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood", 4);
             } else if (collisionTile.type.startsWith(SpriteKeyConstants.INDUSTRIAL)) {
-                tile = self.add.sprite(collisionTile.x, collisionTile.y, "industrial", collisionTile.type.replace(SpriteKeyConstants.INDUSTRIAL, "")); //here error!
+                tile = self.add.sprite(collisionTile.x, collisionTile.y, "industrial", collisionTile.type.replace(SpriteKeyConstants.INDUSTRIAL, ""));
             } else {
                 return;
             }
@@ -619,7 +620,12 @@ export class SectorScene extends Phaser.Scene {
             tile.body.setImmovable(true);
             tile.setOrigin(0, 0);
 
-            self.collisionTilesGroup.add(tile);
+            if (collisionTile.climbable !== undefined && collisionTile.climbable === true) {
+                tile.body.setCollideWorldBounds(false);
+                self.climbableTilesGroup.add(tile);
+            } else {
+                self.collisionTilesGroup.add(tile);
+            }
         });
     }
 
@@ -831,7 +837,7 @@ export class SectorScene extends Phaser.Scene {
 
     loadEnemyImages() {
         var enemyImageKeys = ["snowball", "bouncing-snowball", "flying-snowball", "plasma-gun",
-            "mr-iceblock", "mr-bomb", "krosh", "fish", "ghoul", "jumpy", "spiky"];
+            "mr-iceblock", "mr-bomb", "hell-crusher", "krosh", "fish", "ghoul", "jumpy", "spiky", "creature-thinking"];
 
         this.loadImagesForKeys(enemyImageKeys);
     }

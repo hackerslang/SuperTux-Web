@@ -22,6 +22,7 @@ export class Spiky extends WalkingEnemy {
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
         this.direction = 0;
         this.firstActivated = false;
+        this.canClimb = false;
 
         this.body.setSize(32, 32, true);
         this.setOrigin(0.5, 0.5);
