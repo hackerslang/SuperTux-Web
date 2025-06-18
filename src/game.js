@@ -7,6 +7,7 @@ import { GameSlotMenuScene } from './scenes/gameslotmenuscene.js';
 
 export const CANVAS_WIDTH = 1024;
 export const CANVAS_HEIGHT = 768;
+export const GAME_GRAVITY = 750;
 
 export const GlobalGameConfig = {
     type: Phaser.CANVAS,
@@ -15,7 +16,7 @@ export const GlobalGameConfig = {
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: { y: 750 }, //600
+            gravity: { y: GAME_GRAVITY }, //600
             debug: true
             //,fixedStep: false
         }
@@ -30,6 +31,9 @@ export const GlobalGameConfig = {
         GameMenuScene,
         GameSlotMenuScene
     ],
+    render: {
+        antialias: true,
+    },
     powerPreference: "high-performance"
 };
 

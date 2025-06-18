@@ -1,6 +1,7 @@
 import { GameSession } from '../object/game_session.js';
 import { Level } from '../object/level/Level.js';
 import { Sector } from '../object/level/sector.js';
+import { GAME_GRAVITY } from '../game.js';
 
 export class Tux extends Phaser.GameObjects.Sprite {
     constructor(config) {
@@ -124,6 +125,17 @@ export class Tux extends Phaser.GameObjects.Sprite {
         this.KICK_TIME = 300;
 
         this.killAt = 0;
+
+        this.setCustomGravityIfNeeded();
+    }
+
+    setCustomGravityIfNeeded() {
+        var customGravity = Sector.getCurrentSector().getCustomGravity();
+
+        if (customGravity !== undefined) {
+            this.body.setGravityX(customGravity.x || 0);
+            this.body.setGravityY(customGravity.y || GAME_GRAVITY);
+        }
     }
 
     getOriginalLevel() {

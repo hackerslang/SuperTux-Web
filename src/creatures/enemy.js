@@ -61,6 +61,7 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         this.setWaitTurnTimer = 0;
         this.cannotWaitForTurn = false;
         this.cannotWaitForTurnTimer = 0;
+        this.justTurnAround = false;
         this.sliding = false;
         this.killFalling = false;
         this.killed = false;
@@ -156,29 +157,25 @@ export class Enemy extends Phaser.GameObjects.Sprite {
             this.scene.physics.world.overlap(this, this.scene.climbableTilesGroup, this.climbHit);
         }
 
+        if (this.collidesWithOtherEnmies) {
+            this.scene.physics.world.collide(this, this.scene.enemyGroup);
+        }
+
         this.scene.physics.world.collide(this, this.scene.enemyCollisionGroup, this.enemyHit);
         this.scene.physics.world.collide(this, this.scene.groundLayer);
 
+
+
         if (this.turnAroundWaitTimer > 0) {
             this.turnAroundWaitTimer -= delta;
-        }
-
-        if (this.turnAroundWaitTimer <= 0) {
-            this.swapTurnAround();
+        } else {
+            this.swapTurnAround();//ok
         }
 
         if (this.scene.enemyGroupCreated) {
             if (this.turnAroundWaitTimer <= 0) {
                 this.turnAroundBothEnemiesIfNeeded();
-
-                if (this.currentTurnAround) {
-                    this.turnAroundSpeed(this.walkSpeed, this.direction * -1);
-                    this.turnAroundWaitTimer = this.TURN_AROUND_WAIT_TIMER;
-                    this.currentTurnAround = false;
-                }
             }
-
-            this.swapTurnAround();
         }
 
         if (!this.player.isDead()) {
@@ -246,6 +243,13 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         }
 
         this.setWaitTurnTimer -= delta;
+    }
+
+    turnAroundOnce() {
+        this.turnAroundSpeed(this.walkSpeed, this.direction * -1);
+        this.turnAroundWaitTimer = this.TURN_AROUND_WAIT_TIMER;
+        this.currentTurnAround = false;
+        this.justTurnAround = true;
     }
 
     activeUpdate() {
@@ -527,7 +531,7 @@ export class Enemy extends Phaser.GameObjects.Sprite {
                 }
             }
         });
-
+        //console.log("closestFacingEnemy: " + closestFacingEnemy + ", direction: " + this.direction);
         return closestFacingEnemy;
     }
 
@@ -536,13 +540,19 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         if (closestFacingEnemy == null) {
             return;
         }
+
+        if (this.currentTurnAround) {
+            this.turnAroundOnce();
+        }
+
         var distanceX = Math.abs(closestFacingEnemy.x - this.x);
         
         if (distanceX <= 32) {
             this.prevTurnAround = true;
-            closestFacingEnemy.prevTurnAround = true;
-            //this.turnAroundWaitTimer = this.TURN_AROUND_WAIT_TIMER;
-            //closestFacingEnemy.turnAroundWaitTimer = this.TURN_AROUND_WAIT_TIMER;
+
+            //if (!closestFacingEnemy.justTurnAround) {
+                closestFacingEnemy.prevTurnAround = true;
+            //}
         }
     }
 

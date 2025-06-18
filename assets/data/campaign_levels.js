@@ -1,5 +1,8 @@
 ﻿export var worldLevels = [
-    "the-lava-world",
-    "antarctica-the-beginning"
+    "the-dark-world",
+    "exterminated-planet",
+    "antarctica-the-beginning",  
+    
+    "the-lava-world"
     
 ];

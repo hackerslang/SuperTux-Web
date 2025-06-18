@@ -51,6 +51,10 @@ export class Sector {
         return this.sectorData.invisibleBlocks;
     }
 
+    getCustomGravity() {
+        return this.sectorData.gravity;
+    }
+
     makeCurrent() {
         Level.currentLevel = this.level;
         Sector.currentSector = this;
@@ -108,8 +112,8 @@ export class Sector {
         return this.sectorData.dynamicForegrounds;
     }
 
-    getStaticForegrounds() {
-        return this.sectorData.staticForegrounds;
+    getFillTilesForegrounds() {
+        return this.sectorData.fillTilesForegrounds;
     }
 
     getTilesets() {
@@ -137,61 +141,9 @@ export class Sector {
         this.preloadedSpikes.push(spike);
     }
 
-
-
-
-    //parseBlockLayer() {
-    //    var blockSprites = [];
-    //    for (var i = 0; i < this.additionalTiles.collisionTiles.length; i++) {
-    //        var preloadedBlock = this.additionalTiles.collisionTiles[i]; { };
-
-    //        let block = {};
-
-    //        if (preloadedBlock.type == "bonus-block") {
-    //            block = new BonusBlock({
-    //                id: i,
-    //                key: "bonus-block-" + i,
-    //                scene: this.scene,
-    //                x: preloadedBlock.x,
-    //                y: preloadedBlock.y,
-    //                player: this.player,
-    //                level: this,
-    //                powerupType: preloadedBlock.powerupType,
-    //                content: preloadedBlock.content,
-    //                hitCounter: preloadedBlock.hitCounter
-    //            });
-    //        } else if (preloadedBlock.type == "brick") {
-    //            block = new Brick({
-    //                id: i,
-    //                key: "brick" + i,
-    //                scene: this.scene,
-    //                x: preloadedBlock.x,
-    //                y: preloadedBlock.y,
-    //                brickSprite: preloadedBlock.brickSprite,
-    //                player: this.player,
-    //                level: this
-    //            });
-    //        }
-
-    //        this.blockGroup.add(block);
-    //        blockSprites.push(block);
-    //    }
-
-    //    this.blockSprites = blockSprites;
-    //}
-
-
-
-    
-
-
-
-    
-
     parseTilemaps() {
         this.additionalTiles = this.tilemapParser.parse();
     }
-
 
     createPreloadedPlainWater(currentTile, i, j, tile, preloadedArray) {
         if (!this.waterStart) {

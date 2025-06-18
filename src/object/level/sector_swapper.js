@@ -1,4 +1,5 @@
-﻿import { Sector } from './sector.js';
+﻿import { SectorScene1, SectorScene2, SectorScene3 } from '../../scenes/sectorscene.js';
+import { Sector } from './sector.js';
 import { game } from '../../game.js';
 
 export var SectorScenesSlots = [

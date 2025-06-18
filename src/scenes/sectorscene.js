@@ -52,7 +52,6 @@ export class SectorScene extends Phaser.Scene {
 
     generateKeyController() {
         this.keyController = new KeyController(this);
-
     }
 
     activateAndPausePrevious(sectorScene) {
@@ -137,6 +136,7 @@ export class SectorScene extends Phaser.Scene {
         var fontLoader = new FontLoader();
 
         fontLoader.loadFont(this, "SuperTuxSmallFont");
+        fontLoader.loadFont(this, "SuperTuxBigColorFul");
     }
 
     async preload() {
@@ -158,6 +158,7 @@ export class SectorScene extends Phaser.Scene {
 
             this.loadFonts();
             this.loadImages();
+            this.fillTilesForeground();
             await this.loadTilemaps();
             this.loadCoinTiles();
             this.loadBackgroundImage(this.sector.getBackgroundImage());
@@ -213,7 +214,6 @@ export class SectorScene extends Phaser.Scene {
             this.physics.world.setBoundsCollision(true, true, true, true);
             
             this.createDynamicForeGrounds();
-            this.createStaticForegrounds();
             this.parseLava();
 
             this.cameraDebugButtons = null;
@@ -630,7 +630,7 @@ export class SectorScene extends Phaser.Scene {
     }
 
     createBackground() {
-        var backgroundImage = this.add.image(0, 0, 'background');
+        var backgroundImage = this.add.image(0, 0, this.makeBackgroundImageKey());
         backgroundImage.setOrigin(0, 0);
         backgroundImage.scrollFactorX = 0;
         backgroundImage.scrollFactorY = 0;
@@ -739,7 +739,11 @@ export class SectorScene extends Phaser.Scene {
     }
 
     loadBackgroundImage(backgroundImage) {
-        this.preloadImage('background', backgroundImage);
+        this.preloadImage(this.makeBackgroundImageKey(), backgroundImage);
+    }
+
+    makeBackgroundImageKey() {
+        return Level.getCurrentLevel().levelData.key + '-' + Sector.getCurrentSector().sectorData.key + '-background';
     }
 
     loadCoinTiles() {
@@ -932,28 +936,6 @@ export class SectorScene extends Phaser.Scene {
                         }
                     }
                 }
-            } else if (typeof foreground.tile == 'number') {
-                for (var x = foreground.startX; x < foreground.endX; x++) {
-                    for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
-                        if (self.sector.getTileDataValue(x, y) == 0) {
-                            self.sector.setTileDataValue(x, y, foreground.tile);
-                        } else if (self.sector.getTileDataValue(x, y) == -1) {
-                            self.sector.setTileDataValue(x, y, 0);
-                        }
-                    }
-                }
-                /*
-                lava = new Lava({
-                    id: i,
-                    key: 'lava-' + i,
-                    player: this.player,
-                    scene: this,
-                    x: preloadedLava.x,
-                    y: preloadedLava.y,
-                    level: Level.currentLevel,
-                    alpha: this.LAVA_ALPHA
-                });
-                */
             } else if (foreground.tile == "la2") {
                 for (var x = foreground.startX; x < foreground.endX; x += 4) {
                     for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
@@ -989,50 +971,28 @@ export class SectorScene extends Phaser.Scene {
         }
     }
 
-    createStaticForegrounds() {
-        var sectorStaticForegrounds = this.sector.getStaticForegrounds();
+    fillTilesForeground() {
+        var sectorStaticForegrounds = this.sector.getFillTilesForegrounds();
 
         if (sectorStaticForegrounds == null) { return; }
-
         var i = 0;
         var level = this;
         var self = this;
         sectorStaticForegrounds.forEach(function (foreground, ids) {
             var foregroundImage = {};
+            if (typeof foreground.tile == 'number') {
+                foreground.endX = foreground.startX + foreground.width;
 
-            if (foreground.tile == "la") {
-                for (var x = foreground.x; x < foreground.x + foreground.width; x++) {
+                for (var x = foreground.startX; x < foreground.endX; x++) {
                     for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
-                        var foregroundImage = level.scene.add.sprite(x * 32, y * 32, 'lava');
-                        foregroundImage.setOrigin(0, 0);
-                        foregroundImage.setDepth(120);
-
-                        foregroundImage.scrollFactorX = 0;
-                        foregroundImage.scrollFactorY = 1;
-                    }
-                }
-            } else if (foreground.tile == "la2") {
-                for (var x = foreground.x; x < foreground.x + foreground.width; x += 4) {
-                    for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
-                        var foregroundImage = new Lava({
-                            id: i,
-                            key: 'lava-' + i,
-                            player: level.player,
-                            scene: level.scene,
-                            x: x * 32,
-                            y: y * 32,
-                            level: level
-                        });
-
-                        foregroundImage.scrollFactorX = 0;
-                        foregroundImage.scrollFactorY = 1;
-
-                        i++;
+                        if (self.sector.getTileDataValue(x, y) == 0) {
+                            self.sector.setTileDataValue(x, y, foreground.tile);
+                        } else if (self.sector.getTileDataValue(x, y) == -1) {
+                            self.sector.setTileDataValue(x, y, 0);
+                        }
                     }
                 }
             }
-
-
         });
     }
 
@@ -1127,7 +1087,7 @@ export class SectorScene extends Phaser.Scene {
 
         GameSession.quickSaveGame(session);
 
-        this.quickSaveGameText = fontLoader.displayText({ scene: this, fontName: "SuperTuxSmallFont", x: CANVAS_WIDTH - 30 - (saved.length * 18), y: 70, text: saved, fade: true, fadeFactor: 1 });
+        this.quickSaveGameText = fontLoader.displayTextFromAtlas({ scene: this, fontName: "SuperTuxBigColorFul", x: CANVAS_WIDTH - 30 - (saved.length * 18), y: 70, text: saved, fade: true, fadeFactor: 1 });
     }
 
     createSaveSession() {

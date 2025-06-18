@@ -1,0 +1,8 @@
+{
+  "key": "exterminated-planet",
+  "title": "Exterminated Planet",
+  "slopes": [ "lava-snow" ],
+  "sectors": [ "sector3" ],
+  "objectives": [ "Escape the planet before the sun rises! Or you'll be fried alive!" ],
+  "timer": 420
+}

@@ -55,8 +55,6 @@ export class LoadGameScene extends Phaser.Scene {
         SectorSwapper.clearAllSectors();
         await level.initialize(gameSession);
         this.scene.stop("LoadGameScene");
-
-        console.log(Sector.getCurrentSector());
         SectorSwapper.newSector(Sector.getCurrentSector(), this);
     }
 }

@@ -163,7 +163,7 @@ class SaveGameSlotItem {
         var fontLoader = new FontLoader();
 
         this.createHoverRect();
-        this.slotText = fontLoader.displayText({ scene: this.scene, fontName: "SuperTuxBigFont", x: this.x + PADDING, y: this.y + 20, text: this.slotText });
+        this.slotText = fontLoader.displayTextFromAtlas({ scene: this.scene, fontName: "SuperTuxBigColorFul", x: this.x + PADDING, y: this.y + 20, text: this.slotText });
 
         if (!this.isEmpty) {
             this.isEmptyText = null;

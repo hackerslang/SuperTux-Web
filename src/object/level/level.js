@@ -333,7 +333,6 @@ export class Level {
     }
 
     spikeHit(player) {
-        alert("");
     }
 
 

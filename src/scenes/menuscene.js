@@ -21,6 +21,10 @@ export class MenuScene extends Phaser.Scene {
     preloadFonts() {
         var fontLoader = new FontLoader();
 
+        fontLoader.loadRawTtfFont(this, "Supertux-Medium-TrueType", "./assets/fonts/Supertux-Medium.ttf");
+        fontLoader.loadFont(this, "SuperTuxBigColorFul");
+        fontLoader.loadFont(this, "SuperTuxBigColorFulWhite");
+        fontLoader.loadFont(this, "SuperTuxSmallColorFul");
         fontLoader.loadFont(this, "SuperTuxBigFont");
         fontLoader.loadFont(this, "SuperTuxBigFontColored");
         fontLoader.loadFont(this, "SuperTuxSmallFont");

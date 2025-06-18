@@ -676,6 +676,55 @@
                     "value": "save-game-slot"
                 }
             ]
+        },
+        "gamemenu": {
+            "path": "./assets/images/ui/menu/gamemenu/",
+            "sprites": [
+                {
+                    "name": "exit-to-main-menu",
+                    "value": "exit-to-main-menu"
+                },
+                {
+                    "name": "exit-to-main-menu-hover",
+                    "value": "exit-to-main-menu-hover"
+                },
+                {
+                    "name": "load-game",
+                    "value": "load-game"
+                },
+                {
+                    "name": "load-game-hover",
+                    "value": "load-game-hover"
+                },
+                {
+                    "name": "save-game",
+                    "value": "save-game"
+                },
+                {
+                    "name": "save-game-hover",
+                    "value": "save-game-hover"
+                },
+                {
+                    "name": "resume-game", 
+                    "value": "resume-game"
+                },
+                {
+                    "name": "resume-game-hover",
+                    "value": "resume-game-hover"
+                },
+                {
+                    "name": "settings",
+                    "value": "settings"
+                },
+                {
+                    "name": "settings-hover",
+                    "value": "settings-hover"
+                },
+                {
+                    "name": "gamemenu-title",
+                    "value": "title"
+                }
+            ]
         }
     }
 };

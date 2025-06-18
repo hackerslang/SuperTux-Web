@@ -63,6 +63,11 @@
                     repeat: 0
                 },
                 {
+                    key: 'tux-pushback-hurt',
+                    frames: [{ key: 'tux-jump-7' }],
+                    frameRate: 24
+                },
+                {
                     key: 'tux-run',
                     caption: 'tux-run-',
                     start: 0,
