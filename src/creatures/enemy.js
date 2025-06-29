@@ -47,6 +47,7 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         this.turnedAroundRight = false;
 
         this.prevTurnAround = false;
+        this.currentNormalWalkSpeed = 0;
 
         this.PADDING_ENEMY_COLLISION = 2;
         this.ENEMY_COLLISION_TURN_TIMER = 400;
@@ -151,6 +152,11 @@ export class Enemy extends Phaser.GameObjects.Sprite {
             return;
         }
 
+        if (Math.abs(this.getVelocityX()) > 0.5) {
+            this.currentNormalWalkSpeed = this.getVelocityX();
+            this.currentDirection = this.direction;
+        }
+
         if (!this.canClimb) {
             this.scene.physics.world.collide(this, this.scene.climbableTilesGroup);
         } else {
@@ -246,7 +252,7 @@ export class Enemy extends Phaser.GameObjects.Sprite {
     }
 
     turnAroundOnce() {
-        this.turnAroundSpeed(this.walkSpeed, this.direction * -1);
+        this.turnAroundSpeed(Math.abs(this.currentNormalWalkSpeed), this.currentDirection * -1);
         this.turnAroundWaitTimer = this.TURN_AROUND_WAIT_TIMER;
         this.currentTurnAround = false;
         this.justTurnAround = true;
@@ -360,6 +366,7 @@ export class Enemy extends Phaser.GameObjects.Sprite {
     turnAroundSpeed(speed, direction) {
         this.direction = direction;
         this.body.velocity.x = this.direction * speed;
+        console.log(this.id + ", velocity:" + this.body.velocity.x);
         this.flipX = !this.flipX;
         this.turnedAroundLeft = (direction != this.DIRECTION_RIGHT);
         this.turnedAroundRight = (direction == this.DIRECTION_RIGHT);
@@ -536,17 +543,17 @@ export class Enemy extends Phaser.GameObjects.Sprite {
     }
 
     turnAroundBothEnemiesIfNeeded() {
+        if (this.currentTurnAround) {
+            this.turnAroundOnce();
+        }
+
         var closestFacingEnemy = this.getClosestFacingEnemy();
         if (closestFacingEnemy == null) {
             return;
         }
 
-        if (this.currentTurnAround) {
-            this.turnAroundOnce();
-        }
-
         var distanceX = Math.abs(closestFacingEnemy.x - this.x);
-        
+
         if (distanceX <= 32) {
             this.prevTurnAround = true;
 

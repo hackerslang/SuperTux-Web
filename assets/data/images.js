@@ -674,6 +674,14 @@
                 {
                     "name": "save-game-slot",
                     "value": "save-game-slot"
+                },
+                {
+                    "name": "paused-title",
+                    "value": "paused-title"
+                },
+                {
+                    "name": "press-p-unpause", 
+                    "value": "press-p-unpause"
                 }
             ]
         },

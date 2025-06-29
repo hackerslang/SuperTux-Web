@@ -61,38 +61,6 @@ export class GameMenuScene extends MenuScene {
             }
         ];
 
-        //var padding = 30;
-        //var menuItemPadding = 20;
-        //var longestText = this.getLongestMenuItemName(items);
-        //var longestTextWidth = fontLoader.preCalculateTextDimensionsFromAtlas({ fontName: "SuperTuxBigColorFul", scale: 0.5, text: longestText }).totalWidth;
-        //var menuRectWidth = longestTextWidth + (padding * 2);
-        //var menuRectHeight = (glyphHeight * 4) + (menuItemPadding * 3) + padding;
-        //var menuRectX = (CANVAS_WIDTH / 2) - (menuRectWidth / 2);
-        //var menuRectY = (CANVAS_HEIGHT / 2) - (menuRectHeight / 2);
-
-        //for (var i = 0; i < items.length; i++) {
-        //    var item = items[i];
-        //    //var textWidth = fontLoader.preCalculateTextDimensionsFromAtlas({ fontName: "SuperTuxBigColorFul", scale: 0.5, text: item.text }).totalWidth;
-
-        //    item.textX1 = ((CANVAS_WIDTH / 2) - (longestTextWidth / 2));
-        //    item.textY1 = menuRectY + (i * menuItemPadding) + padding + (i * glyphHeight);
-        //}
-
-        //var rect = this.add.rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, 0x272c2f, 0.9);
-
-        //rect.setOrigin(0, 0);
-        //rect.setInteractive();
-
-        //var graphics = this.add.graphics();
-
-        //this.menuRect = this.add.rectangle(menuRectX, menuRectY, menuRectWidth, menuRectHeight, 0x000000, 0.37);
-
-        //this.menuRect.setOrigin(0, 0);
-        //this.menuRect.setInteractive();
-
-        //graphics.lineStyle(0.3, 0x000000);
-        //graphics.strokeRectShape(this.menuRect);
-
         this.menuItems = [];
 
         var self = this;
@@ -100,7 +68,7 @@ export class GameMenuScene extends MenuScene {
         var x = CANVAS_WIDTH / 2;
         var padding = 20;
 
-        this.add.rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, 0x272c2f, 0.95).setOrigin(0, 0);
+        super.createOverlayDark();
 
         this.add.sprite(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 8, "gamemenu-title").setOrigin(0.5, 0.5);
 

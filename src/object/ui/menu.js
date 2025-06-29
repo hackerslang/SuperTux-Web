@@ -79,6 +79,7 @@ export class ClickableHoverableRecangle {
         this.init();
     } 
 
+
     init() {
         this.rect = this.scene.add.rectangle(this.x, this.y, this.width, this.height, this.color1, 0);
         this.rect.setOrigin(this.originX, this.originY);
@@ -88,9 +89,11 @@ export class ClickableHoverableRecangle {
 
         this.rect.on("pointerover", function (pointer) {
             self.item.hover();
+            self.setCursorLink(true, self);
         });
         this.rect.on("pointerout", function (pointer) {
             self.item.unHover();
+            self.setCursorLink(false, self);
         });
         this.rect.on('pointerdown', function (pointer) {
             self.pointerDown = true;
@@ -98,9 +101,18 @@ export class ClickableHoverableRecangle {
         this.rect.on('pointerup', function (pointer) {
             if (self.pointerDown) {
                 self.clickCallBack(self.item.id);
-                self.pointerDown = false;
             }
         });
+    }
+
+    setCursorLink(bool, self) {
+        if (bool) {
+            if (self.scene.currentCursor == "default") {
+                self.scene.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor-link.png), pointer');
+            }
+        } else if (self.scene.currentCursor == "default") {
+            self.scene.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor.png), pointer');
+        }
     }
 }
 

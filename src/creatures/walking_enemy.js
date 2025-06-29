@@ -20,6 +20,12 @@ export class WalkingEnemy extends Enemy { //everything implemented except collis
             walkSpeed = config.walkSpeed;
         }
 
+        if (walkSpeed < 0) {
+            this.direction = this.DIRECTION_LEFT;
+        } else {
+            this.direction = this.DIRECTION_RIGHT;
+        }
+
         this.setWalkSpeed(walkSpeed);
     }
 

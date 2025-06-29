@@ -17,7 +17,6 @@ export class LoadGameScene extends Phaser.Scene {
     }
 
     preload() {
-
     }
 
     create(config) {

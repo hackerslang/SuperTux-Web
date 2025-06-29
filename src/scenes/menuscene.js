@@ -30,6 +30,12 @@ export class MenuScene extends Phaser.Scene {
         fontLoader.loadFont(this, "SuperTuxSmallFont");
     }
 
+    createOverlayDark() {
+        var rect = this.add.rectangle(0, 0, this.game.canvas.width, this.game.canvas.height, 0x272c2f, 0.95);
+
+        rect.setOrigin(0, 0);
+    }
+
     initCursor() {
         this.currentCursor = "default";
         this.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor.png), pointer');

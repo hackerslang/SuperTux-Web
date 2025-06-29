@@ -20,7 +20,6 @@ export class Spiky extends WalkingEnemy {
         
         this.walkAnimation = "spiky-walk";
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
-        this.direction = 0;
         this.firstActivated = false;
         this.canClimb = false;
 
