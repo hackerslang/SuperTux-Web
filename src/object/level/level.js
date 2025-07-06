@@ -130,6 +130,22 @@ export class Level {
         return Level.anyTileHasClimbingSpaceLeft(tiles, scene);
     }
 
+    static hasClimbingLeftToBottomByHangingTop(creature, scene) {
+        var right = creature.body.right;
+        var left = creature.body.left;
+        var top = creature.body.top;
+
+        var outerTop = top + creature.climbingTopPadding;
+
+        var tiles = [
+            { x: left, y: outerTop },
+            { x: left + ((right - left) / 2), y: outerTop },
+            { x: right, y: outerTop }
+        ];
+
+        return Level.anyTileHasClimbingSpaceLeft(tiles, scene);
+    }
+
     static anyTileHasClimbingSpaceLeft(tiles, scene) {
         for (var i = 0; i < tiles.length; i++) {
             var tile = tiles[i];

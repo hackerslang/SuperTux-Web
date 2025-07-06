@@ -366,7 +366,6 @@ export class Enemy extends Phaser.GameObjects.Sprite {
     turnAroundSpeed(speed, direction) {
         this.direction = direction;
         this.body.velocity.x = this.direction * speed;
-        console.log(this.id + ", velocity:" + this.body.velocity.x);
         this.flipX = !this.flipX;
         this.turnedAroundLeft = (direction != this.DIRECTION_RIGHT);
         this.turnedAroundRight = (direction == this.DIRECTION_RIGHT);

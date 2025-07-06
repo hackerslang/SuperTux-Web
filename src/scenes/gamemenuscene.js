@@ -9,8 +9,6 @@ import { MenuScene } from './menuscene.js';
 export class GameMenuScene extends MenuScene {
     constructor() {
         super({ key: 'GameMenuScene' });
-        this.imageLoader = new ImageLoader({ scene: this });
-        
     }
 
     preload() {
@@ -67,8 +65,6 @@ export class GameMenuScene extends MenuScene {
         var i = 0;
         var x = CANVAS_WIDTH / 2;
         var padding = 20;
-
-        super.createOverlayDark();
 
         this.add.sprite(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 8, "gamemenu-title").setOrigin(0.5, 0.5);
 

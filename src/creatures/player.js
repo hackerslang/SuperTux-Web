@@ -126,6 +126,10 @@ export class Tux extends Phaser.GameObjects.Sprite {
 
         this.killAt = 0;
 
+        //When Tux climbs, he can hang with his arms at the climbing fence. This padding allows him to hang at the bottom of the climbing fence, while hanging
+        //with his head below the fence. This is approximately the length of his hands.
+        this.climbingTopPadding = 10;
+
         this.setCustomGravityIfNeeded();
     }
 
@@ -516,6 +520,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
     die() {
         if (this.killed) { return; }
 
+        this.body.setAllowGravity(true);
         this.scene.cameras.main.setLerp(0, 0);
         this.dieWithoutRemovingColliders();
         this.removeColliders();
@@ -683,7 +688,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
             }
         }
 
-        if (this.isHangingToClimb()) {
+        if (this.isClimbing) {
             if (this.keyPressAlwaysJump()) {
                 this.jumpWhenHanging();
             } else if (this.wantsToLetGoOfClimbing()) {
@@ -691,8 +696,6 @@ export class Tux extends Phaser.GameObjects.Sprite {
             } else {
                 this.handleClimbingInDirections();
             }
-        } else if (this.isClimbing) {
-            this.handleClimbingInDirections();
         }
     }
 
@@ -747,7 +750,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
                 vy = -this.MAX_CLIMB_YM;
             }
 
-            if (this.keyPressClimbingDown() && Level.hasClimbingLeftToBottom(this, this.scene)) {
+            if (this.keyPressClimbingDown() && (Level.hasClimbingLeftToBottom(this, this.scene) || Level.hasClimbingLeftToBottomByHangingTop(this, this.scene))) {
                 vy = this.MAX_CLIMB_YM;
             }
         }

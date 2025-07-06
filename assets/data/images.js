@@ -286,6 +286,27 @@
                 }
             ]
         },
+        "hell": {
+            "path": "./assets/images/level/hell/",
+            "sprites": [
+                {
+                    "name": "hell-large-block",
+                    "value": "rock-d"
+                },
+                {
+                    "name": "hell-meidum-block",
+                    "value": "rock-b"
+                },
+                {
+                    "name": "hell-small-block",
+                    "value": "rock"
+                },
+                {
+                    "name": "hell-smallest-block",
+                    "value": "rock-c"
+                }
+            ]
+        },
         "hell-crusher": {
             "path": "./assets/images/creatures/krosh/",
             "sprites": [
@@ -656,20 +677,16 @@
             "path": "./assets/images/ui/menu/",
             "sprites": [
                 {
+                    "name": "menu-background",
+                    "value": "menu-background"
+                },
+                {
                     "name": "back-button",
                     "value": "back"
                 },
                 {
                     "name": "back-button-hover",
                     "value": "back-hover"
-                },
-                {
-                    "name": "load-game",
-                    "value": "load-game"
-                },
-                {
-                    "name": "save-game",
-                    "value": "save-game"
                 },
                 {
                     "name": "save-game-slot",

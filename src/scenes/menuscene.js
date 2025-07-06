@@ -1,17 +1,32 @@
 ﻿import { FontLoader } from '../object/ui/fontloader.js';
+import { ImageLoader } from '../helpers/imageloader.js';
 import { KeyController } from '../object/controller.js';
+
 export class MenuScene extends Phaser.Scene {
     constructor(config) {
         super({ key: config.key });
+        this.initImageLoader();
+    }
+
+    initImageLoader() {
+        if (this.imageLoader === undefined) {
+            this.imageLoader = new ImageLoader({ scene: this });
+        }
     }
 
     preload() {
         this.generateKeyController();
         this.preloadFonts();
+        this.imageLoader.loadImagesFromData("menu");
     }
 
     create() {
         this.initCursor();
+        this.addBackground();
+    }
+
+    addBackground() {
+        this.add.sprite(0, 0, "menu-background").setOrigin(0, 0);
     }
 
     generateKeyController() {

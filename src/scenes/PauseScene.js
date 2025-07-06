@@ -1,8 +1,7 @@
 ﻿import { game, CANVAS_WIDTH, CANVAS_HEIGHT } from '../game.js';
-import { ImageButton, ClickableHoverableRecangle } from '../object/ui/menu.js';
+import { ImageButton } from '../object/ui/menu.js';
 import { KeyController } from '../object/controller.js';
 import { SectorSwapper } from '../object/level/sector_swapper.js';
-import { ImageLoader } from '../helpers/imageloader.js';
 import { MenuScene } from './menuscene.js';
 
 export class PauseScene extends MenuScene {
@@ -10,11 +9,6 @@ export class PauseScene extends MenuScene {
         super({
             key: 'PauseScene'
         });
-        this.init();
-    }
-
-    init() {
-        this.imageLoader = new ImageLoader({ scene: this });
     }
 
     preload() {
@@ -26,7 +20,6 @@ export class PauseScene extends MenuScene {
 
     create() {
         super.create();
-        super.createOverlayDark();
         this.makePauseMenu();
     }
 
