@@ -63,6 +63,17 @@ export class GameSession {
 
     static saveGameSlot(gameSession, n) {
         GameSession.saveGame(gameSession, "SuperTuxWeb-SaveSlot-" + n);
+
+        var level = Level.getCurrentLevel();
+        var sector = Sector.getCurrentSector();
+
+        var updatedSlot = {
+            levelName: level.levelData.title,
+            sectorName: sector.sectorData.name,
+            timestamp: gameSession.timestamp
+        };
+
+        return updatedSlot;
     }
 
     static saveGame(gameSession, slot) {

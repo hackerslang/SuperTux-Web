@@ -2,8 +2,10 @@
 import { FontLoader } from '../object/ui/fontloader.js';
 import { KeyController } from '../object/controller.js';
 import { GameSession } from '../object/game_session.js';
+import { Sector } from '../object/level/sector.js';
 import { SectorScene } from './sectorscene.js';
 import { SectorSwapper } from '../object/level/sector_swapper.js';
+import { ConfirmDialog } from '../object/ui/dialog.js';
 import { ImageButton } from '../object/ui/menu.js';
 import { ImageLoader } from '../helpers/imageloader.js';
 import { ClickableHoverableRecangle } from '../object/ui/menu.js';
@@ -44,20 +46,6 @@ export class GameSlotMenuScene extends MenuScene
         }
     }
 
-    setCursorLink(bool) {
-        if (bool) {
-            if (this.currentCursor == "default") {
-                this.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor-link.png), pointer');
-            }
-        } else if (this.currentCursor == "default") {
-            this.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor.png), pointer');
-        }
-    }
-
-    setCursorLinkDown() {
-        this.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor-click.png), pointer');
-    }
-
     makeSaveMenu() {
         var gameSessions = GameSession.getLoadSaveGameSlotsSessions();
         var graphics = this.add.graphics();
@@ -85,7 +73,7 @@ export class GameSlotMenuScene extends MenuScene
                         y: startY + (i * (saveGameMenuItemHeight + saveGameMenuItemPadding)),
                         width: 598,
                         height: 106,
-                        slotText: "Slot " + (i + 1),
+                        slotTexture: "slot-" + (i + 1),
                         levelText: gameSession.levelName,
                         sectorText: gameSession.sectorName,
                         timeText: gameSession.timestamp,
@@ -102,7 +90,7 @@ export class GameSlotMenuScene extends MenuScene
                         y: startY + (i * (saveGameMenuItemHeight + saveGameMenuItemPadding)),
                         width: 598,
                         height: 106,
-                        slotText: "Slot " + (i + 1),
+                        slotTexture: "slot-" + (i + 1),
                         isEmpty: true
                     });
             }
@@ -114,12 +102,15 @@ export class GameSlotMenuScene extends MenuScene
             scene: this,
             x: (CANVAS_WIDTH - 598) / 2,
             y: lowerButtonsY,
-            width: 105,
-            height: 107,
+            width: 187,
+            height: 36,
+            scale: 0.7,
             texture: 'back-button',
             hoverTexture: 'back-button-hover',
             callBack: this.resumeMainMenu
         });
+
+        this.menuItems = menuItems;
     }
 
     resumeGame() {
@@ -130,6 +121,18 @@ export class GameSlotMenuScene extends MenuScene
     resumeMainMenu() {
         game.scene.stop("GameSlotMenuScene");
         game.scene.start("GameMenuScene");
+    }
+
+    disableSlotsInteractive() {
+        this.menuItems.forEach(x => x.disabled = true);
+    }
+
+    enableSlotsInteractive() {
+        this.menuItems.forEach(x => x.disabled = false);
+    }
+
+    isSaveGameMenuType() {
+        return this.menuType == "savegame";
     }
 }
 
@@ -143,35 +146,80 @@ class SaveGameSlotItem {
         this.width = config.width;
         this.height = config.height;
         this.slotText = config.slotText;
+        this.slotTexture = config.slotTexture;
         this.levelText = config.levelText;
         this.sectorText = config.sectorText;
         this.timeText = config.timeText;
         this.callBack = config.callBack;
         this.isEmpty = config.isEmpty;
         this.menuType = config.menuType;
+        this.disabled = false;
 
         this.init();
     }
 
     init() {
-        this.initTexts();
+        this.createHoverRect();
+        this.initSlot();
+        this.initHover();
         this.createRect();
     }
 
-    initTexts() {
-        const PADDING = 10;
+    initSlot() {
+        this.removeAllText();
+        this.addText(); 
+    }
+
+    refreshSlot(slot) {
+        this.isEmpty = false;
+        this.disabled = false;
+        this.levelText = slot.levelName;
+        this.sectorText = slot.sectorName;
+        this.timeText = slot.timestamp;
+
+        this.initSlot();
+    }
+
+    removeAllText() {
+        if (this.slotFontText != null) {
+            this.slotFontText.destroy();
+        }
+
+        if (this.isEmptyFontText != null) {
+            this.isEmptyFontText.destroy();
+        }
+
+        if (this.levelFontText != null) {
+            this.levelFontText.destroy();
+        }
+
+        if (this.sectorFontText != null) {
+            this.sectorFontText.destroy();
+        }
+
+        if (this.timeFontText != null) {
+            this.timeFontText.destroy();
+        }
+    }
+
+    addText() {
+        const PADDING_X = 50;
+        const PADDING_Y = 20;
         var fontLoader = new FontLoader();
 
-        this.createHoverRect();
-        this.slotText = fontLoader.displayTextFromAtlas({ scene: this.scene, fontName: "SuperTuxBigColorFul", x: this.x + PADDING, y: this.y + 20, text: this.slotText });
+        if (this.slotText) {
+            this.slotFontText = fontLoader.displayTextFromAtlas({ scene: this.scene, fontName: "SuperTuxBigColorFul", x: this.x + PADDING, y: this.y + 20, text: this.slotText });
+        } else {
+            this.slotFontText = this.scene.add.sprite(this.x + PADDING_X, this.y + 20, this.slotTexture).setScale(0.5);
+        }
 
         if (!this.isEmpty) {
-            this.isEmptyText = null;
-            this.levelText = fontLoader.displayTextAlignBottom({ scene: this.scene, fontName: "SuperTuxBigFont", x: this.x + PADDING, y: this.y + this.height - PADDING - 20, text: "Level: " + this.levelText, scale: 0.6 });
-            this.sectorText = fontLoader.displayTextAlignBottom({ scene: this.scene, fontName: "SuperTuxBigFont", x: this.x + PADDING, y: this.y + this.height - PADDING, text: "Sector: " + this.sectorText, scale: 0.6 });
-            this.timeText = fontLoader.displayTextAlignRight({ scene: this.scene, fontName: "SuperTuxBigFont", x: this.x + this.width, y: this.y + 20, text: this.timeText, scale: 0.6 });
+            this.isEmptyFontText = null;
+            this.levelFontText = fontLoader.displayTextAlignBottom({ scene: this.scene, fontName: "SuperTuxBigFontFlashy", x: this.x + PADDING_X, y: this.y + this.height - PADDING_Y - 20, text: "Level: " + this.levelText, scale: 0.6 });
+            this.sectorFontText = fontLoader.displayTextAlignBottom({ scene: this.scene, fontName: "SuperTuxBigFontFlashy", x: this.x + PADDING_X, y: this.y + this.height - 10, text: "Sector: " + this.sectorText, scale: 0.6 });
+            this.timeFontText = fontLoader.displayTextAlignRight({ scene: this.scene, fontName: "SuperTuxBigFontFlashy", x: this.x + this.width, y: this.y + 20, text: this.timeText, scale: 0.6 });
         } else {
-            this.isEmptyText = fontLoader.displayText({ scene: this.scene, fontName: "SuperTuxBigFont", x: this.x + PADDING, y: this.y + (this.height / 2), text: "<Empty>" });
+            this.isEmptyFontText = fontLoader.displayText({ scene: this.scene, fontName: "SuperTuxBigFontFlashy", x: this.x + PADDING_X, y: this.y + (this.height / 2), text: "<Empty>" });
         }
     }
 
@@ -181,7 +229,7 @@ class SaveGameSlotItem {
             y: this.y,
             width: this.width,
             height: this.height,
-            clickCallBack: (this.isEmpty ? this.nothing : (this.menuType == "savegame" ? this.save : this.load)),
+            clickCallBack: (this.scene.isSaveGameMenuType() ? this.saveConfirm : this.load),
             scene: this.scene,
             item: this
         });
@@ -191,12 +239,27 @@ class SaveGameSlotItem {
         return x >= this.x -75 && y >= this.y && x <= this.x + this.width + 75 && y <= this.y + this.height;
     }
 
+    initHover() {
+        this.polygon.setAlpha(1);
+        this.polygonHover.setAlpha(0);
+    }
+
     hover() {
-        this.polygon.setAlpha(1.0);
+        if (this.canSaveLoad()) {
+            this.polygon.setAlpha(0);
+            this.polygonHover.setAlpha(1);
+        }
     }
 
     unHover() {
-        this.polygon.setAlpha(0.5);
+        if (this.canSaveLoad()) {
+            this.polygon.setAlpha(1);
+            this.polygonHover.setAlpha(0);
+        }
+    }
+
+    focus() {
+        this.hover();
     }
 
     hideText() {
@@ -219,6 +282,11 @@ class SaveGameSlotItem {
 
         this.polygon = this.scene.add.sprite(x, y, 'save-game-slot');
         this.polygon.setOrigin(0, 0);
+        this.polygon.setScale(0.5);
+
+        this.polygonHover = this.scene.add.sprite(x, y, 'save-game-slot-hover');
+        this.polygonHover.setOrigin(0, 0);
+        this.polygonHover.setScale(0.5);
     }
 
     nothing() {
@@ -226,14 +294,49 @@ class SaveGameSlotItem {
     }
 
     load(id) {
-        game.scene.stop("GameSlotMenuScene");
-        game.scene.start("LoadGameScene", { loadSlot: "SuperTuxWeb-SaveSlot-" + id, loadGameType: "loadgame" });
+        if (this.item.canSaveLoad()) {
+            game.scene.stop("GameSlotMenuScene");
+            game.scene.start("LoadGameScene", { loadSlot: "SuperTuxWeb-SaveSlot-" + id, loadGameType: "loadgame" });
+        }
     }
 
-    save(id) {
-        var session = GameSession.createSaveSessionDuringScene(SectorScene.getCurrentSectorScene());
+    saveConfirm(id) {
+        var slot = this.item;
+        if (slot.canSaveLoad()) {
+            const self = this;
+            this.confirm = new ConfirmDialog(
+                {
+                    scene: this.scene,
+                    x: CANVAS_WIDTH / 2,
+                    y: CANVAS_HEIGHT / 2,
+                    width: 400,
+                    height: 200,
+                    titleTexture: "save-dialog-title",
+                    descriptionTexture: "overwrite-save-game",
+                    backgroundTexture: "dialog-bg",
+                    onConfirm: () => {
+                        var session = GameSession.createSaveSessionDuringScene(Sector.currentSectorScene);
 
-        GameSession.saveGameSlot(session, id);
-        this.scene.resumeGame();
+                        var slotData = GameSession.saveGameSlot(session, id);
+
+                        slot.refreshSlot(slotData);
+
+                        self.confirm.close();
+                        self.scene.enableSlotsInteractive();
+                    },
+                    onCancel: () => {
+                        self.confirm.close();
+                        self.scene.enableSlotsInteractive();
+                    }
+                });
+
+            this.confirm.show();
+
+            this.scene.disableSlotsInteractive();
+        }
+    }
+
+    canSaveLoad() {
+        return (!this.isEmpty || this.scene.isSaveGameMenuType()) && !this.disabled && !this.scene.isDialogActive();
     }
 }

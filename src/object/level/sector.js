@@ -88,6 +88,10 @@ export class Sector {
         return this.sectorData.fallingPlatforms;
     }
 
+    getMovablePlatforms() {
+        return this.sectorData.movablePlatforms;
+    }
+
     getEnemyObjects() {
         return this.additionalTiles.enemies;
     }
@@ -106,6 +110,10 @@ export class Sector {
 
     getCollisionTiles() {
         return this.additionalTiles.collisionTiles;
+    }
+
+    getMovablePlatforms() {
+        return this.additionalTiles.movablePlatforms;
     }
 
     getDynamicForegrounds() {

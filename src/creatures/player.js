@@ -130,6 +130,10 @@ export class Tux extends Phaser.GameObjects.Sprite {
         //with his head below the fence. This is approximately the length of his hands.
         this.climbingTopPadding = 10;
 
+        this.cannotPeformActionTimer = 0;
+
+        this.hurtFalling = false;
+
         this.setCustomGravityIfNeeded();
     }
 
@@ -241,10 +245,10 @@ export class Tux extends Phaser.GameObjects.Sprite {
         }
 
         this.stayInStaticsIfNeeded();
-
-        //rounding bug phaser
+        
+        // Rounding bug phaser
         if (!this.isClimbing) { this.body.y = Math.ceil(this.body.y); }
-
+        
         if (this.body.y >= Math.floor(Level.getMaxLevelHeightY() * 32 - this.body.height) && !this.killed) {
             this.die();
 
@@ -320,6 +324,10 @@ export class Tux extends Phaser.GameObjects.Sprite {
         }
 
         if (this.wasHurt > 0 && !this.invincible) {
+            if (this.cannotPeformActionTimer > 0) {
+                this.cannotPeformActionTimer -= delta;
+            }
+
             this.wasHurt -= delta;
             this.hurtStep += delta;
 
@@ -329,6 +337,10 @@ export class Tux extends Phaser.GameObjects.Sprite {
             }
             
             this.alpha = this.damagedToggle ? 0.3 : 1;
+        }
+
+        if (this.cannotPeformActionTimer <= 0 && (this.isClimbing || this.onGround())) {
+            this.hurtFalling = false;
         }
 
         this.resetHurtIfNeeded();
@@ -682,19 +694,22 @@ export class Tux extends Phaser.GameObjects.Sprite {
             this.climbingPressedTimer -= delta;
         }
 
-        if (!this.isClimbing) {
-            if (this.wantsToClimb()) {
-                this.startClimbing();
+        //We did not get hurt!
+        if (this.cannotPeformActionTimer <= 0) {
+            if (!this.isClimbing) {
+                if (this.wantsToClimb()) {
+                    this.startClimbing();
+                }
             }
-        }
 
-        if (this.isClimbing) {
-            if (this.keyPressAlwaysJump()) {
-                this.jumpWhenHanging();
-            } else if (this.wantsToLetGoOfClimbing()) {
-                this.letGoOfClimbing();
-            } else {
-                this.handleClimbingInDirections();
+            if (this.isClimbing) {
+                if (this.keyPressAlwaysJump()) {
+                    this.jumpWhenHanging();
+                } else if (this.wantsToLetGoOfClimbing()) {
+                    this.letGoOfClimbing();
+                } else {
+                    this.handleClimbingInDirections();
+                }
             }
         }
     }
@@ -907,7 +922,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
         if ((!this.scene.isFreeOfMovingStatics(tileBelowX, tileBelowY) ||
             !Level.isFreeOfObjects(tileBelowX, tileBelowY, this.scene))// &&
             /*Level.isInClimbingFence(this, this.scene)*/) {
-            this.body.setVelocityY(Math.min(this.body.velocity.y, 0));
+            this.body.setVelocityY(Math.min(Math.ceil(this.body.velocity.y), 0));
             this.body.y -= this.body.bottom % 32;
         }
     }
@@ -1041,7 +1056,11 @@ export class Tux extends Phaser.GameObjects.Sprite {
                 this.drawClimbing();
             }
         } else if ((!this.onGround() || this.fallMode != this.ON_GROUND) && !this.body.blocked.down) {
-            this.drawJumping();
+            if (this.hurtFalling) {
+                this.drawHurtFalling();
+            } else {
+                this.drawJumping();
+            }
         } else if (Math.abs(this.getVelocityX()) < 1) {
             this.drawStanding();
             this.hasPlayerJump = false;
@@ -1120,6 +1139,12 @@ export class Tux extends Phaser.GameObjects.Sprite {
 
         this.flipDraw();
         this.setTexture("tux-jump-0");
+    }
+
+    drawHurtFalling() {
+        this.flipDraw();
+
+        this.playAnimation("tux-pushback-hurt");
     }
 
     drawJumping() {
@@ -1209,6 +1234,12 @@ export class Tux extends Phaser.GameObjects.Sprite {
         if (this.killed || this.wasHurt > 0) {
             return;
         }
+
+        this.setVelocityX(this.direction * -1 * 300);
+        this.setVelocityY(-150);
+        this.hurtFalling = true;
+
+        this.cannotPeformActionTimer = 1000;
 
         this.setHealth(Math.max(0, this.health - 1));
 

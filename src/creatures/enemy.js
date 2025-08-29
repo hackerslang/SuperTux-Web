@@ -170,8 +170,6 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         this.scene.physics.world.collide(this, this.scene.enemyCollisionGroup, this.enemyHit);
         this.scene.physics.world.collide(this, this.scene.groundLayer);
 
-
-
         if (this.turnAroundWaitTimer > 0) {
             this.turnAroundWaitTimer -= delta;
         } else {
@@ -313,7 +311,8 @@ export class Enemy extends Phaser.GameObjects.Sprite {
     }
 
     //must be overridden
-    playerHit(enemy, player) {                  //OK, but needs revision!!
+    playerHit(enemy, player) {
+        //OK, but needs revision!!
         if (player.invincible /* || */) {
             enemy.killFall();
 
@@ -340,7 +339,7 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         if (enemy.verticalHit(enemy, player)) {
             if (player.isStone()) {
                 enemy.killFall();
-
+                
                 return;
             } else {
                 if (enemy.collisionSquished(player)) {

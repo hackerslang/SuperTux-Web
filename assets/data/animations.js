@@ -64,7 +64,7 @@
                 },
                 {
                     key: 'tux-pushback-hurt',
-                    frames: [{ key: 'tux-jump-7' }],
+                    frames: [{ key: 'tux-hurt' }],
                     frameRate: 24
                 },
                 {

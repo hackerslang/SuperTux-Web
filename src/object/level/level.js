@@ -175,17 +175,17 @@ export class Level {
     }
 
     static isOnTopOfPlayerCollisionObject(x, y, y2, scene) {
-        var platforms = scene.fallingPlatformSprites;
-
-        if (platforms == null || platforms.length == 0) {
+        var collisionObjects = scene.staticObjects;
+        
+        if (collisionObjects == null || collisionObjects.length == 0) {
             return false;
         }
 
-        for (var i = 0; i < platforms.length; i++) {
-            var platform = platforms[i];
-            var platformX = platform.x;
-            var platformX2 = platformX + platform.width;
-            var platformY = platform.y;
+        for (var i = 0; i < collisionObjects.length; i++) {
+            var collisionObject = collisionObjects[i];
+            var platformX = collisionObject.body.left;
+            var platformX2 = collisionObject.body.right;
+            var platformY = collisionObject.body.top;
 
             if (x >= platformX && x <= platformX2 && platformY >= y && platformY <= y2) {
                 return true;
@@ -198,7 +198,7 @@ export class Level {
     static isInPlayerCollisionObject(x, y, scene) {
         //var staticObjects = scene.staticObjects;
 
-        var platforms = scene.fallingPlatformSprites;
+        var platforms = scene.fallingPlatformSprites.concat(scene.movablePlatformsSprites);
 
         if (platforms == null || platforms.length == 0) {
             return false;

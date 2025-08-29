@@ -66,6 +66,10 @@
                     "value": "climb-",
                     "start": 0,
                     "end": 7
+                },
+                {
+                    "name": "tux-hurt",
+                    "value": "jump-7"
                 }
             ]
         },
@@ -435,6 +439,19 @@
                 }
             ]
         },
+        "platforms": {
+            "path": "./assets/images/objects/platforms/",
+            "sprites": [
+                {
+                    "name": "industrial-platform-large",
+                    "value": "industrial-platform-large"
+                }, 
+                {
+                    "name": "industrial-platform-small",
+                    "value": "industrial-platform-small"
+                }
+            ]
+        },
         "powerup": {
             "path": "./assets/images/powerups/",
             "spritesheets": [
@@ -612,6 +629,44 @@
                 }
             ]
         },
+        "spike": {
+            "path": "./assets/images/objects/spikes/",
+            "sprites": [
+                {
+                    "name": "blood-spike-down",
+                    "value": "blood-spike-down"
+                },
+                {
+                    "name": "blood-spike-left",
+                    "value": "blood-spike-left"
+                },
+                {
+                    "name": "blood-spike-right",
+                    "value": "blood-spike-right"
+                },
+                {
+                    "name": "blood-spike-up",
+                    "value": "blood-spike-up"
+                },
+
+                {
+                    "name": "spike-down",
+                    "value": "spike-down"
+                },
+                {
+                    "name": "spike-left",
+                    "value": "spike-left"
+                },
+                {
+                    "name": "spike-right",
+                    "value": "spike-right"
+                },
+                {
+                    "name": "spike-up",
+                    "value": "spike-up"
+                }
+            ]
+        },
         "UI": {
             "path": "./assets/images/ui/",
             "sprites": [
@@ -693,12 +748,79 @@
                     "value": "save-game-slot"
                 },
                 {
+                    "name": "save-game-slot-hover",
+                    "value": "save-game-slot-hover"
+                },
+                {
                     "name": "paused-title",
                     "value": "paused-title"
                 },
                 {
                     "name": "press-p-unpause", 
                     "value": "press-p-unpause"
+                },
+
+                {
+                    "name": "slot-1",
+                    "value": "slot-1"
+                },
+                {
+                    "name": "slot-2",
+                    "value": "slot-2"
+                },
+                {
+                    "name": "slot-3",
+                    "value": "slot-3"
+                }
+            ]
+        },
+        "dialog": {
+            "path": "./assets/images/ui/dialog/",
+            "sprites": [
+                {
+                    "name": "dialog-bg",
+                    "value": "dialog-bg"
+                },
+                {
+                    "name": "no",
+                    "value": "no"
+                },
+                {
+                    "name": "no-hover", 
+                    "value": "no-hover"
+                },
+                {
+                    "name": "yes",
+                    "value": "yes"
+                },
+                {
+                    "name": "yes-hover",
+                    "value": "yes-hover"
+                },
+                {
+                    "name": "save-dialog-title",
+                    "value": "save-dialog-title"
+                },
+                {
+                    "name": "overwrite-save-game",
+                    "value": "overwrite-save-game"
+                }
+            ]
+        },
+        "menu-lines": {
+            "path": "./assets/images/ui/menu/lines/",
+            "sprites": [
+                {
+                    "name": "hl-mblur-left",
+                    "value": "hl-mblur-left"
+                },
+                {
+                    "name": "hl-mid",
+                    "value": "hl-mid"
+                },
+                {
+                    "name": "hl-mblur-right",
+                    "value": "hl-mblur-right"
                 }
             ]
         },
@@ -748,6 +870,51 @@
                 {
                     "name": "gamemenu-title",
                     "value": "title"
+                }
+            ]
+        },
+        "settingsmenu": {
+            "path": "./assets/images/ui/menu/settingsmenu/",
+            "sprites": [
+                {
+                    "name": "audio",
+                    "value": "audio"
+                },
+                {
+                    "name": "audio-hover",
+                    "value": "audio-hover"
+                },
+                {
+                    "name": "gameplay",
+                    "value": "gameplay"
+                },
+                {
+                    "name": "gameplay-hover",
+                    "value": "gameplay-hover"
+                },
+                {
+                    "name": "key-bindings",
+                    "value": "key-bindings"
+                },
+                {
+                    "name": "key-bindings-hover",
+                    "value": "key-bindings-hover"
+                },
+                {
+                    "name": "video",
+                    "value": "video"
+                },
+                {
+                    "name": "video-hover",
+                    "value": "video-hover"
+                },
+                {
+                    "name": "settingsmenu-title",
+                    "value": "title"
+                },
+                {
+                    "name": "dot",
+                    "value": "dot"
                 }
             ]
         }

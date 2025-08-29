@@ -342,6 +342,38 @@
                 }
             ]
         },
+        "SuperTuxBigFontFlashy": {
+            "name": "SuperTuxBigFontFlashy",
+            "path": "./assets/images/ui/fonts/supertux-big-flashy.png",
+            "glyphChars": " !\"\#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~  ¡¢£¤¥¦§¨©ª«¬ ®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹźŻżŽžſ…ắầặảạếệẻịỉốộồơớởợụủưựửứừữọấểềỏậ",
+            "glyphWidth": 22,
+            "glyphHeight": 24,
+            "glyphPaddingX": 3,
+            "glyphPaddingY": 0,
+            "glyphBorder": 0,
+            "glyphExceptions": [
+                {
+                    "key": "e",
+                    "paddingLeft": 2,
+                    "paddingRight": 0
+                },
+                {
+                    "key": "i",
+                    "paddingLeft": 3,
+                    "paddingRight": 0
+                },
+                {
+                    "key": "l",
+                    "paddingLeft": 3,
+                    "paddingRight": 0
+                },
+                {
+                    "key": "t",
+                    "paddingLeft": 2,
+                    "paddingRight": 0
+                }
+            ]
+        },
         "SuperTuxBigFontColored": {
             "name": "SuperTuxBigWhiteColored",
             "path": "./assets/images/ui/fonts/supertux-big-white-colored.png",
@@ -747,6 +779,12 @@ class FontText {
         this.visible(false);
     }
 
+    remove() {
+        for (var i = 0; i < this.characters.length; i++) {
+            this.characters[i].destroy();
+        }
+    }
+
     visible(show) {
         for (var i = 0; i < this.characters.length; i++) {
             this.characters[i].visible = show;
@@ -774,6 +812,12 @@ class FontText {
             }
 
             this.delta = 0;
+        }
+    }
+
+    destroy() {
+        for (var i = 0; i < this.characters.length; i++) {
+            this.characters[i].destroy();
         }
     }
 }

@@ -1,15 +1,77 @@
-﻿export class ImageButton {
+﻿export class HorizontalLine {
     constructor(config) {
         this.scene = config.scene;
         this.x = config.x;
         this.y = config.y;
-        this.width = config.width || undefined;
-        this.height = config.height || undefined;
+        this.totalWidth = config.width;
+        this.scale = config.scale !== undefined ? config.scale : 1;
+        this.originX = config.originX !== undefined ? config.originX : 0;
+        this.originY = config.originY !== undefined ? config.originY : 0;
+        this.MIN_WIDTH = 100;
+
+        this.draw();
+    }
+
+    draw() {
+        const tempLeft = this.scene.add.sprite(0, 0, "hl-mblur-left");
+        const capWidth = tempLeft.displayWidth;
+        const height = tempLeft.displayHeight;
+        tempLeft.destroy();
+
+        const tempRight = this.scene.add.sprite(0, 0, "hl-mblur-right");
+        const rightCapWidth = tempRight.displayWidth;
+        tempRight.destroy();
+
+        const realX = this.x - (this.totalWidth * this.originX);
+        const realY = this.y - (height * this.originY);
+
+        this.hlLeft = this.scene.add.sprite(realX, realY, "hl-mblur-left");
+            
+        this.hlLeft.displayWidth = capWidth * this.scale;
+        this.hlLeft.displayHeight = height * this.scale;
+        this.hlLeft.setOrigin(0, 0);
+
+        const midX = realX + this.hlLeft.displayWidth; // ok till here
+        const remainderWidth = (this.totalWidth - ((capWidth + rightCapWidth) * this.scale));
+        this.hlMid = this.scene.add.sprite(midX, realY, "hl-mid");
+
+        this.hlMid.displayWidth = remainderWidth * 0.665; // why this is, I don't know!
+        this.hlMid.displayHeight = height * this.scale;
+        this.hlMid.setOrigin(0, 0);
+
+        this.hlRight = this.scene.add.sprite(midX + remainderWidth, realY, "hl-mblur-right");
+
+        this.hlRight.displayWidth = rightCapWidth * this.scale;
+        this.hlRight.displayHeight = height * this.scale;
+        this.hlRight.setOrigin(0, 0);
+    }
+
+    destroy() {
+        this.hlLeft.destroy();
+        this.hlMid.destroy();
+        this.hlRight.destroy();
+    }
+}
+
+export class ImageButton {
+    constructor(config) {
+        this.scene = config.scene;
+        this.cursor = this.scene.cursor;
+        this.x = config.x;
+        this.y = config.y;
+        this.width = config.width || 150;
+        this.height = config.height || 20;
+        this.scale = config.scale || 1;
         this.originX = config.originX || 0,
-        this.originy = config.originY || 0,
+        this.originY = config.originY || 0,
         this.texture = config.texture;
         this.hoverTexture = config.hoverTexture;
+        this.focusTexture = config.focusTexture || this.hoverTexture;
         this.callBack = config.callBack;
+        this.smooth = config.smooth || false;
+
+        this.realWidth = this.width * this.scale;
+        this.realHeight = this.height * this.scale;
 
         this.init();
     }
@@ -17,9 +79,11 @@
     init() {
         this.normalSprite = this.addSprite(this.texture);
         this.hoverSprite = this.addSprite(this.hoverTexture);
+        this.focusSprite = this.addSprite(this.focusTexture);
         this.setSize();
         this.unHover();
         this.createRect();
+        this.setSmooth();
     }
 
     createRect() {
@@ -36,11 +100,18 @@
         });
     }
 
+    setSmooth() {
+        this.normalSprite.smooth = this.smooth;
+        this.hoverSprite.smooth = this.smooth;
+        this.focusSprite.smooth = this.smooth;
+    }
+
     addSprite(texture) {
         var sprite = this.scene.add.sprite(this.x, this.y, texture);
 
         sprite.setInteractive();
         sprite.setOrigin(this.originX, this.originY);
+        sprite.scale = this.scale;
         
         this.scene.add.existing(sprite);
 
@@ -54,12 +125,27 @@
 
     hover() {
         this.normalSprite.setAlpha(0);
+        this.focusSprite.setAlpha(0);
         this.hoverSprite.setAlpha(1.0);
     }
 
     unHover() {
+        this.focusSprite.setAlpha(0);
         this.hoverSprite.setAlpha(0);
         this.normalSprite.setAlpha(1.0);
+    }
+
+    focus() {
+        this.normalSprite.setAlpha(0);
+        this.hoverSprite.setAlpha(0);
+        this.focusSprite.setAlpha(1.0);
+    }
+
+    destroy() {
+        this.normalSprite.destroy();
+        this.hoverSprite.destroy();
+        this.focusSprite.destroy();
+        this.rect.destroy();
     }
 }
 
@@ -70,6 +156,7 @@ export class ClickableHoverableRecangle {
         this.width = config.width;
         this.height = config.height;
         this.scene = config.scene;
+        this.cursor = this.scene.cursor;
         this.pointerDown = false;
         this.originX = config.originX || 0;
         this.originy = config.originY || 0;
@@ -78,7 +165,6 @@ export class ClickableHoverableRecangle {
 
         this.init();
     } 
-
 
     init() {
         this.rect = this.scene.add.rectangle(this.x, this.y, this.width, this.height, this.color1, 0);
@@ -89,30 +175,27 @@ export class ClickableHoverableRecangle {
 
         this.rect.on("pointerover", function (pointer) {
             self.item.hover();
-            self.setCursorLink(true, self);
+            self.cursor.setCursorLink(true);
         });
         this.rect.on("pointerout", function (pointer) {
             self.item.unHover();
-            self.setCursorLink(false, self);
+            self.cursor.setCursorLink(false);
         });
         this.rect.on('pointerdown', function (pointer) {
+            self.item.focus();
+            self.cursor.setCursorDown();
             self.pointerDown = true;
         });
         this.rect.on('pointerup', function (pointer) {
             if (self.pointerDown) {
+                self.cursor.setCursorUp();
                 self.clickCallBack(self.item.id);
             }
         });
     }
 
-    setCursorLink(bool, self) {
-        if (bool) {
-            if (self.scene.currentCursor == "default") {
-                self.scene.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor-link.png), pointer');
-            }
-        } else if (self.scene.currentCursor == "default") {
-            self.scene.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor.png), pointer');
-        }
+    destroy() {
+        this.rect.destroy();
     }
 }
 
@@ -123,6 +206,7 @@ export class ClickableHoverablePolygon {
         this.width = config.width;
         this.height = config.height;
         this.scene = config.scene;
+        this.cursor = this.scene.cursor;
         this.pointerDown = false;
         this.item = config.item;
         this.clickCallBack = config.clickCallBack;

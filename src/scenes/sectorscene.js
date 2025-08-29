@@ -1,4 +1,5 @@
 import { game, CANVAS_WIDTH, CANVAS_HEIGHT } from '../game.js';
+import { Cursor } from '../object/ui/cursor.js';
 import { ImageLoader } from '../helpers/imageloader.js';
 import { AnimationLoader } from '../helpers/animationloader.js';
 import { AnimationCreator } from '../helpers/animationcreator.js';
@@ -25,8 +26,10 @@ import { HealthBar } from '../object/ui/healthbar.js';
 import { LivesDisplay } from '../object/ui/livesdisplay.js';
 import { CoinsDisplay } from '../object/ui/coinsdisplay.js';
 import { FallingPlatform } from '../object/blocks/fallingplatform.js';
+import { Platform } from '../object/blocks/platform.js';
 import { InvisibleWallBlock } from '../object/blocks/invisiblewallblock.js';
 import { Lava } from '../object/lava.js';
+import { Spike } from '../object/spike.js';
 import { GlobalGameConfig } from '../game.js';
 import { CameraButtons } from '../object/ui/debug/camerabuttons.js';
 
@@ -121,14 +124,16 @@ export class SectorScene extends Phaser.Scene {
     }
 
     initCursor() {
-        this.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor.png), pointer');
+        this.cursor = new Cursor({ scene: this });
+
+        this.cursor.setDefaultCursor();
 
         this.input.on('pointerdown', (pointer, gameObjects) => {
-            this.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor-click.png), pointer');
+            this.cursor.setCursorDown();
         });
 
         this.input.on('pointerup', (pointer, gameObjects) => {
-            this.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor.png), pointer');
+            this.cursor.setDefaultCursor();
         });
     }
 
@@ -164,7 +169,6 @@ export class SectorScene extends Phaser.Scene {
             this.loadBackgroundImage(this.sector.getBackgroundImage());
             this.loadSounds();
             this.generateKeyController();
-            this.initCursor();
         }
     }
 
@@ -193,11 +197,14 @@ export class SectorScene extends Phaser.Scene {
             this.addCoinsDisplay();
             this.initCamera();
 
+            this.initCursor();
+
             this.createCoinSpritesGroup();
             this.createEnemySpritesGroup();
             this.createHurtableTilesGroup();
             this.createCollisionTilesGroup();
             this.createPowerupGroup();
+            this.createMovablePlatformsGroup();
 
             this.createPlayerCollisionObjectsGroup();
 
@@ -301,6 +308,11 @@ export class SectorScene extends Phaser.Scene {
 
     createPowerupGroup() {
         this.powerupGroup = this.add.group();
+    }
+
+    createMovablePlatformsGroup() {
+        this.movablePlatformsGroup = this.add.group();
+        this.parseMovablePlatforms();
     }
 
     createPlayerCollisionObjectsGroup() {
@@ -573,14 +585,17 @@ export class SectorScene extends Phaser.Scene {
     parseHurtableTiles() {
         var sectorHurtableTiles = this.sector.getHurtableTiles();
 
+        this.hurtableTiles = [];
+
         for (var i = 0; i < sectorHurtableTiles.length; i++) {
             let hurtableTile = sectorHurtableTiles[i];
+            var hurtableTileSprite = {};
 
             if (hurtableTile.type.startsWith("spk-")) {
-                hurtableTile = this.addSpike(preloadedSpike.x, preloadedSpike.y, preloadedSpike.position);
+                hurtableTileSprite = new Spike({ scene: this, x: hurtableTile.x, y: hurtableTile.y, type: hurtableTile.type, player: this.player });
             }
 
-            this.hurtableTiles.push(hurtableTile);
+            this.hurtableTiles.push(hurtableTileSprite);
         }
     }
 
@@ -627,6 +642,32 @@ export class SectorScene extends Phaser.Scene {
                 self.collisionTilesGroup.add(tile);
             }
         });
+    }
+
+    parseMovablePlatforms() {
+        var sectorMovablePlatforms = this.sector.getMovablePlatforms();
+        var self = this;
+
+        this.movablePlatformsSprites = [];
+
+        sectorMovablePlatforms.forEach(function (movablePlatform, idx) {
+            var platform = new Platform({
+                id: idx,
+                scene: self,
+                key: 'platforms',
+                x: movablePlatform.x,
+                y: movablePlatform.y,
+                player: self.player,
+                sector: self.sector,
+                level: Level.getCurrentLevel(),
+                type: movablePlatform.type,
+            });
+            self.movablePlatformsGroup.add(platform);
+            self.movablePlatformsSprites.push(platform);
+            self.staticObjects.push(platform);
+        });
+
+        console.log(this.staticObjects);
     }
 
     createBackground() {
@@ -785,7 +826,7 @@ export class SectorScene extends Phaser.Scene {
     }
 
     loadTileImages() {
-        var keys = ["coin", "blocks", "industrial", "snow", "lava", "home-exit", "acid-rain"];
+        var keys = ["coin", "blocks", "industrial", "snow", "lava", "home-exit", "acid-rain", "spike"];
 
         this.loadImagesForKeys(keys);
     }
@@ -840,7 +881,7 @@ export class SectorScene extends Phaser.Scene {
     }
 
     loadEnemyImages() {
-        var enemyImageKeys = ["snowball", "bouncing-snowball", "flying-snowball", "plasma-gun",
+        var enemyImageKeys = ["snowball", "bouncing-snowball", "flying-snowball", "plasma-gun", "platforms",
             "mr-iceblock", "mr-bomb", "hell-crusher", "krosh", "fish", "ghoul", "jumpy", "spiky", "creature-thinking"];
 
         this.loadImagesForKeys(enemyImageKeys);
@@ -1047,6 +1088,8 @@ export class SectorScene extends Phaser.Scene {
         this.forceUpdateSprites(this.particleSprites, time, delta);
         this.forceUpdateSprites(this.blockSprites, time, delta);
         this.forceUpdateSprites(this.fallingPlatformSprites, time, delta);
+        this.forceUpdateSprites(this.hurtableTiles, time, delta);
+        this.forceUpdateSprites(this.movablePlatformsSprites, time, delta);
         this.updateCameraButtonsIfNeeded(time, delta);
         this.updatePowerups(time, delta);
     }

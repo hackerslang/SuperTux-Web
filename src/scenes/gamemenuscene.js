@@ -5,6 +5,7 @@ import { SectorSwapper } from '../object/level/sector_swapper.js';
 import { ImageButton, ClickableHoverableRecangle } from '../object/ui/menu.js';
 import { ImageLoader } from '../helpers/imageloader.js';
 import { MenuScene } from './menuscene.js';
+import { Cursor } from '../object/ui/cursor.js';
 
 export class GameMenuScene extends MenuScene {
     constructor() {
@@ -19,20 +20,6 @@ export class GameMenuScene extends MenuScene {
     create() {
         super.create();
         this.makeGameMenu();
-    }
-
-    setCursorLink(bool) {
-        if (bool) {
-            if (this.currentCursor == "default") {
-                this.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor-link.png), pointer');
-            }
-        } else if(this.currentCursor == "default") {
-            this.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor.png), pointer');
-        }
-    }
-
-    setCursorLinkDown() {
-        this.input.setDefaultCursor('url(./assets/images/ui/cursor/mousecursor-click.png), pointer');
     }
 
     makeGameMenu() {
@@ -53,6 +40,11 @@ export class GameMenuScene extends MenuScene {
                 "callBack": this.launchSaveGameMenu
             },
             {
+                "texture": "settings",
+                "hoverTexture": "settings-hover",
+                "callBack": this.launchSettingsMenu
+            },
+            {
                 "texture": "exit-to-main-menu",
                 "hoverTexture": "exit-to-main-menu-hover",
                 "callBack": null
@@ -61,10 +53,12 @@ export class GameMenuScene extends MenuScene {
 
         this.menuItems = [];
 
+        var scaleButtons = 0.8;
         var self = this;
         var i = 0;
         var x = CANVAS_WIDTH / 2;
-        var padding = 20;
+        var padding = 10;
+        var itemHeight = 50 * scaleButtons;
 
         this.add.sprite(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 8, "gamemenu-title").setOrigin(0.5, 0.5);
 
@@ -73,9 +67,10 @@ export class GameMenuScene extends MenuScene {
                 new ImageButton({
                     scene: this,
                     x: x,
-                    y: (CANVAS_HEIGHT / 2) - (CANVAS_HEIGHT / 8) - (items.length / 2) + (i * (50 + padding)),
+                    y: (CANVAS_HEIGHT / 2) - (CANVAS_HEIGHT / 8) - (items.length / 2) + (i * (itemHeight + padding)),
                     originX: 0.5,
                     originY: 0.5,
+                    scale: scaleButtons,
                     texture: item.texture,
                     hoverTexture: item.hoverTexture,
                     callBack: item.callBack
@@ -85,14 +80,14 @@ export class GameMenuScene extends MenuScene {
     }
 
     menuItemDown(menuItem) {
-        this.setCursorLink(false);
-        this.setCursorLinkDown();
+        this.cursor.setCursorLink(false);
+        this.cursor.setCursorLinkDown();
         this.currentMenuItemPointerDown = menuItem;
     }
 
     menuItemClick(menuItem) {
         menuItem.hover();
-        this.setCursorLink(true);
+        this.cursor.setCursorLink(true);
 
         if (this.currentMenuItemPointerDown != null) {
             if (this.currentMenuItemPointerDown.text == menuItem.text) {
@@ -138,6 +133,11 @@ export class GameMenuScene extends MenuScene {
     launchLoadGameMenu() {
         game.scene.stop("GameMenuScene");
         game.scene.start("GameSlotMenuScene", "loadgame");
+    }
+
+    launchSettingsMenu() {
+        game.scene.stop("GameMenuScene");
+        game.scene.start("SettingsMenuScene"); 
     }
 }
 

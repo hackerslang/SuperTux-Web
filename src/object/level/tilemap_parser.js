@@ -15,6 +15,10 @@ export var TilemapConstants = {
     SPIKE_UP: 'spk-up',
     SPIKE_LEFT: 'spk-lft',
     SPIKE_RIGHT: 'spk-rght',
+    BLOOD_SPIKE_DOWN: 'spk-b-dwn',
+    BLOOD_SPIKE_UP: 'spk-b-up',
+    BLOOD_SPIKE_LEFT: 'spk-b-lft',
+    BLOOD_SPIKE_RIGHT: 'spk-b-rght',
     DOUBLE_ARROW_UP: 'double-arrow-up',
     DOUBLE_ARROW_DOWN: 'double-arrow-down',
     DOUBLE_ARROW_LEFT: 'double-arrow-left',
@@ -23,6 +27,7 @@ export var TilemapConstants = {
     ICE_BRIDGE: 'ibr',
     BILLBOARD_RUNJUMP: 'expl-rj',
     ENEMY_START_PART: 'e-',
+    PLATFORM: 'plf-',
     HOME: '(home)'
 }
 
@@ -39,6 +44,7 @@ export class TilemapParser {
         this.hurtableTiles = [];
         this.collisionTiles = [];
         this.enemies = [];
+        this.movablePlatforms = [];
 
         this.waterStart = false;
     }
@@ -108,6 +114,8 @@ export class TilemapParser {
                     this.createPreloadedBackgroundObject(i, j, 0, 0, SpriteKeyConstants.DOUBLE_ARROW_UP);
                 } else if (currentTile == "vv") {
                     this.createPreloadedBackgroundObject(i, j, 0, 0, SpriteKeyConstants.DOUBLE_ARROW_DOWN);
+                } else if (currentTile.startsWith(TilemapConstants.PLATFORM)) {
+                    this.createPreloadedPlatform(i, j, currentTile);
                 } else if (currentTile == TilemapConstants.HOME) {
                     this.createPreloadedHome(i, j);
                 }
@@ -125,7 +133,8 @@ export class TilemapParser {
             coins: this.coins,
             hurtableTiles: this.hurtableTiles,
             collisionTiles: this.collisionTiles,
-            enemies: this.enemies
+            enemies: this.enemies,
+            movablePlatforms: this.movablePlatforms
         };
     }
 
@@ -281,6 +290,12 @@ export class TilemapParser {
         this.collisionTiles.push(industrialObject);
     }
 
+    createPreloadedSpike(i, j, type) {
+        let spikeObject = this.createPreloadedObject(i, j, type);
+
+        this.hurtableTiles.push(spikeObject);
+    }
+
     createPreloadedCloud(i, j) {
         return this.createPreloadedBackgroundObject(i, j, 0, 0, SpriteKeyConstants.CLOUD);
     }
@@ -418,6 +433,16 @@ export class TilemapParser {
         };
 
         this.enemies.push(spiky);
+    }
+
+    createPreloadedPlatform(i, j, plfm) {
+        let movablePlatform = {
+            type: plfm,
+            x: i * 32,
+            y: j * 32
+        };
+
+        this.movablePlatforms.push(movablePlatform);
     }
 
     createPreloadedObject(i, j, spriteType, originalType) {

@@ -4,6 +4,7 @@ import { SectorScene1, SectorScene2, SectorScene3 } from './scenes/sectorscene.j
 import { PauseScene } from './scenes/pausescene.js';
 import { GameMenuScene } from './scenes/gamemenuscene.js';
 import { GameSlotMenuScene } from './scenes/gameslotmenuscene.js';
+import { SettingsMenuScene } from './scenes/settingsmenu.js';
 
 export const CANVAS_WIDTH = 1024;
 export const CANVAS_HEIGHT = 768;
@@ -17,7 +18,7 @@ export const GlobalGameConfig = {
         default: 'arcade',
         arcade: {
             gravity: { y: GAME_GRAVITY }, //600
-            debug: false
+            debug: true
             //,fixedStep: false
         }
     },
@@ -29,9 +30,19 @@ export const GlobalGameConfig = {
         SectorScene3,
         PauseScene,
         GameMenuScene,
-        GameSlotMenuScene
+        GameSlotMenuScene,
+        SettingsMenuScene
     ],
+    scale: {
+        CANVAS_HEIGHT,
+        CANVAS_WIDTH,
+        parent: 'canvas',
+        mode: Phaser.Scale.NONE,
+        autoRound: true,
+    },
     render: {
+        pixelArt: false,
+        roundPixels: true,
         antialias: true,
     },
     powerPreference: "high-performance"

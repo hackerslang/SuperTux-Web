@@ -7,8 +7,6 @@ export class ControlsScene extends MenuScene {
         this.keyBinder = new keyBinder();
     }
 
-
-
     adjustKey(control, key) {
         this.keyBinder.setKeyBinding(control, key);
     }
