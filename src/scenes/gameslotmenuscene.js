@@ -39,6 +39,7 @@ export class GameSlotMenuScene extends MenuScene
     }
 
     update(time, delta) {
+        super.update(time, delta);
         this.keyController.update();
 
         if (this.keyController.pressed('menu')) {

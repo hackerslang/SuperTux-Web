@@ -27,6 +27,10 @@
         this.setCollectedCoins(++this.coins);
     }
 
+    addCollectedCoins(n) {
+        this.setCollectedCoins(this.coins + n);
+    }
+
     setCollectedCoins(n) {
         var collectedCoinsString = n.toString();
         var startX = this.START_COINS_TEXT_X;

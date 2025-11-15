@@ -10,7 +10,28 @@
         this.level = config.level;
         this.scene = config.scene;
         this.id = config.id;
+
+        this.setCoinType(config);
+    }
+
+    setCoinType(config) {
+        if (config.coinType === undefined || config.coinType === "coin") {
+            this.setCoinTypeNormal();
+        } else {
+            this.setCoinTypeHell();
+        }
+    }
+
+    setCoinTypeNormal() {
+        this.coinType = "coin";
+        this.coinValue = 1;
         this.anims.play('coin-moving');
+    }
+
+    setCoinTypeHell() {
+        this.coinType = "hell-coin";
+        this.coinValue = 2;
+        this.anims.play('hell-coin-moving');
     }
 
     update(time, delta) {
@@ -18,7 +39,7 @@
     }
 
     coinHit(coin, player) {
-        coin.scene.addCollectedCoin();
+        coin.scene.addCollectedCoin(coin.coinValue);
         coin.remove();
         coin.destroy();
     }

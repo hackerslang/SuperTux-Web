@@ -113,6 +113,7 @@ export class GameMenuScene extends MenuScene {
     }
 
     update(time, delta) {
+        super.update(time, delta);
         this.keyController.update();
 
         if (this.keyController.pressed('menu')) {

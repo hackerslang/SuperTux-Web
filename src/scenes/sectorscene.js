@@ -6,6 +6,7 @@ import { AnimationCreator } from '../helpers/animationcreator.js';
 import { FontLoader } from '../object/ui/fontloader.js';
 import { KeyController } from '../object/controller.js';
 import { SpriteKeyConstants } from '../object/level/tile_creator.js';
+import { TilemapParser } from '../object/level/tilemap_parser.js';
 import { Level } from '../object/level/level.js';
 import { Sector } from '../object/level/sector.js';
 import { GameSession } from '../object/game_session.js';
@@ -32,6 +33,7 @@ import { Lava } from '../object/lava.js';
 import { Spike } from '../object/spike.js';
 import { GlobalGameConfig } from '../game.js';
 import { CameraButtons } from '../object/ui/debug/camerabuttons.js';
+import { TrembleEffect, StompEffect } from '../object/effects/tremble_effect.js';
 
 export var currentSceneKey = "";
 
@@ -111,10 +113,6 @@ export class SectorScene extends Phaser.Scene {
         this.coinsDisplay.setCollectedCoins(coins);
     }
 
-    addCollectedCoin() {
-        this.coinsDisplay.addCollectedCoin();
-    }
-
     setHealthBar(newHealth) {
         this.healthBar.setHealth(newHealth);
     }
@@ -177,18 +175,29 @@ export class SectorScene extends Phaser.Scene {
         if (this.sector != null || !levelsLoaded) {
             this.staticObjects = [];
             this.textsToUpdate = [];
-            this.sector.parseTilemaps();
+            
             this.createBackground();
-            this.parseBackgroundImages();
             this.makeAnimations();
 
-            this.addPlayer();
-            
             this.parseAntarcticWater();
             
             this.makeSounds();
             this.createMap();
+
+            // Create collision groups (Phaser)
+            this.addPlayer();
+            this.createCollisionTilesGroup();
+            this.createEnemySpritesGroup();
+            this.createMovablePlatformsGroup();
+            this.createHurtableTilesGroup();
+            this.createCoinGroup();
             
+
+            this.tilemapParser = new TilemapParser({ sectorScene: this, sector: this.sector, sectorData: this.sector.sectorData });
+            this.tilemapParser.parse();
+
+            
+
             this.parseInvisibleWallBlocks();
             this.createFallingPlatforms();
 
@@ -198,13 +207,8 @@ export class SectorScene extends Phaser.Scene {
             this.initCamera();
 
             this.initCursor();
-
-            this.createCoinSpritesGroup();
-            this.createEnemySpritesGroup();
-            this.createHurtableTilesGroup();
-            this.createCollisionTilesGroup();
+            
             this.createPowerupGroup();
-            this.createMovablePlatformsGroup();
 
             this.createPlayerCollisionObjectsGroup();
 
@@ -222,6 +226,8 @@ export class SectorScene extends Phaser.Scene {
             
             this.createDynamicForeGrounds();
             this.parseLava();
+
+            this.initEffects();
 
             this.cameraDebugButtons = null;
 
@@ -247,6 +253,12 @@ export class SectorScene extends Phaser.Scene {
 
             tileset.firstgid = tilesetObject.firstgid;
         }
+
+        //['tilesetKey1', 'tilesetKey2', ...].forEach(key => {
+        //    if (this.textures.exists(key)) {
+        //        this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+        //    }
+        //});
 
         this.groundLayer = map.createLayer(0, tilesetNames, 0, 0);
     }
@@ -281,15 +293,11 @@ export class SectorScene extends Phaser.Scene {
         this.player.body.setCollideWorldBounds(true);
     }
 
-    createCoinSpritesGroup() {
-        this.coinGroup = this.add.group();
-        this.parseCoinLayer();
-    }
-
     createEnemySpritesGroup() {
         this.enemyGroupCreated = false;
         this.enemyGroup = this.add.group();
         this.enemyCollisionGroup = this.add.group();
+        this.creatureObjects = [];
         
         this.parseEnemyLayer();
         this.enemyGroupCreated = true;
@@ -297,13 +305,17 @@ export class SectorScene extends Phaser.Scene {
 
     createHurtableTilesGroup() {
         this.hurtableTilesGroup = this.add.group();
-        this.parseHurtableTiles();
+        this.hurtableTiles = [];
+    }
+
+    createCoinGroup() {
+        this.coinGroup = this.add.group();
+        this.coinSprites = [];
     }
 
     createCollisionTilesGroup() {
         this.collisionTilesGroup = this.add.group();
         this.climbableTilesGroup = this.add.group();
-        this.parseCollisionTilesLayer();
     }
 
     createPowerupGroup() {
@@ -312,7 +324,6 @@ export class SectorScene extends Phaser.Scene {
 
     createMovablePlatformsGroup() {
         this.movablePlatformsGroup = this.add.group();
-        this.parseMovablePlatforms();
     }
 
     createPlayerCollisionObjectsGroup() {
@@ -364,10 +375,30 @@ export class SectorScene extends Phaser.Scene {
         });
 
         this.coinSprites = coinSprites;
-    }   
+    }
 
-    addCollectedCoin() {
-        this.sectorCoinsCollected++;
+    addCoinSprite(i, j, coinType) {
+        if (coinType === undefined) {
+            coinType = "coin";
+        }
+
+        let coin = new Coin({
+            id: this.getCoinId(),
+            key: 'coin',
+            scene: this,
+            x: i * 32,
+            y: j * 32,
+            player: this.player,
+            level: this.level,
+            coinType: coinType
+        });
+
+        this.coinGroup.add(coin);
+        this.coinSprites.push(coin);
+    }
+
+    addCollectedCoin(coinValue) {
+        this.sectorCoinsCollected += coinValue;
         Level.getCurrentLevel().addCollectedCoin();
         this.updateTotalCoinsCollectedUI();
     }
@@ -376,12 +407,88 @@ export class SectorScene extends Phaser.Scene {
         this.setCollectedCoins(this.sectorCoinsCollected);
     }
 
+    addSnowBallEnemyFromTile(i, j) {
+        var snowBall = new SnowBall({
+            id: this.getEnemyId(),
+            scene: this,
+            key: "snowball",
+            direction: "left",
+            x: i * 32,
+            y: j * 32,
+            realY: 20,
+            player: this.player,
+            sector: this.sector
+        });
+
+        this.addCreature(snowBall);
+    }
+
+    addSpikyFromTile(i, j, sleeping) {
+        let spiky = new Spiky({
+            id: this.getEnemyId(),
+            scene: this,
+            key: "spiky",
+            x: i * 32,
+            y: j * 32,
+            sleeping: false,
+            player: this.player,
+            sector: this.sector
+        });
+
+        this.addCreature(spiky);
+    }
+
+    addFlyingSnowBallEnemyFromTile(i, j) {
+        let flyingSnowBall = new FlyingSnowBall({
+            id: this.getEnemyId(),
+            scene: this,
+            key: "flying-snowball",
+            x: i * 32,
+            y: j * 32,
+            realY: j * 32,
+            player: this.player,
+            sector: this.sector
+        });
+
+        this.addCreature(flyingSnowBall);
+    }
+
+    getEnemyId() {
+        if (this.enemyId === undefined) {
+            this.enemyId = 0;
+        } else {
+            this.enemyId++;
+        }
+
+        return this.enemyId;
+    }
+
+    getMovableObjectId() {
+        if (this.movableObjectId === undefined) {
+            this.movableObjectId = 0;
+        } else {
+            this.movableObjectId++;
+        }
+
+        return this.movableObjectId;
+    }
+
+    getCoinId() {
+        if (this.coinId === undefined) {
+            this.coinId = 0;
+        } else {
+            this.coinId++;
+        }
+
+        return this.coinId;
+    }
+
     parseEnemyLayer() {
-        var enemies = this.sector.getEnemyObjects();
+        //var enemies = this.sector.getEnemyObjects();
         var creatureObjects = [];
         var self = this;
 
-        enemies.forEach((enemy) => self.creatures.push(enemy));
+        //enemies.forEach((enemy) => self.creatures.push(enemy));
 
         for (var i = 0; i < this.creatures.length; i++) {
             this.creatures[i].id = i;
@@ -401,7 +508,7 @@ export class SectorScene extends Phaser.Scene {
             switch (creature.name) {
                 case "snowball":
                     creatureObject = new SnowBall({
-                        id: creature.id,
+                        id: this.getEnemyId(),
                         scene: this,
                         key: "snowball",
                         x: creature.position.x * 32,
@@ -430,7 +537,7 @@ export class SectorScene extends Phaser.Scene {
 
                 case "flying-snowball":
                     creatureObject = new FlyingSnowBall({
-                        id: creature.id,
+                        id: this.getEnemyId(),
                         scene: this,
                         key: "flying-snowball",
                         x: creature.position.x * 32,
@@ -443,7 +550,7 @@ export class SectorScene extends Phaser.Scene {
                     break;
                 case "iceblock":
                     creatureObject = new MrIceBlock({
-                        id: creature.id,
+                        id: this.getEnemyId(),
                         scene: this,
                         key: "mriceblock",
                         x: creature.position.x * 32,
@@ -458,7 +565,7 @@ export class SectorScene extends Phaser.Scene {
 
                 case "jumpy":
                     creatureObject = new Jumpy({
-                        id: creature.id,
+                        id: this.getEnemyId(),
                         scene: this,
                         key: "jumpy",
                         x: creature.position.x * 32,
@@ -472,7 +579,7 @@ export class SectorScene extends Phaser.Scene {
 
                 case "plasma-gun":
                     creatureObject = new PlasmaGun({
-                        id: creature.id,
+                        id: this.getEnemyId(),
                         scene: this,
                         key: "plasma-gun",
                         x: creature.position.x * 32,
@@ -485,7 +592,7 @@ export class SectorScene extends Phaser.Scene {
 
                 //case "krosh":
                 //    creatureObject = new Krosh({
-                //        id: creature.id,
+                //        id: this.getEnemyId(),
                 //        scene: this,
                 //        key: "krosh",
                 //        x: creature.position.x * 32,
@@ -500,7 +607,7 @@ export class SectorScene extends Phaser.Scene {
 
                 case "fish":
                     creatureObject = new Fish({
-                        id: creature.id,
+                        id: this.getEnemyId(),
                         scene: this,
                         key: "fish",
                         x: creature.position.x * 32,
@@ -517,7 +624,7 @@ export class SectorScene extends Phaser.Scene {
                 /*
                 case "ghoul":
                     creatureObject = new Ghoul({
-                        id: creature.id,
+                        id: this.getEnemyId(),
                         scene: this,
                         key: "ghoul",
                         x: creature.position.x * 32,
@@ -531,7 +638,7 @@ export class SectorScene extends Phaser.Scene {
 
                 case "hellspiky":
                     creatureObject = new HellSpiky({
-                        id: creature.id,
+                        id: this.getEnemyId(),
                         scene: this,
                         key: "hellspiky",
                         x: creature.position.x * 32,
@@ -545,7 +652,7 @@ export class SectorScene extends Phaser.Scene {
 
                 case "spiky":
                     creatureObject = new Spiky({
-                        id: creature.id,
+                        id: this.getEnemyId(),
                         scene: this,
                         key: "spiky",
                         x: creature.position.x * 32,
@@ -582,6 +689,21 @@ export class SectorScene extends Phaser.Scene {
         }
     }
 
+    addCreature(creatureObject) {
+        if (creatureObject != null) {
+            this.creatureObjects.push(creatureObject);
+            this.enemyGroup.add(creatureObject);
+
+            if (creatureObject.collidesWithExtraTiles) {
+                this.enemyCollisionExtraTilesGroup.add(creatureObject);
+            }
+
+            if (creatureObject.collidesWithOtherEnemies) {
+                this.enemyCollisionGroup.add(creatureObject);
+            }
+        }
+    }
+
     parseHurtableTiles() {
         var sectorHurtableTiles = this.sector.getHurtableTiles();
 
@@ -599,75 +721,161 @@ export class SectorScene extends Phaser.Scene {
         }
     }
 
-    parseCollisionTilesLayer() {
-        var sectorCollisionTiles = this.sector.getCollisionTiles();
-        var self = this;
+    createHurtableTile(i, j, type) {
+        var hurtableTileSprite = {};
 
-        sectorCollisionTiles.forEach(function (collisionTile, idx) {
-            var tile;
+        if (type.startsWith("spk-")) {
+            hurtableTileSprite = new Spike({ scene: this, x: i * 32, y: j * 32, type: type, player: this.player });
+        }
 
-            if (collisionTile.type.startsWith("icebridge-")) {
-                let tileIndex = 2;
-
-                if (collisionTile.type == "icebridge-start") {
-                    tileIndex = 0;
-                } else if (collisionTile.type == "icebridge-mid") {
-                    tileIndex = 1;
-                }
-
-                tile = self.add.sprite(collisionTile.x, collisionTile.y, "icebridge", tileIndex);
-            } else if (collisionTile.type == "single-wood") {
-                tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood-single");
-            } else if (collisionTile.type == "wood-start") {
-                tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood", 0);
-            } else if (collisionTile.type == "wood-mid") {
-                tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood", 1);
-            } else if (collisionTile.type == "wood-end") {
-                tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood", 4);
-            } else if (collisionTile.type.startsWith(SpriteKeyConstants.INDUSTRIAL)) {
-                tile = self.add.sprite(collisionTile.x, collisionTile.y, "industrial", collisionTile.type.replace(SpriteKeyConstants.INDUSTRIAL, ""));
-            } else {
-                return;
-            }
-
-            self.physics.world.enableBody(tile, 0);
-            tile.body.setAllowGravity(false);
-            tile.body.setImmovable(true);
-            tile.setOrigin(0, 0);
-
-            if (collisionTile.climbable !== undefined && collisionTile.climbable === true) {
-                tile.body.setCollideWorldBounds(false);
-                self.climbableTilesGroup.add(tile);
-            } else {
-                self.collisionTilesGroup.add(tile);
-            }
-        });
+        this.hurtableTiles.push(hurtableTileSprite);
     }
 
-    parseMovablePlatforms() {
-        var sectorMovablePlatforms = this.sector.getMovablePlatforms();
-        var self = this;
+    parseCollisionTilesLayer() {
+        //var sectorCollisionTiles = this.sector.getCollisionTiles();
+        //var self = this;
 
-        this.movablePlatformsSprites = [];
+        //sectorCollisionTiles.forEach(function (collisionTile, idx) {
+        //    var tile;
 
-        sectorMovablePlatforms.forEach(function (movablePlatform, idx) {
-            var platform = new Platform({
-                id: idx,
-                scene: self,
-                key: 'platforms',
-                x: movablePlatform.x,
-                y: movablePlatform.y,
-                player: self.player,
-                sector: self.sector,
-                level: Level.getCurrentLevel(),
-                type: movablePlatform.type,
-            });
-            self.movablePlatformsGroup.add(platform);
-            self.movablePlatformsSprites.push(platform);
-            self.staticObjects.push(platform);
+        //    if (collisionTile.type.startsWith("icebridge-")) {
+        //        let tileIndex = 2;
+
+        //        if (collisionTile.type == "icebridge-start") {
+        //            tileIndex = 0;
+        //        } else if (collisionTile.type == "icebridge-mid") {
+        //            tileIndex = 1;
+        //        }
+
+        //        tile = self.add.sprite(collisionTile.x, collisionTile.y, "icebridge", tileIndex);
+        //    } else if (collisionTile.type == "single-wood") {
+        //        tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood-single");
+        //    } else if (collisionTile.type == "wood-start") {
+        //        tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood", 0);
+        //    } else if (collisionTile.type == "wood-mid") {
+        //        tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood", 1);
+        //    } else if (collisionTile.type == "wood-end") {
+        //        tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood", 4);
+        //    } else if (collisionTile.type == "ind-ladder") {
+        //        alert("ladder");
+        //        tile = self.add.sprite(collisionTile.x, collisionTile.y, "ind-ladder");
+        //    } else if (collisionTile.type.startsWith(SpriteKeyConstants.INDUSTRIAL)) {
+        //        tile = self.add.sprite(collisionTile.x, collisionTile.y, "industrial", collisionTile.type.replace(SpriteKeyConstants.INDUSTRIAL, ""));
+        //    } else {
+        //        return;
+        //    }
+
+        //    self.physics.world.enableBody(tile, 0);
+        //    tile.body.setAllowGravity(false);
+        //    tile.body.setImmovable(true);
+        //    tile.setOrigin(0, 0);
+
+        //    if (collisionTile.climbable !== undefined && collisionTile.climbable === true) {
+        //        tile.body.setCollideWorldBounds(false);
+        //        self.climbableTilesGroup.add(tile);
+        //    } else {
+        //        self.collisionTilesGroup.add(tile);
+        //    }
+        //});
+    }
+
+    addSprite(i, j, type, index) {
+        let sprite;
+
+        if (index !== undefined) {
+            sprite = this.add.sprite(i * 32, j * 32, type, index);
+        } else {
+            sprite = this.add.sprite(i * 32, j * 32, type);
+        }
+
+        return sprite;
+    }
+
+    //createCollisionTile(i, j, collisionTileType) {
+    //    var sectorCollisionTiles = this.sector.getCollisionTiles();
+    //    var self = this;
+    //    var x = i * 32;
+    //    var y = j * 32;
+    //    var tile = {};
+
+    //    if (collisionTileType.startsWith("icebridge-")) {
+    //        let tileIndex = 2;
+
+    //        if (collisionTileType == "icebridge-start") {
+    //            tileIndex = 0;
+    //        } else if (collisionTileType == "icebridge-mid") {
+    //            tileIndex = 1;
+    //        }
+
+    //        tile = self.add.sprite(x, y, "icebridge", tileIndex);
+    //    } else if (collisionTileType == "single-wood") {
+    //        tile = self.add.sprite(x, y, "wood-single");
+    //    } else if (collisionTileType == "wood-start") {
+    //        tile = self.add.sprite(x, y, "wood", 0);
+    //    } else if (collisionTileType == "wood-mid") {
+    //        tile = self.add.sprite(x, y, "wood", 1);
+    //    } else if (collisionTileType == "wood-end") {
+    //        tile = self.add.sprite(x, y, "wood", 4);
+    //    } else if (collisionTileType == "ind-ladder") {
+    //        tile = self.add.sprite(x, y, "ind-ladder");
+    //    } else if (collisionTileType.startsWith(SpriteKeyConstants.INDUSTRIAL)) {
+    //        tile = self.add.sprite(x, y, "industrial", collisionTileType.replace(SpriteKeyConstants.INDUSTRIAL, ""));
+    //    } else {
+    //        return;
+    //    }
+
+    //    self.physics.world.enableBody(tile, 0);
+    //    tile.body.setAllowGravity(false);
+    //    tile.body.setImmovable(true);
+    //    tile.setOrigin(0, 0);
+
+    //    if (collisionTile.climbable !== undefined && collisionTile.climbable === true) {
+    //        tile.body.setCollideWorldBounds(false);
+    //        self.climbableTilesGroup.add(tile);
+    //    } else {
+    //        self.collisionTilesGroup.add(tile);
+    //    }
+    //}
+
+    addCollisionTile(collisionTileSprite, originalKey) {
+        let sectorData = Sector.getCurrentSector().sectorData;
+        let climbable = originalKey && sectorData.climbableTiles && sectorData.climbableTiles.includes(originalKey);
+
+        this.physics.world.enableBody(collisionTileSprite, 0);
+        collisionTileSprite.body.setAllowGravity(false);
+        collisionTileSprite.body.setImmovable(true);
+        collisionTileSprite.setOrigin(0, 0);
+
+        collisionTileSprite.climbable = climbable;
+
+        if (collisionTileSprite.climbable !== undefined && collisionTileSprite.climbable === true) {
+            collisionTileSprite.body.setCollideWorldBounds(false);
+            this.climbableTilesGroup.add(collisionTileSprite);
+        } else {
+            this.collisionTilesGroup.add(collisionTileSprite);
+        }
+    }
+
+    createMovablePlatform(i, j, movablePlatformType) {
+        if (this.movablePlatformsSprites === undefined) {
+            this.movablePlatformsSprites = [];
+        }
+
+        var platform = new Platform({
+            id: this.getMovableObjectId(),
+            scene: this,
+            key: 'platforms',
+            x: i * 32,
+            y: j * 32,
+            player: this.player,
+            sector: this.sector,
+            level: Level.getCurrentLevel(),
+            type: movablePlatformType,
         });
 
-        console.log(this.staticObjects);
+        this.movablePlatformsGroup.add(platform);
+        this.movablePlatformsSprites.push(platform);
+        this.staticObjects.push(platform);
     }
 
     createBackground() {
@@ -677,23 +885,13 @@ export class SectorScene extends Phaser.Scene {
         backgroundImage.scrollFactorY = 0;
     }
 
-    parseBackgroundImages() {
-        var sectorBackgroundObjects = this.sector.getBackgroundObjects();
-
-        for (var i = 0; i < sectorBackgroundObjects.length; i++) {
-            var preloadedBackgroundObject = sectorBackgroundObjects[i];
-
-            if (preloadedBackgroundObject.type == 'home') {
-                this.addHome(preloadedBackgroundObject);
-            } else {
-                this.add.sprite(preloadedBackgroundObject.x, preloadedBackgroundObject.y, preloadedBackgroundObject.type);
-            }        
-        }
+    createBackgroundObject(i, j, offsetX, offsetY, objectType) {
+        let bg = this.add.sprite(i * 32 + offsetX, j * 32 + offsetY, objectType);
     }
 
-    addHome(preloadedHome) {
-        var foreground = this.add.sprite(preloadedHome.x + 100, preloadedHome.y - 65, 'exitfg');
-        var background = this.add.sprite(preloadedHome.x + 242, preloadedHome.y - 65, 'exitbg');
+    addHome(i, j) {
+        var foreground = this.add.sprite(i * 32 + 100, j * 32 - 65, 'exitfg');
+        var background = this.add.sprite(i * 32 + 242, j * 32 - 65, 'exitbg');
 
         foreground.flipX = true;
         background.flipX = true;
@@ -703,59 +901,95 @@ export class SectorScene extends Phaser.Scene {
     }
 
     parseLava() {
-        var lavaTiles = this.sector.getLava();
+        //var lavaTiles = this.sector.getLava();
 
-        if (this.lavaSprites == null) {
-            this.lavaSprites = [];
-        }
+        //if (this.lavaSprites == null) {
+        //    this.lavaSprites = [];
+        //}
 
-        for (var i = 0; i < lavaTiles.length; i++) {
-            var preloadedLava = lavaTiles.lava[i];
-            let lava = {};
+        //for (var i = 0; i < lavaTiles.length; i++) {
+        //    var preloadedLava = lavaTiles.lava[i];
+        //    let lava = {};
             
-            if (preloadedLava.type == 'plain') {
-                lava = this.add.sprite(preloadedLava.x, preloadedLava.y, 'lava');
-                lava.setOrigin(0, 0);
-                lava.setDepth(120);
-                lava.alpha = this.LAVA_ALPHA;
-            } else /*if (preloadedAntarcticWater.type == 'top')*/ {
-                lava = new Lava({
-                    id: i,
-                    key: 'lava-' + i,
-                    player: this.player,
-                    scene: this,
-                    x: preloadedLava.x,
-                    y: preloadedLava.y,
-                    level: Level.currentLevel,
-                    alpha: this.LAVA_ALPHA
-                });
+        //    if (preloadedLava.type == 'plain') {
+        //        lava = this.add.sprite(preloadedLava.x, preloadedLava.y, 'lava');
+        //        lava.setOrigin(0, 0);
+        //        lava.setDepth(120);
+        //        lava.alpha = this.LAVA_ALPHA;
+        //    } else /*if (preloadedAntarcticWater.type == 'top')*/ {
+        //        lava = new Lava({
+        //            id: i,
+        //            key: 'lava-' + i,
+        //            player: this.player,
+        //            scene: this,
+        //            x: preloadedLava.x,
+        //            y: preloadedLava.y,
+        //            level: Level.currentLevel,
+        //            alpha: this.LAVA_ALPHA
+        //        });
 
-                this.lavaSprites.push(lava);
+        //        this.lavaSprites.push(lava);
+        //    }
+        //}
+    }
+
+    initEffects() {
+        var events = this.sector.getEvents();
+
+        if (events !== undefined) {
+            for (var i = 0; i < events.length; i++) {
+                var event = events[i];
+
+                if (event.type == "stomp") {
+                    var trembleIntensity = 0;
+
+                    switch (event.intensity) {
+                        case "low":
+                            trembleIntensity = 5;
+                            break;
+                        case "medium":
+                            trembleIntensity = 15;
+                            break;
+                        case "high":
+                            trembleIntensity = 25;
+                            break;
+                        default:
+                            break;
+                    }
+
+                    var stompEffect = new StompEffect({
+                        scene: this,
+                        player: this.player,
+                        intensity: trembleIntensity,
+                        targets: event.targets,
+                        waitBetween: event.waitBetween
+                    });
+                }
             }
         }
     }
 
     parseAntarcticWater() {
-        for (var i = 0; i < this.sector.additionalTiles.water.length; i++) {
-            var preloadedAntarcticWater = this.additionalTiles.water[i];
+        //for (var i = 0; i < this.sector.additionalTiles.water.length; i++) {
+        //    var preloadedAntarcticWater = this.additionalTiles.water[i];
 
-            let water = {};
+        //    let water = {};
 
-            if (preloadedAntarcticWater.type == 'plain') {
-                water = this.add.sprite(preloadedAntarcticWater.x, preloadedAntarcticWater.y, 'antarctic-water');
-                water.setOrigin(0, 0);
-            } else /*if (preloadedAntarcticWater.type == 'top')*/ {
-                water = new Water({
-                    id: i,
-                    key: 'water-' + i,
-                    scene: this.scene,
-                    x: preloadedAntarcticWater.x,
-                    y: preloadedAntarcticWater.y,
-                    player: this.player,
-                    level: this
-                });
-            }
-        }
+        //    if (preloadedAntarcticWater.type == 'plain') {
+        //        water = this.add.sprite(preloadedAntarcticWater.x, preloadedAntarcticWater.y, 'antarctic-water');
+        //        water.setOrigin(0, 0);
+        //    } else /*if (preloadedAntarcticWater.type == 'top')*/ {
+        //        water = new Water({
+        //            id: i,
+        //            key: 'water-' + i,
+        //            scene: this.scene,
+        //            x: preloadedAntarcticWater.x,
+        //            y: preloadedAntarcticWater.y,
+        //            player: this.player,
+        //            level: this
+        //        });
+        //    }
+        //}
     }
 
     parseInvisibleWallBlocks() {
@@ -807,6 +1041,7 @@ export class SectorScene extends Phaser.Scene {
         this.loadParticleImages();
         this.loadTileImages();
         this.loadSlopeImages();
+        this.loadLevelMiscImages();
         this.loadWeatherImages();
     }
 
@@ -820,7 +1055,7 @@ export class SectorScene extends Phaser.Scene {
     }
 
     loadNecessaryImages() {
-        var keys = ["arrow", "invisible-wall", "UI", "debug-camera", "tux", "backgrounds", "coin", "powerup"];
+        var keys = ["arrow", "invisible-wall", "UI", "debug-camera", "tux", "backgrounds", "coin", "hell-coin", "powerup"];
 
         this.loadImagesForKeys(keys);
     }
@@ -880,6 +1115,10 @@ export class SectorScene extends Phaser.Scene {
         this.imageLoader.loadImagesFromData("slopes");
     }
 
+    loadLevelMiscImages() {
+        this.imageLoader.loadImagesFromData("level-misc");
+    }
+
     loadEnemyImages() {
         var enemyImageKeys = ["snowball", "bouncing-snowball", "flying-snowball", "plasma-gun", "platforms",
             "mr-iceblock", "mr-bomb", "hell-crusher", "krosh", "fish", "ghoul", "jumpy", "spiky", "creature-thinking"];
@@ -909,7 +1148,7 @@ export class SectorScene extends Phaser.Scene {
         var animationKeys = [
             "mr-bomb", "sparkle", "smoke", "tux", "ghoul", "lava",
             "bouncing-snowball", "flying-snowball", "snowball", "mr-iceblock", "spiky",
-            "fish", "lava-fish", "antarctic-water", "star-moving", "plus-flickering", "coin"
+            "fish", "lava-fish", "antarctic-water", "star-moving", "plus-flickering", "coin", "hell-coin"
         ];
 
         this.makeAnimationsForKeys(animationKeys);
@@ -1015,10 +1254,14 @@ export class SectorScene extends Phaser.Scene {
     fillTilesForeground() {
         var sectorStaticForegrounds = this.sector.getFillTilesForegrounds();
 
+        console.log(sectorStaticForegrounds);
+
         if (sectorStaticForegrounds == null) { return; }
+
         var i = 0;
         var level = this;
         var self = this;
+
         sectorStaticForegrounds.forEach(function (foreground, ids) {
             var foregroundImage = {};
             if (typeof foreground.tile == 'number') {
@@ -1082,6 +1325,7 @@ export class SectorScene extends Phaser.Scene {
         this.healthBar.update(time, delta);
         //Sector.currentSector.update(time, delta);
         this.validateCurrentSectorEnds();
+        this.cursor.update(time, delta);
         this.forceUpdateSprites(this.creatureObjects, time, delta);
         this.forceUpdateSprites(this.coinSprites, time, delta);
         this.forceUpdateSprites(this.lavaSprites, time, delta);

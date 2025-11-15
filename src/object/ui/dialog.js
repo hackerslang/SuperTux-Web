@@ -26,7 +26,7 @@ export class Dialog {
 
         this.buttons = [];
     }
-
+    
     show() {
         this.createGradientRectangle();
         this.addTitle();

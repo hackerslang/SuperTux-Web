@@ -81,4 +81,8 @@ export class SettingsMenuScene extends MenuScene {
             i++;
         });
     }
+
+    update(time, delta) {
+        super.update(time, delta);
+    }
 }

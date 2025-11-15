@@ -70,80 +70,158 @@ export class Level {
             return false;
         }
 
-        return (Sector.getCurrentSector().sectorData.climbableTiles && Sector.getCurrentSector().sectorData.climbableTiles.includes(tile)
-            && !Level.isInPlayerCollisionObject(x, y, scene));
+        return ((Sector.getCurrentSector().sectorData.climbableTiles && Sector.getCurrentSector().sectorData.climbableTiles.includes(tile)
+            || Level.canHangOnClimbableSprite(creature, scene)));
+    }
+
+    static canHangOnClimbableSprite(creature, scene) {
+        let climbableObjects = scene.climbableTilesGroup.getChildren();
+        
+        for (var i = 0; i < climbableObjects.length; i++) {
+            let climbableObject = climbableObjects[i];
+
+            if (Level.isReasonablyTooFarApart(creature, climbableObject)) {
+                // Improve performance by skipping distant objects
+
+                continue;
+            }
+
+            if (Level.creatureCanHangOnClimbableSprite(creature, climbableObject)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static isReasonablyTooFarApart(one, other) {
+        return (Math.abs(one.x - other.x) > 500 || Math.abs(one.y - other.y) > 500);
+    }
+
+    static creatureCanHangOnClimbableSprite(one, other) {
+        return (((one.body.right > other.body.left && one.body.right < other.body.right)
+            || (one.body.left > other.body.left && one.body.left < other.body.right))
+            && ((one.body.top > other.body.top && one.body.top < other.body.bottom)
+            || (one.body.bottom > other.body.top && one.body.bottom < other.body.bottom
+                    // Prevent that his top arms appear above the climbable object, when the rest of the body is between the boundaries of the fenc!
+                    && one.body.top >= other.body.top)));
+    }
+
+    static rectBoxIntersects(one, other) {
+        return (((one.body.right > other.body.left && one.body.right < other.body.right)
+            || (one.body.left > other.body.left && one.body.left < other.body.right))
+            && ((one.body.top > other.body.top && one.body.top < other.body.bottom)
+            || (one.body.bottom > other.body.top && one.body.bottom < other.body.bottom)));
+    }
+
+    static creatureCanClimbFurtherOnClimbableSprite(creature, other, direction, delta) {
+        let canClimbFurther = false;
+        let newRectBox = {};
+
+        newRectBox.body = {
+            right: creature.body.right,
+            left: creature.body.left,
+            top: creature.body.top,
+            bottom: creature.body.bottom
+        };
+        
+        if (direction === "left") {
+            newRectBox.body.left -= delta;
+
+            canClimbFurther =
+                (newRectBox.body.left > other.body.left && newRectBox.body.left < other.body.right)
+                && ((newRectBox.body.top > other.body.top && newRectBox.body.top < other.body.bottom)
+                    || (newRectBox.body.bottom > other.body.top && newRectBox.body.bottom < other.body.bottom
+                        && newRectBox.body.top >= other.body.top));
+
+        } else if (direction === "right") {
+            newRectBox.body.right += delta;
+
+            canClimbFurther =
+                (newRectBox.body.right > other.body.left && newRectBox.body.right < other.body.right)
+                && ((newRectBox.body.top > other.body.top && newRectBox.body.top < other.body.bottom)
+                    || (newRectBox.body.bottom > other.body.top && newRectBox.body.bottom < other.body.bottom
+                        && newRectBox.body.top >= other.body.top));
+        } else if (direction === "top") {
+            newRectBox.body.top -= delta;
+
+            canClimbFurther = ((newRectBox.body.left >= other.body.left && newRectBox.body.left <= other.body.right)
+                || (newRectBox.body.right >= other.body.left && newRectBox.body.right <= other.body.right))
+                && newRectBox.body.top > other.body.top && newRectBox.body.top < other.body.bottom;
+        } else if (direction === "bottom") {
+            newRectBox.body.bottom += delta;
+
+            canClimbFurther = ((newRectBox.body.left >= other.body.left && newRectBox.body.left <= other.body.right)
+                || (newRectBox.body.right >= other.body.left && newRectBox.body.right <= other.body.right))
+                && newRectBox.body.top >= other.body.top && newRectBox.body.top <= other.body.bottom;
+        }
+
+        return canClimbFurther;
+    }
+
+    static rectBoxSpaceRemainder(one, other, style, delta) {
+        let newRectBox = {};
+        newRectBox.body = {
+            right: one.body.right,
+            left: one.body.left,
+            top: one.body.top,
+            bottom: one.body.bottom
+        };
+
+        if (style === "left") {
+            newRectBox.body.left -= delta;
+        } else if (style === "right") {
+            newRectBox.body.right += delta;
+        } else if (style === "top") {
+            newRectBox.body.top -= delta;
+        } else if (style === "bottom") {
+            newRectBox.body.bottom += delta;
+        }
+
+        return Level.rectBoxIntersects(newRectBox, other);
+    }
+
+    static hasClimbingSpaceLeft(creature, scene, direction) {
+        if (!creature.isClimbing) { return false; }
+
+        let climbableObjects = scene.climbableTilesGroup.getChildren();
+
+        for (var i = 0; i < climbableObjects.length; i++) {
+            let climbableObject = climbableObjects[i];
+
+            if (Level.isReasonablyTooFarApart(creature, climbableObject)) {
+                // Improve performance by skipping distant objects
+
+                continue;
+            }
+
+            if (Level.creatureCanClimbFurtherOnClimbableSprite(creature, climbableObject, direction, 2)) {
+                return true;
+            }
+
+            //if (Level.creatureCanHangOnClimbableSprite(creature, climbableObject)
+            //    && Level.rectBoxSpaceRemainder(creature, climbableObject, direction, 1)) {
+            //    return true;
+            //}
+        }
+
+        return false;
     }
 
     static hasClimbingLeftToLeft(creature, scene) {
-        var left = creature.body.left;
-        var top = creature.body.top;
-        var bottom = creature.body.bottom;
-
-        var tiles = [
-            { x: left - 1, y: top },
-            { x: left - 1, y: top + ((bottom - top) / 2) },
-            { x: left - 1, y: bottom },
-        ];
-
-        return Level.anyTileHasClimbingSpaceLeft(tiles, scene);
+        return Level.hasClimbingSpaceLeft(creature, scene, "left");
     }
 
     static hasClimbingLeftToRight(creature, scene) {
-        var right = creature.body.right;
-        var top = creature.body.top;
-        var bottom = creature.body.bottom;
-
-        var tiles = [
-            { x: right + 1, y: top },
-            { x: right + 1, y: top + ((bottom - top) / 2) },
-            { x: right + 1, y: bottom },
-        ];
-
-        return Level.anyTileHasClimbingSpaceLeft(tiles, scene);
+        return Level.hasClimbingSpaceLeft(creature, scene, "right");
     }
 
     static hasClimbingLeftToTop(creature, scene) {
-        var left = creature.body.left;
-        var right = creature.body.right;
-        var top = creature.body.top;
-
-        var tiles = [
-            { x: left, y: top - 1 },
-            { x: left + ((right - left) / 2), y: top - 1 },
-            { x: right, y: top - 1}
-        ];
-
-        return Level.anyTileHasClimbingSpaceLeft(tiles, scene);
+        return Level.hasClimbingSpaceLeft(creature, scene, "top");
     }
 
     static hasClimbingLeftToBottom(creature, scene) {
-        var right = creature.body.right;
-        var left = creature.body.left;
-        var bottom = creature.body.bottom;
-
-        var tiles = [
-            { x: left, y: bottom + 1 },
-            { x: left + ((right - left) / 2), y: bottom + 1 },
-            { x: right, y: bottom + 1 }
-        ];
-
-        return Level.anyTileHasClimbingSpaceLeft(tiles, scene);
-    }
-
-    static hasClimbingLeftToBottomByHangingTop(creature, scene) {
-        var right = creature.body.right;
-        var left = creature.body.left;
-        var top = creature.body.top;
-
-        var outerTop = top + creature.climbingTopPadding;
-
-        var tiles = [
-            { x: left, y: outerTop },
-            { x: left + ((right - left) / 2), y: outerTop },
-            { x: right, y: outerTop }
-        ];
-
-        return Level.anyTileHasClimbingSpaceLeft(tiles, scene);
+        return Level.hasClimbingSpaceLeft(creature, scene, "bottom");
     }
 
     static anyTileHasClimbingSpaceLeft(tiles, scene) {
@@ -160,12 +238,12 @@ export class Level {
         return false;
     }
 
-    static hasClimbingSpaceLeft(x, y, scene) {
-        var tile = Sector.getCurrentSector().getOriginalTileData(x, y);
+    //static hasClimbingSpaceLeft(x, y, scene) {
+    //    var tile = Sector.getCurrentSector().getOriginalTileData(x, y);
 
-        return (Sector.getCurrentSector().sectorData.climbableTiles && Sector.getCurrentSector().sectorData.climbableTiles.includes(tile)
-            && !Level.isInPlayerCollisionObject(x, y, scene));
-    }
+    //    return (Sector.getCurrentSector().sectorData.climbableTiles && Sector.getCurrentSector().sectorData.climbableTiles.includes(tile)
+    //        && !Level.isInPlayerCollisionObject(x, y, scene));
+    //}
 
     static isOnTopOfObjects(x, y, scene) {
         var tileX = Math.floor(x / 32);
@@ -206,6 +284,7 @@ export class Level {
 
         for (var i = 0; i < platforms.length; i++) {
             var platform = platforms[i];
+
             var platformX = platform.x;
             var platformX2 = platformX + platform.width;
             var platformY = platform.y;

@@ -50,7 +50,7 @@ export class MenuScene extends Phaser.Scene {
     preloadFonts() {
         var fontLoader = new FontLoader();
 
-        fontLoader.loadRawTtfFont(this, "Supertux-Medium-TrueType", "./assets/fonts/Supertux-Medium.ttf");
+        fontLoader.loadRawTtfFont(this, "Supertux-Medium-TrueType", "./assets/fonts/Supertux-Medium.ttf");  
         fontLoader.loadFont(this, "SuperTuxBigFontFlashy");
         fontLoader.loadFont(this, "SuperTuxBigColorFul");
         fontLoader.loadFont(this, "SuperTuxBigColorFulWhite");
@@ -78,5 +78,9 @@ export class MenuScene extends Phaser.Scene {
         this.input.on('pointerup', (pointer, gameObjects) => {
             this.cursor.setDefaultCursor();
         });
+    }
+
+    update(time, delta) {
+        this.cursor.update(time, delta);
     }
 }

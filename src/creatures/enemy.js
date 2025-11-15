@@ -182,6 +182,7 @@ export class Enemy extends Phaser.GameObjects.Sprite {
             }
         }
 
+        console.log(this.player);
         if (!this.player.isDead()) {
             this.scene.physics.world.collide(this, this.player, this.playerHit);
         }

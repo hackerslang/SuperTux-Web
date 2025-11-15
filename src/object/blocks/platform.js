@@ -162,16 +162,22 @@ export class Platform extends Phaser.GameObjects.Sprite {
 
                 switch (fn) {
                     case "circular":
-                        const centerX = params.centerX !== undefined ? params.centerX : startX;
-                        const centerY = params.centerY !== undefined ? params.centerY : startY;
-                        const radius = params.radius !== undefined ? params.radius : 50;
-                        const startAngle = params.startAngle !== undefined ? params.startAngle : 0;
-                        const endAngle = params.endAngle !== undefined ? params.endAngle : 360;
-                        const angle = Phaser.Math.DegToRad(startAngle + (endAngle - startAngle) * tAbs);
-
-                        newX = centerX + radius * Math.cos(angle);
-                        newY = centerY + radius * Math.sin(angle);
-
+                        // Use platform's own timer for angle
+                        if (!this.circular) {
+                            this.circular = {
+                                centerX: params.centerX !== undefined ? params.centerX : startX,
+                                centerY: params.centerY !== undefined ? params.centerY : startY,
+                                radius: params.radius !== undefined ? params.radius : 50,
+                                angularSpeed: params.angularSpeed !== undefined ? params.angularSpeed : 0.5, // radians/sec
+                                angle: params.startAngle !== undefined ? Phaser.Math.DegToRad(params.startAngle) : 0
+                            };
+                        }
+                        // Advance angle by angularSpeed * deltaTime
+                        this.circular.angle += this.circular.angularSpeed * (this.scene.game.loop.delta / 1000);
+                        // Calculate velocity
+                        const vx = -this.circular.radius * this.circular.angularSpeed * Math.sin(this.circular.angle);
+                        const vy = this.circular.radius * this.circular.angularSpeed * Math.cos(this.circular.angle);
+                        target.body.setVelocity(vx, vy);
                         break;
                     case "quadratic":
                         newX = startX + offsetX * tAbs;

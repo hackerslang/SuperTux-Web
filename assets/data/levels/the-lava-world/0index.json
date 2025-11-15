@@ -2,5 +2,5 @@
   "key": "the-lava-world",
   "title": "The Lava World",
   "slopes": [ "snow" ],
-  "sectors": [ "hell-sector", "sector1" ]
+  "sectors": [ "sector1", "hell-sector" ]
 }

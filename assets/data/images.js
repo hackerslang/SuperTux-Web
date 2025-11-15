@@ -220,11 +220,23 @@
             ]
         },
         "coin": {
-            "path": "./assets/images/objects/",
+            "path": "./assets/images/objects/collectibles/",
             "spritesheets": [
                 {
                     "name": "coin-moving",
                     "value": "coins",
+                    "frameWidth": 32,
+                    "frameHeight": 32,
+                    "number": 16
+                }
+            ]
+        },
+        "hell-coin": {
+            "path": "./assets/images/objects/collectibles/",
+            "spritesheets": [
+                {
+                    "name": "hell-coin-moving",
+                    "value": "hell-coins",
                     "frameWidth": 32,
                     "frameHeight": 32,
                     "number": 16
@@ -495,6 +507,23 @@
                 {
                     "name": "snow-slope-2",
                     "value": "snow-slope2"
+                }
+            ]
+        },
+        "level-misc": {
+            "path": "./assets/images/level/misc/",
+            "sprites": [
+                {
+                    "name": "ind-bridge-high",
+                    "value": "ind-bridge-high"
+                },
+                {
+                    "name": "ind-bridge-low",
+                    "value": "ind-bridge-low"
+                },
+                {
+                    "name": "ind-ladder",
+                    "value": "ind-ladder"
                 }
             ]
         },

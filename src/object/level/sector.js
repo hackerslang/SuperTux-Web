@@ -8,7 +8,6 @@ export class Sector {
         this.sectorData = sectorData;
         this.originalTileData = sectorData.data.slice();
         this.level = level;
-        this.tilemapParser = new TilemapParser(this, this.sectorData);
         this.sectorWidth = this.sectorData.data[0].length * 32;
     }
 
@@ -92,6 +91,10 @@ export class Sector {
         return this.sectorData.movablePlatforms;
     }
 
+    getEvents() {
+        return this.sectorData.events;
+    }
+
     getEnemyObjects() {
         return this.additionalTiles.enemies;
     }
@@ -149,7 +152,7 @@ export class Sector {
         this.preloadedSpikes.push(spike);
     }
 
-    parseTilemaps() {
+    parseAdditionalTilemaps() {
         this.additionalTiles = this.tilemapParser.parse();
     }
 

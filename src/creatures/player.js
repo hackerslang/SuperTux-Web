@@ -121,6 +121,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
         this.hasPlayerJump = false;
 
         this.isClimbing = false;
+        this.isHangingStill = false;
 
         this.KICK_TIME = 300;
 
@@ -229,6 +230,66 @@ export class Tux extends Phaser.GameObjects.Sprite {
 
     isActiveAndAlive() {
         return !this.isDying && !this.isDeactivated;
+    }
+
+    // Functions for Computer controlling the character!
+
+    talk() {
+
+    }
+
+    turnAround() {
+        this.direction = (this.direction === this.DIRECTION_RIGHT) ? this.DIRECTION_LEFT : this.DIRECTION_RIGHT;
+        this.flipX = (this.direction === this.DIRECTION_RIGHT ? false : true);
+    }
+
+    walkSlowly(direction = null, speed = null) {
+        if (this.killed || this.isDying || this.isDeactivated) {
+            return;
+        }
+
+        direction = this.normalizeDirection(direction);
+
+        // default speed to half walk speed
+        if (speed === null || typeof speed !== 'number') {
+            speed = Math.max(1, Math.floor(this.WALK_SPEED * 0.5));
+        }
+
+        // only allow walking slowly when on ground or when intended (you can adjust as needed)
+        if (!this.onGround() && !this.isClimbing) {
+            // still allow a small control while in air if desired
+            // return;
+        }
+
+        // set facing and small bookkeeping used elsewhere
+        this.direction = direction;
+        this.directionSign = (direction === this.DIRECTION_RIGHT) ? 1 : -1;
+        this.flipX = (this.direction === this.DIRECTION_RIGHT ? false : true);
+        this.flipDirection = false;
+
+        // apply slow movement
+        this.setAccelerationX(0);
+        this.setVelocityX(this.directionSign * speed);
+
+        // make sure player shows walking animation
+        this.playAnimation('tux-walk');
+    }
+
+    // End of Functions for Computer controlling the character!
+
+    normalizeDirection(direction) {
+        if (direction === null) {
+            direction = this.direction;
+        } else if (direction === 'left') {
+            direction = this.DIRECTION_LEFT;
+        } else if (direction === 'right') {
+            direction = this.DIRECTION_RIGHT;
+        } else if (direction !== this.DIRECTION_LEFT && direction !== this.DIRECTION_RIGHT) {
+            // if a numeric sign was passed (e.g. -1/1), keep it
+            direction = direction >= 0 ? this.DIRECTION_RIGHT : this.DIRECTION_LEFT;
+        }
+
+        return direction;
     }
 
     update(time, delta) {
@@ -672,6 +733,8 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     handleInput(delta) {
+        if (this.unControllable !== undefined && this.unControllable) { return; }
+
         this.handleInputClimbing(delta);
 
         if (this.isClimbing) {
@@ -710,6 +773,8 @@ export class Tux extends Phaser.GameObjects.Sprite {
                 } else {
                     this.handleClimbingInDirections();
                 }
+            } else {
+                this.isHangingStill = false;
             }
         }
     }
@@ -747,6 +812,10 @@ export class Tux extends Phaser.GameObjects.Sprite {
         this.doJump(-550);
     }
 
+    setUnControllable(bool) {
+        this.unControllable = bool;
+    }
+
     handleClimbingInDirections() {
         var vx = 0;
         var vy = 0;
@@ -755,18 +824,37 @@ export class Tux extends Phaser.GameObjects.Sprite {
             || (this.keyPressClimbingLeft() && this.keyPressClimbingRight()))) {
             if (this.keyPressClimbingLeft() && Level.hasClimbingLeftToLeft(this, this.scene)) {
                 vx = -this.MAX_CLIMB_XM;
+                this.isHangingStill = false;
             }
 
             if (this.keyPressClimbingRight() && Level.hasClimbingLeftToRight(this, this.scene)) {
                 vx = this.MAX_CLIMB_XM;
+                this.isHangingStill = false;
             }
 
             if (this.keyPressClimbingUp() && Level.hasClimbingLeftToTop(this, this.scene)) {
                 vy = -this.MAX_CLIMB_YM;
+                this.isHangingStill = false;
             }
 
-            if (this.keyPressClimbingDown() && (Level.hasClimbingLeftToBottom(this, this.scene) || Level.hasClimbingLeftToBottomByHangingTop(this, this.scene))) {
+            if (this.keyPressClimbingDown() && Level.hasClimbingLeftToBottom(this, this.scene)) {
                 vy = this.MAX_CLIMB_YM;
+                this.isHangingStill = false;
+            }
+        }
+
+        // Is still climbing and no keys pushed == no movement
+
+        if (!this.keyPressClimbingUp() && !this.keyPressClimbingDown()
+            && !this.keyPressClimbingLeft() && !this.keyPressClimbingRight()) {
+            // When we press no climbing keys, character tends to move right or left with tiny fractions.
+            // This is a rounding bug.
+
+            if (!this.isHangingStill) {
+                this.hangingStillX = this.body.x;
+                this.isHangingStill = true;
+            } else {
+                this.body.x = Math.ceil(this.hangingStillX);
             }
         }
 
@@ -1043,7 +1131,9 @@ export class Tux extends Phaser.GameObjects.Sprite {
             return;
         }
 
-        if (this.ducked && this.isBig) {
+        if (this.unControllable !== undefined && this.unControllable) {
+            this.drawShakenUncontrollable();
+        } else if (this.ducked && this.isBig) {
             this.drawDuck();
         } else if (this.skiddingTimer > 0) {
             this.drawSkid();
@@ -1144,6 +1234,10 @@ export class Tux extends Phaser.GameObjects.Sprite {
     drawHurtFalling() {
         this.flipDraw();
 
+        this.playAnimation("tux-pushback-hurt");
+    }
+
+    drawShakenUncontrollable() {
         this.playAnimation("tux-pushback-hurt");
     }
 

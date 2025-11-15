@@ -83,7 +83,7 @@
                 {
                     key: 'tux-kick',
                     caption: 'tux-kick-',
-                    start: 0,
+                    start: 2,
                     end: 5,
                     frameRate: 12,
                     repeat: 0
@@ -194,6 +194,16 @@
                 {
                     key: "coin-moving",
                     spriteSheet: "coin-moving",
+                    frameRate: 20,
+                    repeat: -1
+                }
+            ]
+        },
+        "hell-coin": {
+            "animations": [
+                {
+                    key: "hell-coin-moving",
+                    spriteSheet: "hell-coin-moving",
                     frameRate: 20,
                     repeat: -1
                 }
