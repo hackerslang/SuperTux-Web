@@ -47,14 +47,6 @@
                     repeat: -1
                 },
                 {
-                    key: 'tux-idle',
-                    caption: 'tux-idle-',
-                    start: 1,
-                    end: 2,
-                    frameRate: 24,
-                    repeat: 0
-                },
-                {
                     key: 'tux-jump',
                     caption: 'tux-jump-',
                     start: 0,
@@ -74,6 +66,62 @@
                     end: 5,
                     frameRate: 12,
                     repeat: -1
+                },
+                {
+                    key: 'tux-idle',
+                    frames: [
+                        { key: 'tux-idle-0' },
+                        { key: 'tux-idle-1' },
+                        { key: 'tux-idle-2' },
+                        { key: 'tux-idle-3' },
+                        { key: 'tux-idle-4' },
+                        { key: 'tux-idle-2' },
+                        { key: 'tux-idle-1' },
+                        { key: 'tux-idle-0' },
+                        { key: 'tux-idle-5' },
+                        { key: 'tux-idle-6' },
+                        { key: 'tux-idle-7' },
+                        { key: 'tux-idle-8' },
+                        { key: 'tux-idle-6' },
+                        { key: 'tux-idle-5' },
+                        { key: 'tux-idle-0' },
+                        { key: 'tux-idle-1' },
+                        { key: 'tux-idle-2' },
+                        { key: 'tux-idle-3' },
+                        { key: 'tux-idle-4' },
+                        { key: 'tux-idle-2' },
+                        { key: 'tux-idle-1' },
+                        { key: 'tux-idle-0' },
+                        { key: 'tux-idle-5' },
+                        { key: 'tux-idle-6' },
+                        { key: 'tux-idle-7' },
+                        { key: 'tux-idle-8' },
+                        { key: 'tux-idle-6' },
+                        { key: 'tux-idle-5' },
+                        { key: 'tux-idle-0' },
+                        { key: 'tux-idle-1' },
+                        { key: 'tux-idle-2' },
+                        { key: 'tux-idle-3' },
+                        { key: 'tux-idle-4' },
+                        { key: 'tux-idle-2' },
+                        { key: 'tux-idle-1' },
+                        { key: 'tux-idle-0' },
+                        { key: 'tux-idle-5' },
+                        { key: 'tux-idle-6' },
+                        { key: 'tux-idle-7' },
+                        { key: 'tux-idle-8' },
+                        { key: 'tux-idle-5' } //584
+                    ],
+                    frameRate: 12,
+                    repeat: 0
+                },
+                {
+                    key: 'tux-scratch',
+                    caption: 'tux-scratch-',
+                    start: 0,
+                    end: 7,
+                    frameRate: 24,
+                    repeat: 0
                 },
                 {
                     key: 'tux-skid',
@@ -194,7 +242,7 @@
                 {
                     key: "coin-moving",
                     spriteSheet: "coin-moving",
-                    frameRate: 20,
+                    frameRate: 12,
                     repeat: -1
                 }
             ]
@@ -204,7 +252,7 @@
                 {
                     key: "hell-coin-moving",
                     spriteSheet: "hell-coin-moving",
-                    frameRate: 20,
+                    frameRate: 12,
                     repeat: -1
                 }
             ]

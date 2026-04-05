@@ -1,4 +1,10 @@
 ﻿export var imagesData = {
+    "atlas": {
+        "ice-spikes": {
+            "image": "./assets/images/objects/spikes/ice-spikes.png",
+            "json": "./assets/images/objects/spikes/ice-spikes.json"
+        }
+    },
     "images": {
         "tux": {
             "path": "./assets/images/creatures/tux/",
@@ -14,6 +20,18 @@
                     "value": "duck-",
                     "start": 0,
                     "end": 4
+                },
+                {
+                    "name": "tux-idle-",
+                    "value": "idle-",
+                    "start": 0,
+                    "end": 11
+                },
+                {
+                    "name": "tux-scratch-",
+                    "value": "scratch-",
+                    "start": 0,
+                    "end": 7
                 },
                 {
                     "name": "tux-skid",

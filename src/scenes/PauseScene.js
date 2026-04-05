@@ -20,10 +20,9 @@ export class PauseScene extends MenuScene {
 
     create() {
         super.create();
-        this.makePauseMenu();
     }
 
-    makePauseMenu() {
+    makeMenu() {
         this.add.sprite(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 8, "paused-title").setOrigin(0.5, 0.5);
         this.add.sprite(CANVAS_WIDTH / 2, (CANVAS_HEIGHT / 8) + 100, "press-p-unpause").setOrigin(0.5, 0.5);
 

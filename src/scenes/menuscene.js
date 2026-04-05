@@ -17,12 +17,14 @@ export class MenuScene extends Phaser.Scene {
         this.imageLoader.loadImagesFromData("dialog");
         this.imageLoader.loadImagesFromData("menu");
         this.imageLoader.loadImagesFromData("menu-lines");
+        this.backgroundReady = false;
     }
 
     create() {
         this.initCursor();
-        this.addBackground();
         this.cursor = new Cursor({ scene: this });
+        this.makeMenu();
+        this.addBackground();
     }
 
     setDialogActive(active) {
@@ -40,7 +42,48 @@ export class MenuScene extends Phaser.Scene {
     }
 
     addBackground() {
-        this.add.sprite(0, 0, "menu-background").setOrigin(0, 0).setScale(0.75);
+        //this.time.delayedCall(0, () => {
+        //    this.game.renderer.snapshot((image) => {
+        //        const blurRadius = 8;
+        //        const canvas = document.createElement('canvas');
+        //        canvas.width = image.width + blurRadius * 2;
+        //        canvas.height = image.height + blurRadius * 2;
+        //        const ctx = canvas.getContext('2d');
+        //        ctx.filter = `blur(${blurRadius}px)`;
+        //        ctx.drawImage(image, blurRadius, blurRadius);
+
+        //        const cropped = document.createElement('canvas');
+        //        cropped.width = image.width;
+        //        cropped.height = image.height;
+        //        const croppedCtx = cropped.getContext('2d');
+        //        croppedCtx.drawImage(
+        //            canvas,
+        //            blurRadius, blurRadius, image.width, image.height,
+        //            0, 0, image.width, image.height
+        //        );
+
+        //        const blurredBase64 = cropped.toDataURL('image/png');
+
+        //        if (this.textures.exists('blurred-bg')) {
+        //            this.textures.remove('blurred-bg');
+        //        }
+
+        //        this.textures.once('addtexture', (key) => {
+        //            if (key === 'blurred-bg') {
+        //                this.pausedBlurredImage = this.add.image(
+        //                    this.sys.game.config.width / 2,
+        //                    this.sys.game.config.height / 2,
+        //                    'blurred-bg'
+        //                ).setOrigin(0.5);
+
+        //                this.makeMenu();
+        //            }
+        //        });
+        //        this.textures.addBase64('blurred-bg', blurredBase64);
+        //        this.backgroundReady = true;
+        //    });
+        //});
+        //this.add.sprite(0, 0, "menu-background").setOrigin(0, 0).setScale(0.75);
     }
 
     generateKeyController() {
@@ -78,6 +121,10 @@ export class MenuScene extends Phaser.Scene {
         this.input.on('pointerup', (pointer, gameObjects) => {
             this.cursor.setDefaultCursor();
         });
+    }
+
+    resumeGame() {
+
     }
 
     update(time, delta) {

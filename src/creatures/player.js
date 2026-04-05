@@ -12,7 +12,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
         this.level = config.level;
         this.originalLevel = config.level;
         this.scene = config.scene;
-        this.anims.play("tux-stand");
+        //this.anims.play("tux-stand");
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
 
         this.REAL_COLLISION_BOX_WIDTH = 40;
@@ -126,6 +126,21 @@ export class Tux extends Phaser.GameObjects.Sprite {
         this.KICK_TIME = 300;
 
         this.killAt = 0;
+
+        this.idleStages = [
+            "tux-stand",
+            "tux-scratch",
+            "tux-idle"
+        ];
+        this.idleStage = 0;
+        this.TIME_UNTIL_IDLE = 5000;
+        this.idleTimer = 0;
+
+        this.lastAnimationCompleted = null;
+
+        this.on('animationcomplete', (animation, frame) => {
+            this.lastAnimationCompleted = animation.key;
+        });
 
         //When Tux climbs, he can hang with his arms at the climbing fence. This padding allows him to hang at the bottom of the climbing fence, while hanging
         //with his head below the fence. This is approximately the length of his hands.
@@ -292,6 +307,37 @@ export class Tux extends Phaser.GameObjects.Sprite {
         return direction;
     }
 
+    collisionSolid(hit) {
+        this.handleCollisionLogic(hit);
+    }
+
+    handleCollisionLogic(hit) {
+        if (hit.bottom) {
+            if (this.getVelocityY > 0) {
+                this.setVelocityY(0);
+            }
+
+            if (!this.isSwimming) {
+                this.isOnGround = true;
+            }
+
+            this.floorNormal = hit.slopeNormal;
+            this.isSlideJumpingFalling = false;
+            this.slideJumping = false;
+
+            if (!this.onGround() || this.floorNormal.y == 0) {
+                // buttJump
+                this.doesButtJump = false;
+                this.buttJumpStomp = true;
+                this.setVelocityY(-300);
+                this.isOnGround = false;
+
+                // still add particles
+                // camera shake
+            }
+        }
+    }
+
     update(time, delta) {
         if (this.killAt > 0) {
             this.killAt -= delta;
@@ -334,6 +380,10 @@ export class Tux extends Phaser.GameObjects.Sprite {
             this.kickTimer -= delta;
         } else {
             this.hasPlayedKick = false;
+        }
+
+        if (this.idleTimer > 0) {
+            this.idleTimer -= delta;
         }
 
         this.setCollisionBoxesForAnimations();
@@ -649,7 +699,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     onGround() {
-        return (this.getVelocityY() == 0 && !this.jumping) || this.slightlyAboveGround() || this.onObject(); //|| this.slightlyAboveObject();
+        return this.isOnGround || (this.getVelocityY() == 0 && !this.jumping) || this.slightlyAboveGround() || this.onObject(); //|| this.slightlyAboveObject();
     }
 
     slightlyAboveGround() {
@@ -1125,7 +1175,6 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     draw(time, delta) {
-        // if Tux is above camera, draw little "air arrow" to show where he is x-wise
         if (this.killed) {
 
             return;
@@ -1152,7 +1201,21 @@ export class Tux extends Phaser.GameObjects.Sprite {
                 this.drawJumping();
             }
         } else if (Math.abs(this.getVelocityX()) < 1) {
-            this.drawStanding();
+            var currentAnimationKey = this.anims.currentAnim ? this.anims.currentAnim.key : null;
+            var isNotIdle = !this.idleStages.includes(currentAnimationKey);
+
+            if (isNotIdle) {
+                this.idleStage = 0;
+                this.idleTimer = 5000;
+            } else if (this.idleTimer <= 0 || this.lastAnimationCompleted == "tux-scratch") {
+                this.idleStage++;
+                if (this.idleStage >= 3) {
+                    this.idleStage = 2;
+                }
+            }
+
+            this.drawIdle();
+
             this.hasPlayerJump = false;
         } else {
             if (Math.abs(this.getVelocityX()) > this.MAX_WALK_XM) {
@@ -1262,11 +1325,12 @@ export class Tux extends Phaser.GameObjects.Sprite {
         this.playAnimation("tux-climb");
     }
 
-    drawStanding() {
+    drawIdle() {
         if (this.forceDrawWalking > 0) { return; }
-
-        this.playAnimation("tux-stand");
-        //strange bug rounding float, player sprite trembles!
+        
+        this.playAnimation(this.idleStages[this.idleStage]);
+        
+        // strange bug rounding float, player sprite trembles!
         this.body.y = Math.ceil(this.body.y);
     }
 

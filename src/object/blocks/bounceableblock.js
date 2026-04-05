@@ -1,4 +1,4 @@
-﻿class BounceableBlock {
+﻿class BounceableBlock extends Phaser.GameObjects.Sprite {
     constructor(config) {
         this.block = config.block;
         this.startY = config.y;
@@ -7,15 +7,23 @@
     }
 
     update(time, delta) {
-        this.body.setImmovable(true);
+        if (!this.done) {
+            this.body.setImmovable(true);
+
+            if (!this.player.killed) {
+                //this.scene.physics.world.collide(this, this.player, this.blockHitPlayer);
+
+                if (this.hitFromBelow()) {
+                    this.blockHitPlayer(this, this.player);
+                }
+            }
+
+            return;
+        }
 
         if (!this.player.killed) {
             if (!this.player.jumping) {
                 this.hasPreviouselyHitWhileInAir = false;
-            }
-
-            if (this.hitFromBelow()) {
-                this.blockHit();
             }
 
             if (this.player.jumping && !this.playerHasPreviouselyHitWhileInAir) {
@@ -24,8 +32,27 @@
         }
     }
 
-    blockHit() {
+    blockHitPlayer(block, player) {
+        if (block == null) { return; }
+        if (block.body == null) { return; }
+        block.body.setVelocityY(0);
+        //if (!block.done && brick.hitFromBelow(block, player)) {
+            block.bounce();
+            block.playerHitEvents();
+        //}
+    }
 
+    //hitFromBelow() {
+    //    if (!this.player.isActiveAndAlive()) {
+    //        return false;
+    //    }
+
+    //    return (this.player.body.top <= this.body.bottom + 3 && this.player.body.top >= this.body.bottom)
+    //        && (this.player.body.right >= this.body.left - 8 && this.player.body.left <= this.body.right + 8);
+    //}
+
+    playerHitEvents() {
+        // Template method pattern, subclasses can override this method or leave it empty!
     }
 
     startBounce(creature) {
@@ -57,5 +84,9 @@
                 this.bounceComplete();
             }
         });
+    }
+
+    bounceComplete() {
+        // Template method pattern, subclasses can override this method or leave it empty!
     }
 }

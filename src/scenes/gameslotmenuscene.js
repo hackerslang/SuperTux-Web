@@ -33,9 +33,8 @@ export class GameSlotMenuScene extends MenuScene
     }
 
     create(menuType) {
-        super.create();
         this.initMenuType(menuType);
-        this.makeSaveMenu();
+        super.create();
     }
 
     update(time, delta) {
@@ -47,7 +46,7 @@ export class GameSlotMenuScene extends MenuScene
         }
     }
 
-    makeSaveMenu() {
+    makeMenu() {
         var gameSessions = GameSession.getLoadSaveGameSlotsSessions();
         var graphics = this.add.graphics();
         var menuItems = [];

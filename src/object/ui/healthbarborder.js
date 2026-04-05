@@ -8,6 +8,7 @@
         this.currentHealth = 100;
         this.scrollFactorX = 0;
         this.scrollFactorY = 0;
+        this.setDepth(config.depth);
         this.setTexture("healthbar-border");
     }
 

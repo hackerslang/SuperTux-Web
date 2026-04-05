@@ -1,4 +1,4 @@
-﻿class Brick extends Phaser.GameObjects.Sprite {
+﻿class Brick extends BounceableBlock {
     constructor(config) {
         super(config.scene, config.x, config.y, config.key);
         config.scene.physics.world.enable(this);
@@ -20,49 +20,22 @@
     }
 
     update(time, delta) {
-        if (!this.done) {
-            this.body.setImmovable(true);
+        super.update(time, delta);
 
-            if (!this.player.killed) {
-                this.scene.physics.world.collide(this, this.player, this.blockHitPlayer);
+        if (this.brickPiecesDestroyAt <= 0) {
+            for (var i = 0; i < this.brickPieces.length; i++) {
+                var brickPiece = this.brickPieces[i];
+
+                brickPiece.destroy();
             }
         } else {
-            if (this.brickPiecesDestroyAt <= 0) {
-                for (var i = 0; i < this.brickPieces.length; i++) {
-                    var brickPiece = this.brickPieces[i];
+            this.brickPiecesDestroyAt -= delta;
 
-                    brickPiece.destroy();
-                }
-            } else {
-                this.brickPiecesDestroyAt -= delta;
+            for (var i = 0; i < this.brickPieces.length; i++) {
+                var brickPiece = this.brickPieces[i];
 
-                for (var i = 0; i < this.brickPieces.length; i++) {
-                    var brickPiece = this.brickPieces[i];
-
-                    brickPiece.alpha -= 0.05;
-                }
+                brickPiece.alpha -= 0.05;
             }
-            
-        }
-    }
-
-    blockHitPlayer(brick, player) {
-        if (brick == null) { return; }
-        if (brick.body == null) { return; }
-        brick.body.setVelocityY(0);
-        if (!brick.done && brick.hitFromBelow(brick, player)) {
-            brick.body.setImmovable(false);
-
-            brick.scene.tweens.add({
-                targets: brick,
-                y: brick.y - 32,
-                yoyo: true,
-                duration: 100,
-                onUpdate: () => brick.update(),
-                onComplete: () => {
-                    
-                }
-            });
         }
     }
 
@@ -91,21 +64,5 @@
 
         this.level.removeBlock(brick);
         this.destroy();
-    }
-
-    hit() {
-        if (this.isEmpty()) {
-            return;
-        }
-
-        this.tryBreak();
-    }
-
-    hitFromBelow(brick, player) {
-        if (!player.isActiveAndAlive()) {
-            return false;
-        }
-
-        return (brick.body.y + brick.body.height) - (player.body.y) <= 0;
     }
 }

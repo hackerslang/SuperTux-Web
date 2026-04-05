@@ -211,3 +211,37 @@ export class Platform extends Phaser.GameObjects.Sprite {
         });
     }
 }
+
+export class UpPlatform extends Platform {
+    constructor(config) {
+        super(config);
+        // Disable any tween config/movement
+        this.tweenConfig = null;
+        this.tweenStarted = false;
+        this.isMovingUp = false;
+        this.moveUpSpeed = config.moveUpSpeed || -180; // negative for upward
+        this.moveUpDuration = config.moveUpDuration || 600; // ms
+        this.moveUpTimer = 0;
+    }
+
+    // Override update: only handle upward movement if triggered
+    update(time, delta) {
+        if (this.isMovingUp) {
+            this.moveUpTimer -= delta;
+            if (this.moveUpTimer > 0) {
+                this.body.setVelocityY(this.moveUpSpeed);
+            } else {
+                this.body.setVelocityY(0);
+                this.isMovingUp = false;
+            }
+        }
+    }
+
+    // Override playerHit: start upward movement when player lands
+    playerHit(platform, player) {
+        if (!this.isMovingUp) {
+            this.isMovingUp = true;
+            this.moveUpTimer = this.moveUpDuration;
+        }
+    }
+}

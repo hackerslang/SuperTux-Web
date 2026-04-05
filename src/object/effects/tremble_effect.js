@@ -116,7 +116,7 @@
                 } else {
                     // visual bounce applied to sprite (player)
                     var creature = (target === "player") ? this.player : target;
-                    if (!creature) { continue; }
+                    if (!creature || !creature.body) { continue; }
 
                     const orig = this.originalDisplayPositions.get(creature) || { x: creature.x, y: creature.y };
                     // apply pixel offsets directly (these are visual only; physics body remains unchanged)

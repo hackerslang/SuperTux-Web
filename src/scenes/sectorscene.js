@@ -1,5 +1,6 @@
 import { game, CANVAS_WIDTH, CANVAS_HEIGHT } from '../game.js';
 import { Cursor } from '../object/ui/cursor.js';
+import { AtlasLoader } from '../helpers/atlasloader.js';
 import { ImageLoader } from '../helpers/imageloader.js';
 import { AnimationLoader } from '../helpers/animationloader.js';
 import { AnimationCreator } from '../helpers/animationcreator.js';
@@ -9,6 +10,7 @@ import { SpriteKeyConstants } from '../object/level/tile_creator.js';
 import { TilemapParser } from '../object/level/tilemap_parser.js';
 import { Level } from '../object/level/level.js';
 import { Sector } from '../object/level/sector.js';
+import { Tile } from '../object/level/tile.js';
 import { GameSession } from '../object/game_session.js';
 import { gameSession } from './levelselectscene.js';
 import { SectorSwapper } from '../object/level/sector_swapper.js';
@@ -42,6 +44,7 @@ export class SectorScene extends Phaser.Scene {
         super({ key: config.key });
         this.key = config.key;
         this.imageLoader = new ImageLoader({ scene: this });
+        this.atlasLoader = new AtlasLoader({ scene: this });
         this.animationLoader = new AnimationLoader({ scene: this });
 
         this.DEFAULT_FRAMERATE = 10;
@@ -146,7 +149,7 @@ export class SectorScene extends Phaser.Scene {
         this.canSaveOrLoad = false;
         this.sector = Sector.getCurrentSector();
         
-;        if (this.sector != null) {
+        if (this.sector != null) {
             this.creatures = this.sector.sectorData.creatures;
             this.sectorCoinsCollected = 0;
 
@@ -170,7 +173,7 @@ export class SectorScene extends Phaser.Scene {
         }
     }
 
-    create() {
+    async create() {
         this.canSaveOrLoad = false;
         if (this.sector != null || !levelsLoaded) {
             this.staticObjects = [];
@@ -191,12 +194,9 @@ export class SectorScene extends Phaser.Scene {
             this.createMovablePlatformsGroup();
             this.createHurtableTilesGroup();
             this.createCoinGroup();
-            
 
             this.tilemapParser = new TilemapParser({ sectorScene: this, sector: this.sector, sectorData: this.sector.sectorData });
             this.tilemapParser.parse();
-
-            
 
             this.parseInvisibleWallBlocks();
             this.createFallingPlatforms();
@@ -212,6 +212,8 @@ export class SectorScene extends Phaser.Scene {
 
             this.createPlayerCollisionObjectsGroup();
 
+            this.groundLayer.setDepth(3);
+
             this.physics.add.collider(this.coinGroup, this.groundLayer);
             this.playerGroundCollider = this.physics.add.collider(this.player, this.groundLayer);
             this.woodCollider = this.physics.add.collider(this.player, this.collisionTilesGroup, this.woodHit);
@@ -219,11 +221,12 @@ export class SectorScene extends Phaser.Scene {
 
             this.physics.world.bounds.width = this.groundLayer.width;
             this.physics.world.bounds.height = this.groundLayer.height;
-            this.groundLayer.setCollisionByExclusion(0, true);
 
             this.physics.world.enable(this.player);
             this.physics.world.setBoundsCollision(true, true, true, true);
-            
+
+            await this.setSlopeTilesCollisionExclusions();
+
             this.createDynamicForeGrounds();
             this.parseLava();
 
@@ -234,11 +237,21 @@ export class SectorScene extends Phaser.Scene {
             if (this.isDebug()) {
                 this.cameraDebugButtons = new CameraButtons({ scene: this });
             }
+
+            this.tilesets = await Tile.getTileDataAndAttributes(this);
+            this.createReady = true;
         }
     }
 
     isDebug() {
         return GlobalGameConfig.physics.arcade.debug;
+    }
+
+    async setSlopeTilesCollisionExclusions() {
+        var slopeTilesArray = await Tile.getSlopeTiles();
+        var slopeTiles = slopeTilesArray.map(tile => tile.index);
+
+        this.groundLayer.setCollisionByExclusion(slopeTiles);
     }
 
     createMap() {
@@ -679,6 +692,8 @@ export class SectorScene extends Phaser.Scene {
             }
         }
 
+        console.log(this.enemyCollisionGroup);
+
         this.creatureObjects = creatureObjects;
 
         if (this.sector.sectorData.key == GameSession.session.sectorKey) {
@@ -1036,6 +1051,7 @@ export class SectorScene extends Phaser.Scene {
     }
 
     loadImages() {
+        this.loadNecessaryAtlas();
         this.loadNecessaryImages();
         this.loadEnemyImages();
         this.loadParticleImages();
@@ -1052,6 +1068,12 @@ export class SectorScene extends Phaser.Scene {
         tilesets.forEach(function (tileset, idx) {
             self.preloadImage(tileset.name, tileset.value);//correct
         });
+    }
+
+    loadNecessaryAtlas() {
+        var keys = ["ice-spikes"];
+
+        this.loadAtlasForKeys(keys);
     }
 
     loadNecessaryImages() {
@@ -1084,6 +1106,10 @@ export class SectorScene extends Phaser.Scene {
 
     makeSounds() {
         this.sound.add('enemy-fall');
+    }
+
+    loadAtlasFromData(caption) {
+        this.atlasLoader.loadAtlasFromData(caption);
     }
 
     loadImage(caption, path) {
@@ -1124,6 +1150,12 @@ export class SectorScene extends Phaser.Scene {
             "mr-iceblock", "mr-bomb", "hell-crusher", "krosh", "fish", "ghoul", "jumpy", "spiky", "creature-thinking"];
 
         this.loadImagesForKeys(enemyImageKeys);
+    }
+
+    loadAtlasForKeys(atlasKeys) {
+        var self = this;
+
+        atlasKeys.forEach(atlasKey => self.loadAtlasFromData(atlasKey));
     }
 
     loadImagesForKeys(imageKeys) {
@@ -1308,7 +1340,89 @@ export class SectorScene extends Phaser.Scene {
         });
     }
 
+    pauseWithBlurredImage(callBack) {
+        this.time.delayedCall(0, () => {
+            this.game.renderer.snapshot((image) => {
+                const blurRadius = 8;
+                const w = image.width;
+                const h = image.height;
+
+                // Step 1: Create a canvas with extended borders filled with edge pixels
+                const canvas = document.createElement('canvas');
+                canvas.width = w + blurRadius * 2;
+                canvas.height = h + blurRadius * 2;
+                const ctx = canvas.getContext('2d');
+
+                // Fill top and bottom borders
+                for (let y = 0; y < blurRadius; y++) {
+                    ctx.drawImage(image, 0, 0, w, 1, blurRadius, y, w, 1); // top
+                    ctx.drawImage(image, 0, h - 1, w, 1, blurRadius, h + blurRadius + y, w, 1); // bottom
+                }
+                // Fill left and right borders
+                for (let x = 0; x < blurRadius; x++) {
+                    ctx.drawImage(image, 0, 0, 1, h, x, blurRadius, 1, h); // left
+                    ctx.drawImage(image, w - 1, 0, 1, h, w + blurRadius + x, blurRadius, 1, h); // right
+                }
+                // Fill corners
+                ctx.drawImage(image, 0, 0, 1, 1, 0, 0, blurRadius, blurRadius); // top-left
+                ctx.drawImage(image, w - 1, 0, 1, 1, w + blurRadius, 0, blurRadius, blurRadius); // top-right
+                ctx.drawImage(image, 0, h - 1, 1, 1, 0, h + blurRadius, blurRadius, blurRadius); // bottom-left
+                ctx.drawImage(image, w - 1, h - 1, 1, 1, w + blurRadius, h + blurRadius, blurRadius, blurRadius); // bottom-right
+
+                // Draw the center image
+                ctx.drawImage(image, blurRadius, blurRadius);
+
+                // Step 2: Blur the entire extended canvas
+                const blurredCanvas = document.createElement('canvas');
+                blurredCanvas.width = canvas.width;
+                blurredCanvas.height = canvas.height;
+                const blurredCtx = blurredCanvas.getContext('2d');
+                blurredCtx.filter = `blur(${blurRadius}px)`;
+                blurredCtx.drawImage(canvas, 0, 0);
+
+                // Step 3: Crop the blurred center to the original size
+                const cropped = document.createElement('canvas');
+                cropped.width = w;
+                cropped.height = h;
+                const croppedCtx = cropped.getContext('2d');
+                croppedCtx.drawImage(
+                    blurredCanvas,
+                    blurRadius, blurRadius, w, h,
+                    0, 0, w, h
+                );
+
+                const blurredBase64 = cropped.toDataURL('image/png');
+
+                if (this.textures.exists('blurred-bg')) {
+                    this.textures.remove('blurred-bg');
+                }
+
+                this.textures.once('addtexture', (key) => {
+                    if (key === 'blurred-bg') {
+                        this.pausedBlurredImage = this.add.image(
+                            this.sys.game.config.width / 2,
+                            this.sys.game.config.height / 2,
+                            'blurred-bg'
+                        ).setOrigin(0.5).setDepth(10001).setScrollFactor(0);
+
+                        callBack.call(this);
+                    }
+                });
+                this.textures.addBase64('blurred-bg', blurredBase64);
+                this.backgroundReady = true;
+            });
+        });
+    }
+
+    resumeGame() {
+        if (this.pausedBlurredImage != null) {
+            this.pausedBlurredImage.destroy();
+            this.pausedBlurredImage = null;
+        }
+    }
+
     update(time, delta) {
+        if (!this.createReady) { return; }
         if (this.sector == null) { return; }
         
         this.canSaveOrLoad = true;
@@ -1397,6 +1511,10 @@ export class SectorScene extends Phaser.Scene {
     }
     
     pause() {
+        this.pauseWithBlurredImage(this.pauseGame);
+    }
+
+    pauseGame() {
         var sceneKey = SectorSwapper.getCurrentSceneKey();
 
         game.scene.pause(sceneKey);
@@ -1404,9 +1522,12 @@ export class SectorScene extends Phaser.Scene {
     }
 
     launchMenu() {
-        var sceneKey = SectorSwapper.getCurrentSceneKey();
-
         Sector.currentSectorScene = this;
+        this.pauseWithBlurredImage(this.pauseAndLaunchMenu);
+    }
+
+    pauseAndLaunchMenu() {
+        var sceneKey = SectorSwapper.getCurrentSceneKey();
 
         game.scene.pause(sceneKey);
         game.scene.start("GameMenuScene");

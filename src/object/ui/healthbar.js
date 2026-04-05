@@ -9,12 +9,15 @@ export class HealthBar extends Phaser.GameObjects.Sprite {
         this.currentHealth = 100;
         this.scrollFactorX = 0;
         this.scrollFactorY = 0;
+        this.depth = config.depth || 10000;
 
         if (config.initHealth != null) {
             this.setHealth(config.initHealth * 33 + (config.initHealth > 1 ? 1 : 0), false);
         } else {
             this.setHealth(100, false);
         }
+
+        this.setDepth(this.depth);
 
         this.healthChanged = 0;
         this.passedDelta = 0;
@@ -25,7 +28,8 @@ export class HealthBar extends Phaser.GameObjects.Sprite {
             scene: this.scene,
             x: 90,
             y: 20,
-            alpha: 0
+            alpha: 0,
+            depth: this.depth
         });
     }
 

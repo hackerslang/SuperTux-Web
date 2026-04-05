@@ -1,0 +1,8 @@
+{
+  "frames": {
+    "ice-spike-up":   { "frame": { "x": 0,   "y": 2,   "w": 32, "h": 37 } },
+    "ice-spike-down": { "frame": { "x": 32,  "y": 25,  "w": 32, "h": 37 } },
+    "ice-spike-right":{ "frame": { "x": 89,  "y": 32,  "w": 37, "h": 32 } },
+    "ice-spike-left": { "frame": { "x": 66,  "y": 0,   "w": 37, "h": 32 } }
+  }
+}

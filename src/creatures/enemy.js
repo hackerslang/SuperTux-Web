@@ -28,8 +28,6 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         this.playerCollides = true;
         this.canClimb = false;
 
-        this.collidesWithOtherEnmies = config.collidesWithOtherEnmies;
-
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
         this.body.allowGravity = true;
         this.hasBeenSeen = false;
@@ -81,7 +79,7 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         //Collides with moving tiles, such as platforms or industrial tiles??
         this.collidesWithExtraTiles = true;
 
-        this.collidesWithOtherEnmies = true;
+        this.collidesWithOtherEnemies = true;
     }
 
     initWithGameSession(enemyFromGameSession) {
@@ -163,11 +161,13 @@ export class Enemy extends Phaser.GameObjects.Sprite {
             this.scene.physics.world.overlap(this, this.scene.climbableTilesGroup, this.climbHit);
         }
 
-        if (this.collidesWithOtherEnmies) {
-            this.scene.physics.world.collide(this, this.scene.enemyGroup);
+        if (this.collidesWithOtherEnemies) {
+            this.scene.physics.world.collide(this, this.scene.enemyCollisionGroup, this.enemyHit);
+        } else {
+            console.log(this);
+            this.scene.physics.world.overlap(this, this.scene.enemyCollisionGroup);
         }
 
-        this.scene.physics.world.collide(this, this.scene.enemyCollisionGroup, this.enemyHit);
         this.scene.physics.world.collide(this, this.scene.groundLayer);
 
         if (this.turnAroundWaitTimer > 0) {
@@ -182,7 +182,6 @@ export class Enemy extends Phaser.GameObjects.Sprite {
             }
         }
 
-        console.log(this.player);
         if (!this.player.isDead()) {
             this.scene.physics.world.collide(this, this.player, this.playerHit);
         }
@@ -488,18 +487,6 @@ export class Enemy extends Phaser.GameObjects.Sprite {
     addGroundCollisionDetection() {
         this.scene.physics.world.collide(this, this.sector.groundLayer);
     }
-
-    addAllOtherEnemiesCollisionDetection() {
-        var enemies = this.sector.getEnemies();
-
-        for (var i = 0; i < enemies.length; i++) {
-            var enemy = enemies[i];
-
-            if (this !== enemy) {
-                this.scene.physics.world.collide(this, enemy, this.collideEnemy);
-            }
-        }
-    }
     
     collideEnemy(self, other) {
         self.changeDirection();
@@ -515,7 +502,7 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         var self = this;
  
         this.scene.creatureObjects.forEach(function (enemy, index) {
-            if (enemy != null && !enemy.killed) {
+            if (enemy != null && !enemy.killed && enemy.collidesWithOtherEnemies) {
                 var distanceY = Math.abs(self.y - enemy.y);
 
                 if (distanceY < 80) {

@@ -4,6 +4,11 @@
     { key: "spk-rght", value: "spike-right" },
     { key: "spk-up", value: "spike-up" },
 
+    { key: "spk-i-dwn", value: "ice-spike-down", atlas: 'ice-spikes' }, 
+    { key: "spk-i-lft", value: "ice-spike-left", atlas: 'ice-spikes' }, 
+    { key: "spk-i-rght", value: "ice-spike-right", atlas: 'ice-spikes' }, 
+    { key: "spk-i-up", value: "ice-spike-up", atlas: 'ice-spikes' }, 
+
     { key: "spk-b-dwn", value: "blood-spike-down" },
     { key: "spk-b-lft", value: "blood-spike-left" },
     { key: "spk-b-rght", value: "blood-spike-right" },
@@ -42,18 +47,42 @@ export class Spike extends HurtableStillObject {
     constructor(config) {
         super(config);
 
-        this.initTexture(config.type);
+        this.ICE_SPIKE_MARGIN = 5;
+        this.init(config.type);
     }
 
-    initTexture(type) {
+    init(type) {
         var texture = spikeMapping.find(item => item.key === type);
-        var textureKey = "spike-up"
 
-        if (texture !== undefined) {
-            textureKey = texture.value;
+        this.initTexture(texture);
+        this.position(texture);
+    }
+
+    position(texture) {
+        // Ice spikes seem to have gap between themselves and tilemap, we move them below
+        // the tilemap in depth (z-index) and we remove the gap!
+
+        this.setDepth(0);
+
+        if (texture.value.endsWith("up")) {
+            this.x += this.ICE_SPIKE_MARGIN;
+        } else if (texture.value.endsWith("down")) {
+            this.x -= this.ICE_SPIKE_MARGIN;
+        } else if (texture.value.endsWith("right")) {
+            this.x -= this.ICE_SPIKE_MARGIN;
+        } else if (texture.value.endsWith("left")) {
+            this.x += this.ICE_SPIKE_MARGIN;
         }
+    }
 
-        this.setTexture(textureKey);
+    initTexture(texture) {
+        if (texture !== undefined) {
+            if (texture.atlas !== undefined) {
+                this.setTexture(texture.atlas, texture.value);
+            } else {
+                this.setTexture(texture.value);
+            }
+        }
     }
 
     update(time, delta) {

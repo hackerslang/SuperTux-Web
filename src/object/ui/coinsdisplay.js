@@ -9,11 +9,13 @@
         this.toggleBorder = false;
         this.START_COINS_TEXT_X = 54;
         this.Y = 85;
+        this.depth = config.depth || 10000;
 
         var coinsDisplayImage = this.scene.add.sprite(30, this.Y, "coins");
 
         coinsDisplayImage.scrollFactorX = 0;
         coinsDisplayImage.scrollFactorY = 0;
+        coinsDisplayImage.setDepth(this.DEPTH);
 
         this.coins = 0;
         this.digitImages = [];
@@ -48,6 +50,7 @@
 
             charImage.scrollFactorX = 0;
             charImage.scrollFactorY = 0;
+            charImage.setDepth(this.DEPTH)
 
             this.digitImages.push(charImage);
 

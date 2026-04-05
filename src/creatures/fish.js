@@ -23,10 +23,12 @@ export class Fish extends Enemy {
         //Collides with moving tiles, such as platforms or industrial tiles??
         this.collidesWithExtraTiles = false;
 
-        this.collidesWithOtherEnemies = false;
+        super.collidesWithOtherEnemies = false;
     }
 
     update(time, delta) {
+        super.update(time, delta);
+
         if (!this.player.isDead()) {
             this.scene.physics.world.overlap(this, this.player, this.playerHit);
         }

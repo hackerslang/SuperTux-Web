@@ -2,6 +2,7 @@
 import { FontLoader } from '../object/ui/fontloader.js';
 import { KeyController } from '../object/controller.js';
 import { SectorSwapper } from '../object/level/sector_swapper.js';
+import { Sector } from '../object/level/sector.js';
 import { ImageButton, ClickableHoverableRecangle } from '../object/ui/menu.js';
 import { ImageLoader } from '../helpers/imageloader.js';
 import { MenuScene } from './menuscene.js';
@@ -19,10 +20,9 @@ export class GameMenuScene extends MenuScene {
 
     create() {
         super.create();
-        this.makeGameMenu();
     }
 
-    makeGameMenu() {
+    makeMenu() {
         var items = [
             {
                 "texture": "resume-game",
@@ -122,8 +122,10 @@ export class GameMenuScene extends MenuScene {
     }
 
     resumeGame() {
+        super.resumeGame();
         game.scene.stop("GameMenuScene");
         game.scene.resume(SectorSwapper.getCurrentSceneKey());
+        Sector.currentSectorScene.resumeGame();
     }
 
     launchSaveGameMenu() {

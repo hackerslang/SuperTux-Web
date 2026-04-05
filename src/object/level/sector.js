@@ -9,6 +9,7 @@ export class Sector {
         this.originalTileData = sectorData.data.slice();
         this.level = level;
         this.sectorWidth = this.sectorData.data[0].length * 32;
+        this.sectorHeight = this.sectorData.data.length * 32;
     }
 
     static async getSectorName(levelKey, sectorKey) {
@@ -20,6 +21,14 @@ export class Sector {
     static currentSector = null;
     static getCurrentSector() {
         return Sector.currentSector;
+    }
+
+    static getCurrentSectorWidth() {
+        return Sector.currentSector.sectorWidth;
+    }
+
+    static getCurrentSectorHeight() {
+        return Sector.currentSector.sectorHeight;
     }
 
     getOriginalTileData(x, y) {

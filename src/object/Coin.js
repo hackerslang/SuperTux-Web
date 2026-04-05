@@ -11,6 +11,8 @@
         this.scene = config.scene;
         this.id = config.id;
 
+        this.destroyed = false;
+
         this.setCoinType(config);
     }
 
@@ -35,10 +37,15 @@
     }
 
     update(time, delta) {
+        if (this.destroyed) {
+            return;
+        }
+
         this.scene.physics.world.overlap(this, this.player, this.coinHit);
     }
 
     coinHit(coin, player) {
+        coin.destroyed = true;
         coin.scene.addCollectedCoin(coin.coinValue);
         coin.remove();
         coin.destroy();
