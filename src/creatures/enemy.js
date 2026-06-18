@@ -1,4 +1,6 @@
 ﻿import { Level } from '../object/level/level.js';
+import { CollisionGroup } from '../collision/collision_group.js';
+import { MovingSprite } from '../object/moving_object.js';
 
 export var EnemyState = {
     STATE_INIT: 0,
@@ -13,9 +15,9 @@ export var EnemyState = {
     STATE_GEAR: 9
 }
 
-export class Enemy extends Phaser.GameObjects.Sprite {
+export class Enemy extends MovingSprite {
     constructor(config) {
-        super(config.scene, config.x, config.y, config.key);
+        super(config);
         config.scene.physics.world.enable(this);
         config.scene.add.existing(this);
         this.scene = config.scene;
@@ -24,6 +26,8 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         this.id = config.id;
         this.enemyType = config.key;
         this.powerUps = config.powerUps;
+
+        this.isTile = false;
 
         this.playerCollides = true;
         this.canClimb = false;
@@ -80,6 +84,8 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         this.collidesWithExtraTiles = true;
 
         this.collidesWithOtherEnemies = true;
+
+        this.collisionGroupActive = CollisionGroup.COLGROUP_MOVING;
     }
 
     initWithGameSession(enemyFromGameSession) {
@@ -131,6 +137,8 @@ export class Enemy extends Phaser.GameObjects.Sprite {
     }
 
     update(time, delta) {
+        super.update(time, delta);
+
         if (this.killed) {
 
             if (this.killAt <= 0) {
@@ -247,6 +255,15 @@ export class Enemy extends Phaser.GameObjects.Sprite {
         }
 
         this.setWaitTurnTimer -= delta;
+    }
+
+    setCollisionGroupActive(group) {
+        this.collisionGroupActive = group;
+        if (this.state == EnemyState.STATE_ACTIVE) setGroup(group);
+    }
+
+    setGroup(group) {
+        this.collisionObject.group = group;
     }
 
     turnAroundOnce() {

@@ -1,4 +1,6 @@
-﻿export class Constraints {
+﻿import { Sector } from "../object/level/sector.js";
+
+export class Constraints {
     constructor(config) {
         this.negativeInfinityX = - 10;
         this.negativeInfinityY = - 10;

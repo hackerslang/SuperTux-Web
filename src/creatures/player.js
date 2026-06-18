@@ -1,19 +1,21 @@
 import { GameSession } from '../object/game_session.js';
 import { Level } from '../object/level/Level.js';
 import { Sector } from '../object/level/sector.js';
+import { MovingSprite } from '../object/moving_object.js';
+import { CollisionGroup } from '../collision/collision_group.js';
 import { GAME_GRAVITY } from '../game.js';
 
-export class Tux extends Phaser.GameObjects.Sprite {
+export class Tux extends MovingSprite {
     constructor(config) {
-        super(config.scene, config.x, config.y, config.key);
-        config.scene.physics.world.enable(this);
-        config.scene.add.existing(this);
+        super(config, CollisionGroup.COLGROUP_MOVING);
 
         this.level = config.level;
         this.originalLevel = config.level;
         this.scene = config.scene;
         //this.anims.play("tux-stand");
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
+
+        this.isTile = false;
 
         this.REAL_COLLISION_BOX_WIDTH = 40;
         this.REAL_COLLISION_BOX_HEIGHT = 60;
@@ -312,6 +314,8 @@ export class Tux extends Phaser.GameObjects.Sprite {
     }
 
     handleCollisionLogic(hit) {
+        alert("hit");
+        console.log(hit);
         if (hit.bottom) {
             if (this.getVelocityY > 0) {
                 this.setVelocityY(0);
@@ -335,10 +339,24 @@ export class Tux extends Phaser.GameObjects.Sprite {
                 // still add particles
                 // camera shake
             }
+        } else if (hit.top) {
+            if (this.getVelocityY < 0) {
+                this.setVelocityY(0.2);
+            }
+        }
+
+        if ((hit.left || hit.right) && hit.slopeNormal.x == 0) {
+            this.setVelocityX(0);
+        }
+
+        if (hit.crush) {
+            
         }
     }
 
     update(time, delta) {
+        super.update(time, delta);
+
         if (this.killAt > 0) {
             this.killAt -= delta;
         }
@@ -351,7 +369,7 @@ export class Tux extends Phaser.GameObjects.Sprite {
             return;
         }
 
-        this.stayInStaticsIfNeeded();
+        //this.stayInStaticsIfNeeded();
         
         // Rounding bug phaser
         if (!this.isClimbing) { this.body.y = Math.ceil(this.body.y); }

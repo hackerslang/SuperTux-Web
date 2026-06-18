@@ -44,8 +44,9 @@ export const GlobalGameConfig = {
         pixelArt: false,
         roundPixels: true,
         antialias: true,
-    },
-    powerPreference: "high-performance"
+    }
+    //},
+    //powerPreference: "high-performance"
 };
 
 export const game = new Phaser.Game(GlobalGameConfig);

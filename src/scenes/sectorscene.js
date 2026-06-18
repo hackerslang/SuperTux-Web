@@ -36,6 +36,7 @@ import { Spike } from '../object/spike.js';
 import { GlobalGameConfig } from '../game.js';
 import { CameraButtons } from '../object/ui/debug/camerabuttons.js';
 import { TrembleEffect, StompEffect } from '../object/effects/tremble_effect.js';
+import { CollisionSystem } from '../collision/collision_system.js';
 
 export var currentSceneKey = "";
 
@@ -170,6 +171,8 @@ export class SectorScene extends Phaser.Scene {
             this.loadBackgroundImage(this.sector.getBackgroundImage());
             this.loadSounds();
             this.generateKeyController();
+
+            this.collisionSystem = new CollisionSystem({ sectorScene: this });
         }
     }
 
@@ -178,6 +181,8 @@ export class SectorScene extends Phaser.Scene {
         if (this.sector != null || !levelsLoaded) {
             this.staticObjects = [];
             this.textsToUpdate = [];
+
+            this.collisionObjects = [];
             
             this.createBackground();
             this.makeAnimations();
@@ -214,10 +219,10 @@ export class SectorScene extends Phaser.Scene {
 
             this.groundLayer.setDepth(3);
 
-            this.physics.add.collider(this.coinGroup, this.groundLayer);
-            this.playerGroundCollider = this.physics.add.collider(this.player, this.groundLayer);
-            this.woodCollider = this.physics.add.collider(this.player, this.collisionTilesGroup, this.woodHit);
-            this.enemyCollisionTilesCollider = this.physics.add.collider(this.enemyCollisionExtraTilesGroup, this.collisionTilesGroup, this.woodHit);
+            //this.physics.add.collider(this.coinGroup, this.groundLayer);
+            //this.playerGroundCollider = this.physics.add.collider(this.player, this.groundLayer);
+            //this.woodCollider = this.physics.add.collider(this.player, this.collisionTilesGroup, this.woodHit);
+            //this.enemyCollisionTilesCollider = this.physics.add.collider(this.enemyCollisionExtraTilesGroup, this.collisionTilesGroup, this.woodHit);
 
             this.physics.world.bounds.width = this.groundLayer.width;
             this.physics.world.bounds.height = this.groundLayer.height;
@@ -303,7 +308,8 @@ export class SectorScene extends Phaser.Scene {
             }
         }
 
-        this.player.body.setCollideWorldBounds(true);
+        //this.player.body.setCollideWorldBounds(true);
+        this.collisionObjects.push(this.player.getCollisionObject());
     }
 
     createEnemySpritesGroup() {
@@ -679,6 +685,8 @@ export class SectorScene extends Phaser.Scene {
             }
 
             if (creatureObject != null) {
+                this.collisionObjects.push(creatureObject.getCollisionObject());
+
                 creatureObjects.push(creatureObject);
                 this.enemyGroup.add(creatureObject);
 
@@ -1448,6 +1456,9 @@ export class SectorScene extends Phaser.Scene {
         this.forceUpdateSprites(this.fallingPlatformSprites, time, delta);
         this.forceUpdateSprites(this.hurtableTiles, time, delta);
         this.forceUpdateSprites(this.movablePlatformsSprites, time, delta);
+
+        this.collisionSystem.update(time, delta);
+
         this.updateCameraButtonsIfNeeded(time, delta);
         this.updatePowerups(time, delta);
     }

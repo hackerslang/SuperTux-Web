@@ -1,8 +1,4 @@
-﻿export class Rectangle {
-
-}
-
-export class Collision {
+﻿export class Collision {
 
     constructor(config) {
 
@@ -19,7 +15,7 @@ export class Collision {
     }
 
     static rectangleCollidesWithAATriangle(rect, triangle) {
-        if (rect.overlaps(triangle.bbox)) {
+        if (!rect.overlaps(triangle.bbox)) {
             return false;
         }
 
@@ -34,19 +30,19 @@ export class Collision {
                     area.p2 = triangle.bbox.p2;
                     break;
             case AATriangle.DEFORM_BOTTOM:
-                    area.p2 = new Vector(triangle.bbox.get_left(), triangle.bbox.get_top() + triangle.bbox.get_height() / 2);
+                    area.p2 = new Vector(triangle.bbox.left, triangle.bbox.top + triangle.bbox.height / 2);
                     area.p2 = triangle.bbox.p2;
                     break;
             case AATriangle.DEFORM_TOP:
                     area.p1 = triangle.bbox.p1;
-                    area.p2 = new Vector(triangle.bbox.get_right(), triangle.bbox.get_top() + triangle.bbox.get_height() / 2);
+                    area.p2 = new Vector(triangle.bbox.right, triangle.bbox.top + triangle.bbox.height / 2);
                     break;
             case AATriangle.DEFORM_LEFT:
                     area.p1 = triangle.bbox.p1;
-                    area.p2 = new Vector(triangle.bbox.get_left() + triangle.bbox.get_width() / 2, triangle.bbox.get_bottom());
+                    area.p2 = new Vector(triangle.bbox.left + triangle.bbox.width / 2, triangle.bbox.bottom);
                     break;
             case AATriangle.DEFORM_RIGHT:
-                    area.p1 = new Vector(triangle.bbox.get_left() + triangle.bbox.get_width() / 2, triangle.bbox.get_top());
+                    area.p1 = new Vector(triangle.bbox.left + triangle.bbox.width / 2, triangle.bbox.top);
                     area.p2 = triangle.bbox.p2;
                     break;
             default:
@@ -55,30 +51,30 @@ export class Collision {
 
         var hasDownwardsEastCorner = false;
         var hasDownwardsWestCorner = false;
-
+        
         switch (triangle.dir & triangle.DIRECTION_MASK) {
             case AATriangle.SOUTHWEST:
                 p1 = new Vector(rect.left, rect.bottom);
-                this.makePlane(area.p1, area.p2, normal, c);
+                ({ n, c } = this.makePlane(area.p1, area.p2, normal, c));
                 break;
             case AATriangle.NORTHEAST:
                 p1 = new Vector(rect.right, rect.top);
-                this.makePlane(area.p2, area.p1, normal, c);
+                ({ n, c } = this.makePlane(area.p2, area.p1, normal, c));
                 hasDownwardsWestCorner = true;
                 break;
             case AATriangle.SOUTHEAST:
                 p1 = rect.p2;
-                this.makePlane(new Vector(area.left, area.bottom), new Vector(area.right, area.top), normal, c);
+                ({ n, c } = this.makePlane(new Vector(area.left, area.bottom), new Vector(area.right, area.top), normal, c));
                 break;
             case AATriangle.NORTHWEST:
                 p1 = rect.p1;
-                this.makePlane(new Vector(area.right, area.top), new Vector(area.left, area.bottom), normal, c);
+                ({ n, c } = this.makePlane(new Vector(area.right, area.top), new Vector(area.left, area.bottom), normal, c));
                 hasDownwardsEastCorner = true;
                 break;
             default:
                 break;
         }
-
+        //ok till here
         var n_p1 = normal.dot(p1);
         var depth = n_p1 - c;
 
@@ -92,25 +88,29 @@ export class Collision {
         var outVector = normal.dot(depth + 0.2);
 
         const RDELTA = 3;
-
+        
         if (p1.x < area.getLeft() - RDELTA || p1.x > area.getRight() + RDELTA ||
             p1.y < area.getTop() - RDELTA || p1.y > area.getBottom() + RDELTA) {
         } else {
-            if (outvec.x < 0) {
+            if (outVector.x < 0) {
                 //hit right
-                rect.velocity.x = Math.min(0, rect.velocity.x);
+                constraints.constrainRight(rect.right + outVector.x);
+                constraints.hit.right = true;
             } else {
                 //hit left
-                rect.velocity.x = Math.max(0, rect.velocity.x);
+                constraints.constrainLeft(rect.left + outVector.x);
+                constraints.hit.left = true;
             }
 
-            if (outvec.y < 0) {
+            if (outVector.y < 0) {
                 //hit bottom
-                rect.velocity.y = Math.min(0, rect.velocity.y);
+                constraints.constrainBottom(rect.bottom + outVector.y);
+                constraints.hit.bottom = true;
                 hitsRectangleBottom = true;
             } else {
                 //hit top
-                rect.velocity.y = Math.max(0, rect.velocity.y);
+                constraints.constrainTop(rect.top + outVector.y);
+                constraints.hit.top = true;
             }
 
             constraints.hit.slopeNormal = normal;
