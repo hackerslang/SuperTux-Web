@@ -5,7 +5,7 @@
 };
 
 export class CollisionHit {
-    constructor(config) {
+    constructor() {
         this.left = false;
         this.right = false;
         this.top = false;

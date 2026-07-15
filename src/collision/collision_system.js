@@ -15,18 +15,12 @@ export class CollisionSystem {
     }
 
     update(time, delta) {
+        this.delta = delta;
+
         for (var object of this.sectorScene.collisionObjects) {
-            object.dest = object.bbox;
+            object.dest = new Rect(object.bbox);
             object.pressure = new Phaser.Math.Vector2(0, 0);
             object.dest.move(object.getMovement(delta));
-            // console.log(object.getMovement(delta));
-            // console.log("coll:");
-            // console.log(object.parent);
-            // console.log("bbox");
-            // console.log(object.bbox);
-            // console.log("dest");
-            // console.log(object.dest);
-            // console.log("collend");
         }
 
         // Part 1: COLGROUP_MOVING vs COLGROUP_STATIC and tilemap.
@@ -54,7 +48,7 @@ export class CollisionSystem {
                 || !object.isValid())
                 continue;
 
-            var tileAttributes = this.collisionTileAttributes(object.dest, object.getMovement());
+            var tileAttributes = this.collisionTileAttributes(object.dest, object.getMovement(delta));
             if (tileAttributes >= Tile.FIRST_INTERESTING_FLAG) {
                 object.collisionTile(tileAttributes);
             }
@@ -158,12 +152,12 @@ export class CollisionSystem {
     collisionStaticConstrains(object) {
         var infinity = 10000000000;
         var constraints = new Constraints();
-        var movement = object.getMovement();
+        var movement = object.getMovement(this.delta);
         var pressure = new Phaser.Math.Vector2(0, 0);
         var dest = object.dest;
 
         for (var i = 0; i < 2; ++i) {
-            this.collisionStatic(object, dest, movement, pressure, constraints);
+            constraints = this.collisionStatic(object, dest, movement, pressure, constraints);
             
             if (!constraints.hasConstraints())
                 break;
@@ -192,7 +186,7 @@ export class CollisionSystem {
         constraints = new Constraints();
 
         for (var i = 0; i < 2; ++i) {
-            this.collisionStatic(object, dest, movement, pressure, constraints);
+            constraints = this.collisionStatic(object, dest, movement, pressure, constraints);
 
             if (!constraints.hasConstraints())
                 break;
@@ -220,18 +214,16 @@ export class CollisionSystem {
         if (pressure.y > 0) {
             constraints = new Constraints();
 
-            this.collisionStatic(constraints, movement, dest, object);
+            constraints = this.collisionStatic(constraints, movement, dest, object);
 
-            if (constraints.positionRight < infinity) {
-                width = constraints.width;
+            if (constraints.positionBottom < infinity) {
+                height = constraints.height;
 
-                if (width + SHIFT_DELTA < object.bbox.width) {
+                if (height + SHIFT_DELTA < object.bbox.height) {
                     var hit = new CollisionHit();
 
                     hit.top = true;
                     hit.bottom = true;
-                    hit.left = true;
-                    hit.right = true;
                     hit.crush = pressure.x > 16;
                     object.collisionSolid(hit);
 
@@ -241,7 +233,7 @@ export class CollisionSystem {
     }
 
     collisionStatic(object, dest, movement, pressure, constraints) {
-        var constraints = this.collisionTileMap(movement, dest, object);
+        constraints = this.collisionTileMap(movement, dest, object);
 
         // Collision with other (static) objects.
         for (var i = 0; i != this.sectorScene.collisionObjects.length; ++i)
@@ -251,16 +243,20 @@ export class CollisionSystem {
             if ((staticObject.group == CollisionGroup.COLGROUP_STATIC || staticObject.group == CollisionGroup.COLGROUP_MOVING_STATIC) &&
                 staticObject.isValid() && staticObject != object) {
 
-                var newConstraints = checkCollisions(sprite, staticObject);
+                var newConstraints = checkCollisions(movement, dest, sprite, staticObject.dest, object, staticObject);
 
-                if (newConstraints.hit.bottom)
+                if (newConstraints.hit.bottom) {
+                    alert("newconstraints)");
                     staticObject.collisionMovingObjectBottom(object);
-                else if (newConstraints.hit.top)
+                } else if (newConstraints.hit.top) {
                     object.collisionMovingObjectBottom(staticObject);
+                }
 
                 constraints.mergeConstraints(newConstraints);
             }
         }
+
+        return constraints;
     }
 
     checkCollisions(objectMovement, movingObjectRect, otherObjectRect, movingObject, otherObject) {
@@ -279,21 +275,21 @@ export class CollisionSystem {
         if (movingObject != null && otherObject != null && !movingObject.collides(otherObject, dummy))
             return constraints;
 
-        const itop = movingObjectRect.bottom - grownOtherObjectRect.top;
-        const ibottom = grownOtherObjectRect.bottom - movingObjectRect.top;
-        const ileft = movingObjectRect.right - grownOtherObjectRect.left;
-        const iright = grownOtherObjectRect.right - movingObjectRect.left;
+        const itop = movingObjectRect.getBottom() - grownOtherObjectRect.top;
+        const ibottom = grownOtherObjectRect.getBottom() - movingObjectRect.top;
+        const ileft = movingObjectRect.getRight() - grownOtherObjectRect.left;
+        const iright = grownOtherObjectRect.getRight() - movingObjectRect.left;
 
         var shiftout = false;
 
-        if ((otherObject != null || isNotUniSolid(otherObject))
-            && (movingObject != null || isNotUniSolid(movingObject))) {
-            if (Math.abs(movingObject.getVelocityY()) > Math.abs(movingObject.getVelocityX())) {
+        if ((otherObject == null || this.isNotUniSolid(otherObject))
+            && (movingObject == null || this.isNotUniSolid(movingObject))) {
+            if (Math.abs(objectMovement.y) > Math.abs(objectMovement.x) ) {
                 if (ileft < SHIFT_DELTA) {
                     constraints.constrainRight(grownOtherObjectRect.left);
                     shiftout = true;
                 } else if (iright < SHIFT_DELTA) {
-                    constraints.constrainLeft(grownOtherObjectRect.right);
+                    constraints.constrainLeft(grownOtherObjectRect.getRight());
                     shiftout = true;
                 }
             } else {
@@ -301,23 +297,23 @@ export class CollisionSystem {
                     constraints.constrainBottom(grownOtherObjectRect.top);
                     shiftout = true;
                 } else if (ibottom < SHIFT_DELTA) {
-                    constraints.constrainTop(grownOtherObjectRect.bottom);
+                    constraints.constrainTop(grownOtherObjectRect.getBottom());
                     shiftout = true;
                 }
             }
         }
-        
+
         if (!shiftout) {
             if (otherObject != null && !this.isNotUniSolid(otherObject)) {
-                if (otherObject.bottom - movingObject.getVelocityY() <= grownOtherObjectRect.top -
-                    (otherObject.getVelocityY() - 5)) {
+                //
+                if (movingObjectRect.getBottom() - objectMovement.y <= grownOtherObjectRect.top - (otherObject.getMovement(this.delta).y - 5)) {
                     constraints.constrainBottom(grownOtherRect.top);
                     constraints.hit.bottom = true;
                 }
             } else if (otherObject != null && otherObject.group !== undefined && otherObject.group == CollisionGroup.COLGROUP_MOVING_STATIC
                 && movingObject != null && !this.isNotUniSolid(movingObject)) {
-                if (grownOtherObjectRect.top - otherObject.getVelocityY() <= movingObject.top -
-                    (movingObject.getVelocityY() - 5)) {
+                if (grownOtherObjectRect.top - otherObject.getMovement().y <= movingObjectRect.top -
+                    (movingObject.getMovement(this.delta).y - 5)) {
                     constraints.constrainTop(sprite.top);
                     constraints.hit.top = true;
                 }
@@ -330,7 +326,7 @@ export class CollisionSystem {
                         constraints.constrainBottom(grownOtherObjectRect.top);
                         constraints.hit.bottom = true;
                     } else {
-                        constraints.constrainTop(grownOtherObjectRect.bottom);
+                        constraints.constrainTop(grownOtherObjectRect.getBottom());
                         constraints.hit.top = true;
                     }
                 } else {
@@ -338,7 +334,7 @@ export class CollisionSystem {
                         constraints.constrainRight(grownOtherObjectRect.left);
                         constraints.hit.right = true;
                     } else {
-                        constraints.constrainLeft(grownOtherObjectRect.right);
+                        constraints.constrainLeft(grownOtherObjectRect.getRight());
                         constraints.hit.left = true;
                     }
                 }
@@ -366,8 +362,6 @@ export class CollisionSystem {
         return constraints;
     }
 
-    
-
     isNotUniSolid(object) {
         return object.isTile === undefined || !object.isTile || (object.isTile && !object.isUniSolid());
     }
@@ -377,21 +371,24 @@ export class CollisionSystem {
         // Later on, we will add multiple tile layers, so we will need to check collisions with all of them. 
         // For now, we only have one tile layer, so we will just check collisions with that one.
         var overlappingTilesRect = Tile.getTilesOverlapping(dest);
-
+        console.log("dest:");
+        console.log(dest);
+        console.log("overlappingTilesRect:");
+        console.log(overlappingTilesRect);
         var hitsBottom = false;
 
-        for (let x = overlappingTilesRect.left; x < overlappingTilesRect.right; ++x) {
-            for (let y = overlappingTilesRect.top; y < overlappingTilesRect.bottom; ++y) {
+        for (let x = overlappingTilesRect.left; x < overlappingTilesRect.getRight(); ++x) {
+            for (let y = overlappingTilesRect.top; y < overlappingTilesRect.getBottom(); ++y) {
                 const tile = Tile.getTileAt(x, y); 
                 if (!tile) continue;
 
                 if (tile.isSolid()) {
-                    const tileBbox = {
+                    const tileBbox = new Rect({
                         left: x * TILE_SIZE,
                         top: y * TILE_SIZE,
                         right: (x + 1) * TILE_SIZE,
                         bottom: (y + 1) * TILE_SIZE,
-                    };
+                    });
 
                     var isRelativelySolid = true;
 
@@ -404,14 +401,14 @@ export class CollisionSystem {
                     if (isRelativelySolid) {
                         if (tile.isSlope()) {
                             const triangle = new AATriangle(tileBbox, tile.data);
-                            const result = Collision.rectangleCollidesWithAATriangle(rect, triangle);
-
+                            const result = Collision.rectangleCollidesWithAATriangle(dest, triangle);
+                            alert("slope");
                             if (result && result.hits) {
                                 hitsBottom |= result.hitsRectangleBottom;
                             }
                         } else {
-                            var newConstraints = this.checkCollisions(object.getVelocity(), dest, tilebBox);
-
+                            var newConstraints = this.checkCollisions(movement, dest, tileBbox);
+                            console.log("isrelsolid");
                             hitsBottom |= newConstraints.hit.bottom;
                             constraints.mergeConstraints(newConstraints);
                         }

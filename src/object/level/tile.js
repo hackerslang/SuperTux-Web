@@ -46,9 +46,9 @@ export class Tile {
 
     static getTilesOverlapping(rect) {
         var left = Math.max(0, Math.floor(rect.left / 32));
-        var right = Math.min(Sector.getCurrentSector().sectorData.width - 1, Math.ceil(rect.right / 32));
+        var right = Math.min(Math.floor(Sector.getCurrentSector().sectorWidth / 32), Math.ceil(rect.getRight() / 32));
         var top = Math.max(0, Math.floor(rect.top / 32));
-        var bottom = Math.min(Sector.getCurrentSector().sectorData.height - 1, Math.ceil(rect.bottom / 32));
+        var bottom = Math.min(Math.floor(Sector.getCurrentSector().sectorHeight / 32), Math.ceil(rect.getBottom() / 32));
 
         return new Rect({ left: left, top: top, right: right, bottom: bottom });
     }
@@ -69,7 +69,15 @@ export class Tile {
 
         for (var i = 0; i < tilesets.length; i++) {
             var tileset = tilesets[i];
-            
+
+            if (tileset.lastgid === undefined) {
+                if (i + 1 < tilesets.length) {
+                    tileset.lastgid = tilesets[i + 1].firstgid - 1;
+                } else {
+                    tileset.lastgid = 1000000;
+                }
+            }
+
             if (tileIndex >= tileset.firstgid && tileIndex < tileset.lastgid) {
                 var tile = new Tile({
                     attributes: tileset.attributes[tileIndex - tileset.firstgid],
@@ -81,6 +89,14 @@ export class Tile {
         }
 
         return null;
+    }
+
+    isSolid() {
+        return (this.attributes & SOLID) != 0;
+    }
+
+    isUniSolid() {
+        return (this.attributes & UNISOLID) != 0;
     }
 
     static async getTileDataAndAttributes() {

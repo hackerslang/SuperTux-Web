@@ -5,7 +5,7 @@
     }
 
     static makePlane(p1, p2, n, c) {
-        n = new Phaser.Math.Vector(p2.y - p1.y, p1.x - p2.x);
+        n = new Phaser.Math.Vector2(p2.y - p1.y, p1.x - p2.x);
         c = - p2.dot(n);
         var nval = n.length();
         n /= nval;
@@ -19,9 +19,9 @@
             return false;
         }
 
-        var normal = new Vector(0, 0);
+        var normal = new Phaser.Math.Vector2(0, 0);
         var c = 0.0;
-        var p1 = new Vector(0, 0);
+        var p1 = new Phaser.Math.Vector2(0, 0);
         var area = {};
 
         switch (triangle.dir & triangle.DEFORM_MASK) {
@@ -55,20 +55,20 @@
         switch (triangle.dir & triangle.DIRECTION_MASK) {
             case AATriangle.SOUTHWEST:
                 p1 = new Vector(rect.left, rect.bottom);
-                ({ n, c } = this.makePlane(area.p1, area.p2, normal, c));
+                ({ normal, c } = this.makePlane(area.p1, area.p2, normal, c));
                 break;
             case AATriangle.NORTHEAST:
                 p1 = new Vector(rect.right, rect.top);
-                ({ n, c } = this.makePlane(area.p2, area.p1, normal, c));
+                ({ normal, c } = this.makePlane(area.p2, area.p1, normal, c));
                 hasDownwardsWestCorner = true;
                 break;
             case AATriangle.SOUTHEAST:
                 p1 = rect.p2;
-                ({ n, c } = this.makePlane(new Vector(area.left, area.bottom), new Vector(area.right, area.top), normal, c));
+                ({ normal, c } = this.makePlane(new Vector(area.left, area.bottom), new Vector(area.right, area.top), normal, c));
                 break;
             case AATriangle.NORTHWEST:
                 p1 = rect.p1;
-                ({ n, c } = this.makePlane(new Vector(area.right, area.top), new Vector(area.left, area.bottom), normal, c));
+                ({ normal, c } = this.makePlane(new Vector(area.right, area.top), new Vector(area.left, area.bottom), normal, c));
                 hasDownwardsEastCorner = true;
                 break;
             default:

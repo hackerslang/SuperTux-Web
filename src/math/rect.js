@@ -14,52 +14,55 @@
                 this.height = config.height;
             } else {
                 this.width = config.right - config.left;
-                this.bottom = config.bottom - config.top;
+                this.height = config.bottom - config.top;
             }
         }
     }
 
-    width() {
+    setWidth(width) {
+        this.width = width;
+    }
+
+    getWidth() {
         return this.width;
     }
 
-    height() {
+    getHeight() {
         return this.height;
     }
 
-    right() {
-        return this.left + this.width;
+    getRight() {
+        return this.right !== undefined ? this.right : this.left + this.width;
     }
 
-    bottom() {
-        return this.top + this.height;
+    getBottom() {
+        return this.bottom !== undefined ? this.bottom : this.top + this.height;
     }
 
     grown(border) {
-        return new Rect(
-            this.left - border,
-            this.top - border,
-            this.right + border,
-            this.bottom + border);
+        return new Rect({
+            left: this.left - border,
+            top: this.top - border,
+            right: this.getRight() + border,
+            bottom: this.getBottom() + border
+        });
     }
 
     move(v) {
         this.left += v.x;
         this.top += v.y;
-        console.log(v.x);
-        console.log(v.y);
     }
 
     overlaps(other) {
-        if (this.right < other.left || this.left > other.right)
+        if (this.getRight() < other.left || this.left > other.getRight())
             return false;
-        if (this.bottom < other.top || this.top > other.bottom)
+        if (this.getBottom() < other.top || this.top > other.getBottom())
             return false;
 
         return true;
     }
 
     static fromSprite(sprite) {
-        return new Rect(sprite.x, sprite.y, sprite.width, sprite.height);
+        return new Rect({ left: sprite.x, top: sprite.y, width: sprite.width, height: sprite.height });
     }
 }

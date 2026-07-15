@@ -2,5 +2,5 @@
   "key": "antarctica-the-beginning",
   "title": "Antarctica, The Beginning",
   "slopes": [ "snow" ],
-  "sectors": [ "what-goes-up", "exploration", "home", "antarctic-downfall" ]
+  "sectors": [ "home", "what-goes-up", "exploration", "antarctic-downfall" ]
 }

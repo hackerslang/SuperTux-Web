@@ -55,6 +55,10 @@ export class Tux extends MovingSprite {
 
         this.MAX_WALK_XM = 175;
         this.MAX_RUN_XM = 400;
+
+        this.RUNNING_TUX_WIDTH = 34;
+        this.TUX_WIDTH = 31.8;
+
         this.WALK_SPEED = 100;
 
         this.MAX_CLIMB_XM = 50;
@@ -101,6 +105,8 @@ export class Tux extends MovingSprite {
 
         this.falling = false;
         this.jumping = false;
+
+        this.floorNormal = new Phaser.Math.Vector2(0, 0);
 
         this.skiddingTimer = 0;
 
@@ -314,11 +320,11 @@ export class Tux extends MovingSprite {
     }
 
     handleCollisionLogic(hit) {
-        alert("hit");
-        console.log(hit);
         if (hit.bottom) {
-            if (this.getVelocityY > 0) {
+            if (this.getVelocityY() > 0) {
                 this.setVelocityY(0);
+                this.saveGravityY();
+                this.body.setGravityY(0);
             }
 
             if (!this.isSwimming) {
@@ -328,21 +334,23 @@ export class Tux extends MovingSprite {
             this.floorNormal = hit.slopeNormal;
             this.isSlideJumpingFalling = false;
             this.slideJumping = false;
+            console.log("hit.bottom");
+            // if (!this.onGround() || this.floorNormal.y == 0) {
+            //     // buttJump
+            //     this.doesButtJump = false;
+            //     this.buttJumpStomp = true;
+            //     this.setVelocityY(-300);
+            //     this.isOnGround = false;
 
-            if (!this.onGround() || this.floorNormal.y == 0) {
-                // buttJump
-                this.doesButtJump = false;
-                this.buttJumpStomp = true;
-                this.setVelocityY(-300);
-                this.isOnGround = false;
-
-                // still add particles
-                // camera shake
-            }
+            //     // still add particles
+            //     // camera shake
+            // }
         } else if (hit.top) {
             if (this.getVelocityY < 0) {
                 this.setVelocityY(0.2);
             }
+        } else {
+            this.restoreGravityY();
         }
 
         if ((hit.left || hit.right) && hit.slopeNormal.x == 0) {
@@ -350,8 +358,20 @@ export class Tux extends MovingSprite {
         }
 
         if (hit.crush) {
-            
-        }
+
+        } 
+    }
+
+    saveGravityY() {
+        const gravity = this.body && this.body.gravity ? this.body.gravity : { x: 0, y: 0 };
+
+        this.savedGravityY = gravity.y;
+    }
+
+    restoreGravityY() {
+        if (!this.body || !this._savedGravityY) return;
+
+        this.body.setGravityY(this.savedGravityY || 0);
     }
 
     update(time, delta) {
@@ -372,7 +392,7 @@ export class Tux extends MovingSprite {
         //this.stayInStaticsIfNeeded();
         
         // Rounding bug phaser
-        if (!this.isClimbing) { this.body.y = Math.ceil(this.body.y); }
+        if (!this.isClimbing) { this.body.y = Math.floor(this.body.y); }
         
         if (this.body.y >= Math.floor(Level.getMaxLevelHeightY() * 32 - this.body.height) && !this.killed) {
             this.die();
@@ -384,7 +404,8 @@ export class Tux extends MovingSprite {
             this.forceDrawWalking -= delta;
         }
 
-        this.fallIfMightAlmostFallOverEdge();
+        console.log(this.onGround());
+        //this.fallIfMightAlmostFallOverEdge();
 
         if (this.fallingStartTimer > 0) {
             this.fallingStartTimer -= delta;
@@ -402,6 +423,20 @@ export class Tux extends MovingSprite {
 
         if (this.idleTimer > 0) {
             this.idleTimer -= delta;
+        }
+
+        if (Math.abs(this.getVelocityX()) > this.MAX_WALK_XM) {
+            this.collisionObject.setWidth(this.RUNNING_TUX_WIDTH);
+        } else {
+            this.collisionObject.setWidth(this.TUX_WIDTH);
+        }
+
+        if (this.onGround() && !this.swimming && !this.dying) {
+            if (this.floorNormal.y != 0) {
+                if ((this.floorNormal.x * this.getVelocityX()) >= 0) {
+                    this.setVelocityY((Math.abs(this.getVelocityX()) * Math.abs(this.floorNormal.x)) + 100);
+                }
+            }
         }
 
         this.setCollisionBoxesForAnimations();
@@ -474,7 +509,7 @@ export class Tux extends MovingSprite {
 
         this.resetHurtIfNeeded();
 
-        if (this.jumping && (this.body.blocked.down || this.onGround())) {
+        if (this.jumping && (this.onGround())) {
             this.jumping = false;
             this.canJump = true;
             this.jumpButtonTimer = this.JUMP_GRACE_TIME;
@@ -500,6 +535,10 @@ export class Tux extends MovingSprite {
                 this.fallMode = this.JUMPING;
             }
         }
+
+
+
+
 
         this.handleInput(delta);
     }
@@ -717,7 +756,8 @@ export class Tux extends MovingSprite {
     }
 
     onGround() {
-        return this.isOnGround || (this.getVelocityY() == 0 && !this.jumping) || this.slightlyAboveGround() || this.onObject(); //|| this.slightlyAboveObject();
+        console.log("bool:" + this.isOnGround);
+        return this.isOnGround || (this.getVelocityY() == 0 && !this.jumping) || this.slightlyAboveGround(); //|| this.onObject(); //|| this.slightlyAboveObject();
     }
 
     slightlyAboveGround() {
@@ -726,6 +766,7 @@ export class Tux extends MovingSprite {
         var bottomY2 = this.body.bottom + 15;
         var y = this.body.y + 32;
 
+        return false;
         return Level.isOnTopOfObjects(x, y, this.scene) || Level.isOnTopOfPlayerCollisionObject(x, bottomY, bottomY2, this.scene);
     }
 
@@ -1178,7 +1219,6 @@ export class Tux extends MovingSprite {
             } 
         }
 
-        //console.log("vx:" + vx + "vy" + vy);
         this.setAccelerationY(0);  
     }
 
