@@ -94,13 +94,12 @@ class BouncyCoin extends Phaser.GameObjects.Sprite {
             this.isRemoved = true;
             this.destroy();
         } else {
-            console.log("t:"+this.timer);
             var timeLeft = this.timer;
             var isFading = timeLeft < this.FADE_TIME && this.timer > 0;
 
             if (isFading) {
                 var alpha = timeLeft / this.FADE_TIME;
-                console.log("alpha:" + alpha);
+
                 this.alpha = alpha;
             }
 

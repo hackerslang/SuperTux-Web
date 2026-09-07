@@ -1,15 +1,18 @@
 ﻿import { TilemapParser } from './tilemap_parser.js';
 import { JsonFetcher } from '../json_fetcher.js';
 import { Level } from './level.js';
+import { SectorSwapper } from './sector_swapper.js';
+import { SectorScene } from '../../scenes/sectorscene.js';
+import { Tilemap } from './tilemap.js';
 
 export class Sector {
     constructor(sectorData, level) {
         this.name = sectorData.name;
         this.sectorData = sectorData;
-        this.originalTileData = sectorData.data.slice();
+        this.originalTileData = sectorData.tilemaps[0].data.slice();
         this.level = level;
-        this.sectorWidth = this.sectorData.data[0].length * 32;
-        this.sectorHeight = this.sectorData.data.length * 32;
+        this.sectorWidth = this.sectorData.tilemaps[0].data[0].length * 32;
+        this.sectorHeight = this.sectorData.tilemaps[0].data.length * 32;
     }
 
     static async getSectorName(levelKey, sectorKey) {
@@ -40,15 +43,22 @@ export class Sector {
     }
 
     getTileData() {
-        return this.sectorData.data;
+        return this.sectorData.tilemaps[0].data;
     }
 
     getTileDataValue(x, y) {
-        return this.sectorData.data[y][x];
+        return this.sectorData.tilemaps[0].data[y][x];
     }
 
     setTileDataValue(x, y, val) {
-        this.sectorData.data[y][x] = val;
+        this.sectorData.tilemaps[0].data[y][x] = val;
+    }
+
+    getSolidTilemaps() {
+        var w = Sector.getCurrentSectorWidth();
+        var h = Sector.getCurrentSectorHeight();
+
+        return this.sectorData.tilemaps.filter((tilemap) => tilemap.solid).map((tilemap) => new Tilemap({ width: w * 32, height: h * 32 }));
     }
 
     getData() {
@@ -82,6 +92,10 @@ export class Sector {
 
     getPlayer() {
         return this.player;
+    }
+
+    getFirstLineIntersection(lineStart, lineEnd, ignore, ignoreObject) {
+        return SectorSwapper.getCurrentSectorSceneObject().collisionSystem.getFirstLineIntersection(lineStart, lineEnd, ignore, ignoreObject);
     }
 
     getBackgroundImage() {
@@ -177,7 +191,7 @@ export class Sector {
 
             preloadedArray.push(firstWater);
         }
-
+       
         let preloadedWater = {
             type: 'plain',
             x: i * 32,

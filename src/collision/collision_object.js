@@ -37,6 +37,13 @@ export class CollisionObject {
         return new Phaser.Math.Vector2(this.getVelocityX() * dt, this.getVelocityY() * dt);
     }
 
+    setMovement(movement, delta) {
+        // delta is milliseconds
+        const dt = (typeof delta === 'number') ? delta / 1000 : 1 / 60;
+
+        this.parent.setVelocity(movement.x / dt, movement.y / dt);
+    }
+
     getVelocityX() {
         return this.parent.getVelocityX();
     }
@@ -53,7 +60,19 @@ export class CollisionObject {
         return this.uniSolid;
     }
 
+    getGroup() {
+        return this.parent.getGroup();
+    }
+
     isValid() {
         return this.parent.isValid();
+    }
+
+    equals(other) {
+        return this.parent.equals(other.parent);
+    }
+
+    getBbox() {
+        return new Rect(this.bbox);
     }
 }

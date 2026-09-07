@@ -1,9 +1,10 @@
+import { CollisionGroup } from '../collision/collision_group.js';
+import { HitResponse } from '../collision/collision_hit.js';
+import { GAME_GRAVITY } from '../game.js';
 import { GameSession } from '../object/game_session.js';
 import { Level } from '../object/level/Level.js';
 import { Sector } from '../object/level/sector.js';
 import { MovingSprite } from '../object/moving_object.js';
-import { CollisionGroup } from '../collision/collision_group.js';
-import { GAME_GRAVITY } from '../game.js';
 
 export class Tux extends MovingSprite {
     constructor(config) {
@@ -15,7 +16,10 @@ export class Tux extends MovingSprite {
         //this.anims.play("tux-stand");
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
 
+        this.id = -10;
+
         this.isTile = false;
+        this.isEnemy = false;
 
         this.REAL_COLLISION_BOX_WIDTH = 40;
         this.REAL_COLLISION_BOX_HEIGHT = 60;
@@ -97,11 +101,15 @@ export class Tux extends MovingSprite {
         this.forceDrawWalking = 0;
 
         this.currentDelta = 0;
-        
 
         this.invincible = false;
         this.invincibleStep = 0;
         this.invincibleIndex = 0;
+        this.invincibleTimer = 0;
+
+        this.isIntentionallySafe = false;
+        this.postDamageSafetyTimer = 0;
+        this.tempSafetyTimer = 0;
 
         this.falling = false;
         this.jumping = false;
@@ -131,6 +139,8 @@ export class Tux extends MovingSprite {
         this.isClimbing = false;
         this.isHangingStill = false;
 
+        this.grabbedObject = null;
+
         this.KICK_TIME = 300;
 
         this.killAt = 0;
@@ -143,6 +153,8 @@ export class Tux extends MovingSprite {
         this.idleStage = 0;
         this.TIME_UNTIL_IDLE = 5000;
         this.idleTimer = 0;
+
+        this.objectName = "Tux";
 
         this.lastAnimationCompleted = null;
 
@@ -158,7 +170,13 @@ export class Tux extends MovingSprite {
 
         this.hurtFalling = false;
 
+        this.isEnemy = false;
+
         this.setCustomGravityIfNeeded();
+    }
+
+    isValid() {
+        return true;
     }
 
     setCustomGravityIfNeeded() {
@@ -323,6 +341,7 @@ export class Tux extends MovingSprite {
         if (hit.bottom) {
             if (this.getVelocityY() > 0) {
                 this.setVelocityY(0);
+                this.setAccelerationY(0);
                 this.saveGravityY();
                 this.body.setGravityY(0);
             }
@@ -334,17 +353,6 @@ export class Tux extends MovingSprite {
             this.floorNormal = hit.slopeNormal;
             this.isSlideJumpingFalling = false;
             this.slideJumping = false;
-            console.log("hit.bottom");
-            // if (!this.onGround() || this.floorNormal.y == 0) {
-            //     // buttJump
-            //     this.doesButtJump = false;
-            //     this.buttJumpStomp = true;
-            //     this.setVelocityY(-300);
-            //     this.isOnGround = false;
-
-            //     // still add particles
-            //     // camera shake
-            // }
         } else if (hit.top) {
             if (this.getVelocityY < 0) {
                 this.setVelocityY(0.2);
@@ -374,6 +382,64 @@ export class Tux extends MovingSprite {
         this.body.setGravityY(this.savedGravityY || 0);
     }
 
+    collision(other, hit) {
+        var bullet = other;
+
+        // if (bullet) {
+        //     return FORCE_MOVE;
+        // }
+
+        var player = !other.parent.isEnemy ? other.parent : undefined;
+
+        if (player !== undefined) {
+            return HitResponse.ABORT_MOVE;
+        }
+
+        if (hit.left || hit.right) {
+            this.tryGrab(); //grab objects right now, in update it will be too late
+        }
+
+        // if (other.getGroup() == CollissionGroup.COLGROUP_TOUCHABLE) {
+        //     var trigger = other;
+        //     if (!this.deactivated) {
+        //         if (this.getKeyController().pressed("UP"))
+        //             trigger.event(this, TriggerBase.EVENT_ACTIVATE);
+        //     }
+
+        //     return FORCE_MOVE;
+        // }
+
+        var enemy = other.parent.isEnemy ? other.parent : undefined;
+
+
+        if (this.isIntentionallySafe || this.postDamageSafetyTimer > 0 || this.tempSafetyTimer > 0 || this.invincibleTimer > 0)
+            return HitResponse.FORCE_MOVE;
+        if (this.stone)
+            return HitResponse.ABORT_MOVE;
+        if (enemy.isFrozen() && enemy.getVelocityY() != 0) {
+            this.handleCollisionLogic(hit);
+        }
+
+        return HitResponse.CONTINUE;
+    }
+
+    tryGrab() {
+        if (this.getKeyController().pressed('grab') && !this.grabbedObject && !(this.ducked ^ this.crawl) && !this.releasedObject) {
+            var pos = new Phaser.Math.Vector2(0, 0);
+
+            if (!this.swimming && !this.waterJump) {
+                if (this.direction == this.DIRECTION_LEFT) {
+                    pos = new Phaser.Math.Vector2(this.getCollisionObject().getBbox().left - 5, this.getCollisionObject().getBbox().getBottom() - 16);
+                } else {
+                    pos = new Phaser.Math.Vector2(this.getCollisionObject().getBbox().getRight() + 5, this.getCollisionObject().getBbox().getBottom() - 16);
+                }
+            } else {
+                pos = new Phaser.Math.Vector2(this.getCollisionObject().getBbox().left + 16 + (Math.cos(this.swimmingAngle) * 48),
+                    this.getCollisionObject().getBbox().top + 16 + (Math.sin(this.swimmingAngle) * 48));
+            }
+        }
+    }
+
     update(time, delta) {
         super.update(time, delta);
 
@@ -390,8 +456,8 @@ export class Tux extends MovingSprite {
         }
 
         //this.stayInStaticsIfNeeded();
-        
-        // Rounding bug phaser
+
+        // Rounding bug phaser, character lowers slowly without this fix!
         if (!this.isClimbing) { this.body.y = Math.floor(this.body.y); }
         
         if (this.body.y >= Math.floor(Level.getMaxLevelHeightY() * 32 - this.body.height) && !this.killed) {
@@ -404,7 +470,6 @@ export class Tux extends MovingSprite {
             this.forceDrawWalking -= delta;
         }
 
-        console.log(this.onGround());
         //this.fallIfMightAlmostFallOverEdge();
 
         if (this.fallingStartTimer > 0) {
@@ -478,7 +543,6 @@ export class Tux extends MovingSprite {
                         this.particleSprites.push(sparkle);
                         this.particleMaxId++;
                     }
-                    
                 }
             } else {
                 this.invincible = false;
@@ -692,6 +756,34 @@ export class Tux extends MovingSprite {
         }
     }
 
+    kill(completely) {
+        if (this.dying || this.isDeactivated || this.isWinning) {
+            return;
+        }
+
+        if (!completely && (this.isIntentionallySafe || this.postDamageSafetyTimer > 0 || this.tempSafetyTimer > 0 || this.invincibleTimer > 0)) {
+            return;
+        }
+
+        if (this.isClimbing) { }
+
+        this.setVelocityX(0);
+        this.boost = 0;
+
+        this.setAngle(0);
+
+        if (!completely) {
+            //play sound hurt
+            this.resetAction = true;
+
+            this.hurt();
+        } else {
+            //play sound killed
+
+            this.die();
+        }
+    }
+
     resetHurt() {
         this.alpha = 1;
         this.hurtStep = 0;
@@ -699,25 +791,22 @@ export class Tux extends MovingSprite {
 
     die() {
         if (this.killed) { return; }
-
+        
         this.body.setAllowGravity(true);
         this.scene.cameras.main.setLerp(0, 0);
-        this.dieWithoutRemovingColliders();
-        this.removeColliders();
-    }
-
-    dieWithoutRemovingColliders() {
         this.scene.setHealthBar(0);
         this.killed = true;
         this.killAt = 3000;
-        this.tint = 0xFFFFFF;
         this.alpha = 1;
         this.playAnimation("tux-gameover");
         this.setVelocityX(0);
         this.setVelocityY(-550);
         this.setAccelerationX(0);
+        this.isDying = true;
+        this.duck = this.crawl = false;
+        this.setGroup(CollisionGroup.COLGROUP_DISABLED);
 
-        GameSession.playerDied(this.level);
+        //GameSession.playerDied(this.level);
     }
 
     removeColliders() {
@@ -756,7 +845,6 @@ export class Tux extends MovingSprite {
     }
 
     onGround() {
-        console.log("bool:" + this.isOnGround);
         return this.isOnGround || (this.getVelocityY() == 0 && !this.jumping) || this.slightlyAboveGround(); //|| this.onObject(); //|| this.slightlyAboveObject();
     }
 
@@ -1446,7 +1534,7 @@ export class Tux extends MovingSprite {
         this.body.setVelocityY(-150);
     }
 
-    hurtBy(enemy) {
+    hurt() {
         if (this.killed || this.wasHurt > 0) {
             return;
         }

@@ -39,7 +39,7 @@ export class TilemapParser {
         this.sectorScene = config.sectorScene;
         this.sectorData = config.sectorData;
         this.level = config.sector.level;
-        this.tileData = this.sectorData.data;
+        this.tileData = this.sectorData.tilemaps[0].data;
         this.spriteFactory = new SpriteFactory(this.sectorScene);
     }
 
@@ -224,7 +224,7 @@ class SpriteFactory {
     constructor(sectorScene) {
         this.sectorScene = sectorScene;
     }
-
+    
     addCoinSprite(x, y, coinType) {
         this.sectorScene.addCoinSprite(x, y, coinType);
     }

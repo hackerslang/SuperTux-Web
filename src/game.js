@@ -18,7 +18,7 @@ export const GlobalGameConfig = {
         default: 'arcade',
         arcade: {
             gravity: { y: GAME_GRAVITY }, //600
-            debug: true
+            debug: false
             //,fixedStep: false
         }
     },

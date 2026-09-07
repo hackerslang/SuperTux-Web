@@ -146,6 +146,10 @@ export class SectorScene extends Phaser.Scene {
         fontLoader.loadFont(this, "SuperTuxBigColorFul");
     }
 
+    init(data) {
+        data.slot.loadedScene = this;
+    }
+
     async preload() {
         this.canSaveOrLoad = false;
         this.sector = Sector.getCurrentSector();
@@ -154,17 +158,14 @@ export class SectorScene extends Phaser.Scene {
             this.creatures = this.sector.sectorData.creatures;
             this.sectorCoinsCollected = 0;
 
-            if (this.creatures == null) {
-                this.creatures = [];
-            }
-
-            this.enemyCollisionExtraTilesGroup = this.add.group();
+            this.collisionObjects = [];
 
             this.hasPaused = false;
             this.player = {};
 
             this.loadFonts();
             this.loadImages();
+
             this.fillTilesForeground();
             await this.loadTilemaps();
             this.loadCoinTiles();
@@ -182,8 +183,18 @@ export class SectorScene extends Phaser.Scene {
             this.staticObjects = [];
             this.textsToUpdate = [];
 
-            this.collisionObjects = [];
-            
+            if (this.creatureObjects == null) {
+                this.creatureObjects = [];
+            }
+
+            if (this.creatures == null) {
+                this.creatures = [];
+            }
+
+            if (this.collisionObjects === undefined) {
+                this.collisionObjects = [];
+            }
+
             this.createBackground();
             this.makeAnimations();
 
@@ -195,13 +206,15 @@ export class SectorScene extends Phaser.Scene {
             // Create collision groups (Phaser)
             this.addPlayer();
             this.createCollisionTilesGroup();
-            this.createEnemySpritesGroup();
+
             this.createMovablePlatformsGroup();
             this.createHurtableTilesGroup();
             this.createCoinGroup();
 
             this.tilemapParser = new TilemapParser({ sectorScene: this, sector: this.sector, sectorData: this.sector.sectorData });
             this.tilemapParser.parse();
+
+            this.createEnemySpritesGroup();
 
             this.parseInvisibleWallBlocks();
             this.createFallingPlatforms();
@@ -214,8 +227,6 @@ export class SectorScene extends Phaser.Scene {
             this.initCursor();
             
             this.createPowerupGroup();
-
-            this.createPlayerCollisionObjectsGroup();
 
             this.groundLayer.setDepth(3);
 
@@ -314,10 +325,6 @@ export class SectorScene extends Phaser.Scene {
 
     createEnemySpritesGroup() {
         this.enemyGroupCreated = false;
-        this.enemyGroup = this.add.group();
-        this.enemyCollisionGroup = this.add.group();
-        this.creatureObjects = [];
-        
         this.parseEnemyLayer();
         this.enemyGroupCreated = true;
     }
@@ -343,30 +350,6 @@ export class SectorScene extends Phaser.Scene {
 
     createMovablePlatformsGroup() {
         this.movablePlatformsGroup = this.add.group();
-    }
-
-    createPlayerCollisionObjectsGroup() {
-        var self = this;
-        this.playerCollisionObjectsGroup = this.add.group();
-
-        for (var i = 0; i < this.enemyGroup.children.length; i++) {
-            var enemy = this.enemyGroup.children[i];
-            if (enemy.playerCollides) {
-                this.playerCollisionObjectsGroup.add(enemy);
-            }
-        }
-
-        for (var i = 0; i < this.hurtableTilesGroup.children.length; i++) {
-            var hurtableTile = this.hurtableTilesGroup.children[i];
-
-            this.playerCollisionObjectsGroup.add(hurtableTile);
-        }
-
-        //for (var i = 0; i < this.staticObjects.children.length; i++) {
-        //    var staticObject = this.staticObjects.children[i];
-
-        //    this.playerCollisionObjectsGroup.add(staticObject);
-        //}
     }
 
     getPlayerCollisionObjectsGroup() {
@@ -482,6 +465,14 @@ export class SectorScene extends Phaser.Scene {
         return this.enemyId;
     }
 
+    pushPreCreaturesList(enemy) {
+        if (this.preCreatures === undefined) {
+            this.preCreatures = [];
+        }
+
+        this.preCreatures.push(enemy);
+    }
+
     getMovableObjectId() {
         if (this.movableObjectId === undefined) {
             this.movableObjectId = 0;
@@ -509,9 +500,7 @@ export class SectorScene extends Phaser.Scene {
 
         //enemies.forEach((enemy) => self.creatures.push(enemy));
 
-        for (var i = 0; i < this.creatures.length; i++) {
-            this.creatures[i].id = i;
-        }
+
 
         if (this.sector.sectorData.key == GameSession.session.sectorKey) {
             if (GameSession.session.enemiesPositions != null && GameSession.session.enemiesPositions.length > 0) {
@@ -520,14 +509,23 @@ export class SectorScene extends Phaser.Scene {
             }
         }
 
+        if (this.preCreatures !== undefined) {
+            for (var i = 0; i < this.preCreatures.length; i++) {
+                var preCreature = this.preCreatures[i];
+
+                this.addCreature(this.preCreature);
+            }
+        }
+
         for (var i = 0; i < this.creatures.length; i++) {
             var creature = this.creatures[i];
             var creatureObject;
+            var enemyId = this.getEnemyId();
 
             switch (creature.name) {
                 case "snowball":
                     creatureObject = new SnowBall({
-                        id: this.getEnemyId(),
+                        id: enemyId,
                         scene: this,
                         key: "snowball",
                         x: creature.position.x * 32,
@@ -539,24 +537,10 @@ export class SectorScene extends Phaser.Scene {
                     });
 
                     break;
-                //case "bouncing-snowball":
-                //    creatureObject = new BouncingSnowBall({
-                //        id: creature.id,
-                //        scene: this,
-                //        key: "bouncing-snowball",
-                //        x: creature.position.x * 32,
-                //        y: creature.position.y * 32,
-                //        realY: creature.position.realY,
-                //        player: this.player,
-                //        sector: this.sector,
-                //        powerUps: creature.powerUps
-                //    });
-
-                //    break;
 
                 case "flying-snowball":
                     creatureObject = new FlyingSnowBall({
-                        id: this.getEnemyId(),
+                        id: enemyId,
                         scene: this,
                         key: "flying-snowball",
                         x: creature.position.x * 32,
@@ -567,9 +551,10 @@ export class SectorScene extends Phaser.Scene {
                     });
 
                     break;
+
                 case "iceblock":
                     creatureObject = new MrIceBlock({
-                        id: this.getEnemyId(),
+                        id: enemyId,
                         scene: this,
                         key: "mriceblock",
                         x: creature.position.x * 32,
@@ -584,7 +569,7 @@ export class SectorScene extends Phaser.Scene {
 
                 case "jumpy":
                     creatureObject = new Jumpy({
-                        id: this.getEnemyId(),
+                        id: enemyId,
                         scene: this,
                         key: "jumpy",
                         x: creature.position.x * 32,
@@ -598,7 +583,7 @@ export class SectorScene extends Phaser.Scene {
 
                 case "plasma-gun":
                     creatureObject = new PlasmaGun({
-                        id: this.getEnemyId(),
+                        id: enemyId,
                         scene: this,
                         key: "plasma-gun",
                         x: creature.position.x * 32,
@@ -609,24 +594,9 @@ export class SectorScene extends Phaser.Scene {
 
                     break;
 
-                //case "krosh":
-                //    creatureObject = new Krosh({
-                //        id: this.getEnemyId(),
-                //        scene: this,
-                //        key: "krosh",
-                //        x: creature.position.x * 32,
-                //        y: creature.position.y * 32,
-                //        stopY: creature.position.stopY,
-                //        realY: creature.position.realY,
-                //        player: this.player,
-                //        sector: this.sector,
-                //    });
-
-                //    break;
-
                 case "fish":
                     creatureObject = new Fish({
-                        id: this.getEnemyId(),
+                        id: enemyId,
                         scene: this,
                         key: "fish",
                         x: creature.position.x * 32,
@@ -640,24 +610,10 @@ export class SectorScene extends Phaser.Scene {
                     });
 
                     break;
-                /*
-                case "ghoul":
-                    creatureObject = new Ghoul({
-                        id: this.getEnemyId(),
-                        scene: this,
-                        key: "ghoul",
-                        x: creature.position.x * 32,
-                        y: creature.position.y * 32,
-                        realY: creature.position.realY,
-                        player: this.player,
-                        sector: this.sector,
-                    });
-
-                    break;*/
 
                 case "hellspiky":
                     creatureObject = new HellSpiky({
-                        id: this.getEnemyId(),
+                        iid: enemyId,
                         scene: this,
                         key: "hellspiky",
                         x: creature.position.x * 32,
@@ -671,7 +627,7 @@ export class SectorScene extends Phaser.Scene {
 
                 case "spiky":
                     creatureObject = new Spiky({
-                        id: this.getEnemyId(),
+                        id: enemyId,
                         scene: this,
                         key: "spiky",
                         x: creature.position.x * 32,
@@ -684,25 +640,8 @@ export class SectorScene extends Phaser.Scene {
                     break;
             }
 
-            if (creatureObject != null) {
-                this.collisionObjects.push(creatureObject.getCollisionObject());
-
-                creatureObjects.push(creatureObject);
-                this.enemyGroup.add(creatureObject);
-
-                if (creatureObject.collidesWithExtraTiles) {
-                    this.enemyCollisionExtraTilesGroup.add(creatureObject);
-                }
-
-                if (creatureObject.collidesWithOtherEnemies) {
-                    this.enemyCollisionGroup.add(creatureObject);
-                }
-            }
+            this.addCreature(creatureObject);
         }
-
-        console.log(this.enemyCollisionGroup);
-
-        this.creatureObjects = creatureObjects;
 
         if (this.sector.sectorData.key == GameSession.session.sectorKey) {
             if (GameSession.session.enemiesPositions != null && GameSession.session.enemiesPositions.length > 0) {
@@ -710,20 +649,14 @@ export class SectorScene extends Phaser.Scene {
                     creature.initWithGameSession(GameSession.session.enemiesPositions.find((ep) => ep.id == creature.id)));
             }
         }
+
+
     }
 
     addCreature(creatureObject) {
         if (creatureObject != null) {
             this.creatureObjects.push(creatureObject);
-            this.enemyGroup.add(creatureObject);
-
-            if (creatureObject.collidesWithExtraTiles) {
-                this.enemyCollisionExtraTilesGroup.add(creatureObject);
-            }
-
-            if (creatureObject.collidesWithOtherEnemies) {
-                this.enemyCollisionGroup.add(creatureObject);
-            }
+            this.collisionObjects.push(creatureObject.getCollisionObject());
         }
     }
 
@@ -913,8 +846,8 @@ export class SectorScene extends Phaser.Scene {
     }
 
     addHome(i, j) {
-        var foreground = this.add.sprite(i * 32 + 100, j * 32 - 65, 'exitfg');
-        var background = this.add.sprite(i * 32 + 242, j * 32 - 65, 'exitbg');
+        var foreground = this.add.sprite(i * 32 + 100, j * 32 - 65, 'igloo_fg');
+        var background = this.add.sprite(i * 32 + 100, j * 32 - 65, 'igloo_bg');
 
         foreground.flipX = true;
         background.flipX = true;
@@ -1053,7 +986,7 @@ export class SectorScene extends Phaser.Scene {
     }
 
     initCamera() {
-        this.cameras.main.setBounds(0, 0, this.sector.sectorData.data[0].length * 32, (this.sector.sectorData.data.length - 3) * 32);
+        this.cameras.main.setBounds(0, 0, this.sector.sectorData.tilemaps[0].data[0].length * 32, (this.sector.sectorData.tilemaps[0].data.length - 3) * 32);
         this.cameras.main.startFollow(this.player, true);
         this.cameras.main.roundPixels = true;
     }
@@ -1194,6 +1127,10 @@ export class SectorScene extends Phaser.Scene {
         this.makeAnimationsForKeys(animationKeys);
     }
 
+    isFreeOfTiles(rect, ignoreUnisolid, tiletype) {
+        return this.collisionSystem.isFreeOfTiles(rect, ignoreUnisolid, tiletype);
+    }
+
     static loadedAnimations = [];
 
     makeAnimationsForKeys(animationKeys) {
@@ -1293,8 +1230,6 @@ export class SectorScene extends Phaser.Scene {
 
     fillTilesForeground() {
         var sectorStaticForegrounds = this.sector.getFillTilesForegrounds();
-
-        console.log(sectorStaticForegrounds);
 
         if (sectorStaticForegrounds == null) { return; }
 

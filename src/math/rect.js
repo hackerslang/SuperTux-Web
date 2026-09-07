@@ -31,12 +31,28 @@
         return this.height;
     }
 
+    getMiddle() {
+        return new Phaser.Math.Vector2(this.left + this.width / 2, this.top / this.height / 2);
+    }
+
     getRight() {
         return this.right !== undefined ? this.right : this.left + this.width;
     }
 
     getBottom() {
         return this.bottom !== undefined ? this.bottom : this.top + this.height;
+    }
+
+    setBottom(value) {
+        this.height += value - this.getBottom();
+    }
+
+    p1() {
+        return new Phaser.Math.Vector2(this.left, this.top);
+    }
+
+    p2() {
+        return new Phaser.Math.Vector2(this.getRight(), this.getBottom());
     }
 
     grown(border) {

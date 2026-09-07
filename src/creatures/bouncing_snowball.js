@@ -99,10 +99,33 @@ export class BouncingSnowBall extends Enemy {
     //    }
     //}
 
-    killNoFlat() {
-        super.killNoFlat("bouncing-snowball-4");
+    collisionSolid(hit) {
+        if (this.frozen || !this.isActive) {
+            super.collisionSolid(hit);
+        }
+
+        if (this.isSquishedAnim) {
+            return;
+        }
+
+        if (hit.bottom) {
+            if (this.state == EnemyState.STATE_ACTIVE) {
+                var bounceSpeed = -this.getVelocityY() * 0.8;
+
+                this.setVelocityY(Math.min(this.JUMPSPEED, bounceSpeed));
+                // set action ... ?
+            } else {
+                this.setVelocityY(0);
+            }
+        } else if (hit.top) {
+            this.setVelocityY(0);
+        }
     }
 
+    isSquishedAnim() {
+        return this.anims.currentFrame.textureKey == "snowball-squished";
+    }
+    
     getFlat() {
         super.getFlat("snowball-squished");
     }

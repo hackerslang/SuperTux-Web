@@ -15,7 +15,6 @@ export class MrIceBlock extends WalkingEnemy {
 
         super(config);
 
-        this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
         this.walkAnimation = "mriceblock-walk";
         this.iceState = EnemyIceState.ICESTATE_NORMAL;
         this.WALK_SPEED = 80;
@@ -31,11 +30,23 @@ export class MrIceBlock extends WalkingEnemy {
         this.noKickTimer = 0;
         this.flatTimer = 0;
         this.squishCount = 0;
+
+        this.objectName = "MrIceBlock";
+        this.initialize();
     }
 
     create() {
         this.createWalkAnimation();
     }
+
+    initialize() {
+        super.initialize();
+    }
+
+    update(time, delta) {
+        super.update(time, delta);
+    }
+
 
     setIceState(iceState) {
         if (this.iceState == iceState) {
@@ -143,6 +154,10 @@ export class MrIceBlock extends WalkingEnemy {
         }
 
         return super.EnemyPlayerHit(enemy, player);
+    }
+
+    collisionSolid(hit) {
+
     }
 
     enemyHit(thisEnemy, enemy) {

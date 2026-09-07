@@ -354,12 +354,12 @@
             "path": "./assets/images/level/snow/",
             "sprites": [
                 {
-                    "name": "exitbg",
-                    "value": "exitbg"
+                    "name": "igloo_bg",
+                    "value": "igloo_bg"
                 },
                 {
-                    "name": "exitfg",
-                    "value": "exitfg"
+                    "name": "igloo_fg",
+                    "value": "igloo_fg"
                 }
             ]
         },

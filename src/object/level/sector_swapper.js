@@ -5,15 +5,18 @@ import { game } from '../../game.js';
 export var SectorScenesSlots = [
     {
         "key": "SectorScene1",
-        "loadedSector": null
+        "loadedSector": null,
+        "loadedScene": null
     },
     {
         "key": "SectorScene2",
-        "loadedSector": null
+        "loadedSector": null,
+        "loadedScene": null
     },
     {
         "key": "SectorScene3",
-        "loadedSector": null
+        "loadedSector": null,
+        "loadedScene": null
     }
 ];
 
@@ -29,6 +32,7 @@ export class SectorSwapper {
             if (SectorScenesSlots[i].loadedSector != null) {
                 game.scene.stop("SectorScene" + (i + 1));
                 SectorScenesSlots[i].loadedSector = null;
+                SectorScenesSlots[i].loadedScene = null;
             }
         }
     }
@@ -75,13 +79,12 @@ export class SectorSwapper {
             var sector = Sector.getCurrentSector();
             
             game.scene.pause(currentScene.key);
-            game.scene.start(firstFreeSectorSlot.key);
+            game.scene.start(firstFreeSectorSlot.key, { slot: firstFreeSectorSlot });
             firstFreeSectorSlot.loadedSector = sector;
         }
     }
 
     static getFirstFreeSectorSlot() {
-        console.log(SectorScenesSlots);
         for (var i = 0; i < SectorScenesSlots.length; i++) {
             var sectorSlot = SectorScenesSlots[i];
             if (sectorSlot.loadedSector == null) {
@@ -110,9 +113,22 @@ export class SectorSwapper {
         return sectorScene;
     }
 
+    static getSectorSceneObjectFromSlot(sectorSlot) {
+        var sectorSceneObj = sectorSlot.loadedScene;
+
+        return sectorSceneObj;
+    }
+
     static getCurrentSectorScene() {
         var sectorSlot = SectorSwapper.getCurrentSceneKey();
 
         return SectorSwapper.getSectorSceneFromSlot(sectorSlot);
+    }
+
+    static getCurrentSectorSceneObject() {
+        var key = SectorSwapper.getCurrentSceneKey();
+        var sectorSlot = SectorScenesSlots.find((x) => key == key);
+
+        return SectorSwapper.getSectorSceneObjectFromSlot(sectorSlot);
     }
 }

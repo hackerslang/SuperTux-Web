@@ -23,7 +23,7 @@
         super.update(time, delta);
         super.enemyCollideTurn();
         super.playerCollideTurn();
-        console.log(this);
+
         if (!this.killFalling) {
             this.scene.physics.world.collide(this, this.scene.groundLayer);
 

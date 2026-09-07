@@ -1,25 +1,29 @@
 ﻿import { Sector } from './sector.js';
 import { Rect } from '../../math/rect.js';
 
-// solid tile that is indestructible by Tux
-export const SOLID = 0x0001;
-// uni-directional solid tile
-export const UNISOLID = 0x0002;
-// slope tile
-export const SLOPE = 0x0010;
-// interesting flags (the following are passed to gameobjects)
-export const FIRST_INTERESTING_FLAG = 0x0100;
-// an ice brick that makes tux sliding more than usual
-export const ICE = 0x0100;
-// a water tile in which tux starts to swim
-export const WATER = 0x0200;
-// a tile that hurts Tux if he touches it
-// to be used for spikes?? I think not, because spikes are sprites!
-export const HURTS = 0x0400;
-// for lava: WATER, HURTS, FIRE, for lava?? I think not!
-export const FIRE = 0x0800;
-// a walljumping trigger tile, to be used?? I think not, we use sprites & classes for that!
-export const WALLJUMP = 0x1000;
+export var TileType = {
+    // solid tile that is indestructible by Tux
+    SOLID: 0x0001,
+    // uni-directional solid tile
+    UNISOLID: 0x0002,
+    // slope tile
+    SLOPE: 0x0010,
+    // interesting flags (the following are passed to gameobjects)
+    FIRST_INTERESTING_FLAG: 0x0100,
+    // an ice brick that makes tux sliding more than usual
+    ICE: 0x0100,
+    // a water tile in which tux starts to swim
+    WATER: 0x0200,
+    // a tile that hurts Tux if he touches it
+    // to be used for spikes?? I think not, because spikes are sprites!
+    HURTS: 0x0400,
+    // for lava: WATER, HURTS, FIRE, for lava?? I think not!
+    FIRE: 0x0800,
+    // a walljumping trigger tile, to be used?? I think not, we use sprites & classes for that!
+    WALLJUMP: 0x1000,
+}
+
+
 
 export class SlopeTiles {
     constructor(config) {
@@ -37,10 +41,14 @@ export class Tile {
     }
 
     isSlope() {
-        return this.attributes & SLOPE;
+        return this.attributes & TileType.SLOPE;
     }
 
-    getTileBbox() {
+    static getTileBbox(x, y) {
+        return new Rect({ left: x * 32, top: y * 32, right: (x + 1) * 32, bottom: (y + 1) + 32 });
+    }
+
+    getBbox() {
         return new Rect({ left: this.x * 32, top: this.y * 32, right: (this.x + 1) * 32, bottom: (this.y + 1) + 32 });
     }
 
@@ -57,14 +65,20 @@ export class Tile {
         const tileX = Math.floor(x / 32);
         const tileY = Math.floor(y / 32);
 
-        return getTileAt(tileX, tileY);
+        return Tile.getTileAt(tileX, tileY);
     }
 
     static getTileAt(x, y) {
         var sectorData = Sector.getCurrentSector().sectorData;
-        var data = sectorData.data;
+        var data = sectorData.tilemaps[0].data;
         var tilesets = sectorData.tilesets;
-        
+
+        var sectorWidth = Sector.getCurrentSectorWidth() / 32;
+        var sectorHeight = Sector.getCurrentSectorHeight() / 32;
+
+        if (x < 0 || x > sectorWidth - 1) { return null; }
+        if (y < 0 || y > sectorHeight - 1) { return null; }
+
         var tileIndex = data[y][x];
 
         for (var i = 0; i < tilesets.length; i++) {
@@ -92,11 +106,11 @@ export class Tile {
     }
 
     isSolid() {
-        return (this.attributes & SOLID) != 0;
+        return (this.attributes & TileType.SOLID) != 0;
     }
 
     isUniSolid() {
-        return (this.attributes & UNISOLID) != 0;
+        return (this.attributes & TileType.UNISOLID) != 0;
     }
 
     static async getTileDataAndAttributes() {

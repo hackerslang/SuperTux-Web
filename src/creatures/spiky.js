@@ -1,4 +1,4 @@
-﻿import { WalkingEnemy } from './walking_enemy.js';
+﻿import { WalkingEnemy, LedgeBehavior } from './walking_enemy.js';
 
 export var SpikyState = {
     STATE_SLEEPING: 0,
@@ -13,39 +13,59 @@ export class Spiky extends WalkingEnemy {
         super(config);
 
         if (config.sleeping != null) {
-            this.sleeping = true;
+            this.sleeping = config.sleeping;
         } else {
             this.sleeping = false;
         }
         
         this.walkAnimation = "spiky-walk";
-        this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
+        this.direction = 0;
+
+        if (config.direction == "left") {
+            this.direction = this.DIRECTION_LEFT;
+        } else if (config.direction == "right") {
+            this.direction = this.DIRECTION_RIGHT;
+        }
+
         this.firstActivated = false;
         this.canClimb = false;
 
+        this.body.x = config.x;
+        this.body.y = config.y;
         this.body.setSize(32, 32, true);
         this.setOrigin(0.5, 0.5);
         this.body.setOffset(7, 6);
+
+        this.objectName = "Spiky";
 
         this.squishable = false;
         this.initialize();
     }
 
     initialize() {
+        this.setLedgeBehavior(LedgeBehavior.NORMAL);
+    }
+
+    update(time, delta) {
+        super.update(time, delta);
         if (this.sleeping) {
             this.state = SpikyState.STATE_SLEEPING;
             this.setVelocityX(0);
             this.anims.play("spiky-sleep");
         } else {
             this.state = SpikyState.STATE_WALKING;
+            this.anims.play("spiky-walk");
             super.walk();
         }
     }
 
-    update(time, delta) {
-        super.update(time, delta);
+    isFreezable() {
+        return true;
     }
 
+    isFlammable() {
+        return true;
+    }
 }
 
 export class HellSpiky extends WalkingEnemy {
@@ -58,7 +78,6 @@ export class HellSpiky extends WalkingEnemy {
         this.body.allowGravity = !this.angry;
         this.walkAnimation = "hellspiky-walk";
         this.tint = 0xFF0000;
-        this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
         this.direction = 0;
         this.firstActivated = false;
 
@@ -72,6 +91,8 @@ export class HellSpiky extends WalkingEnemy {
         this.runningDegrees = "horizontal";
         this.clockwise = this.direction * -1;
         this.walkSpeed = 100;
+
+        this.objectName = "HellSpiky";
     }
 
     initialize() {
@@ -177,5 +198,9 @@ export class HellSpiky extends WalkingEnemy {
 
     update(time, delta) {
         super.update(time, delta);
+    }
+
+    collisionSolid(hit) {
+
     }
 }

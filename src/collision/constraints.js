@@ -3,10 +3,10 @@ import { Sector } from "../object/level/sector.js";
 
 export class Constraints {
     constructor(config) {
-        this.negativeInfinityX = - 10;
-        this.negativeInfinityY = - 10;
-        this.infinityX = Sector.getCurrentSectorWidth() + 10;
-        this.infinityY = Sector.getCurrentSectorHeight() + 10;
+        this.negativeInfinityX = Number.MIN_VALUE;
+        this.negativeInfinityY = Number.MIN_VALUE;
+        this.infinityX = Number.MAX_VALUE;
+        this.infinityY = Number.MAX_VALUE;
 
         this.positionLeft = this.negativeInfinityX;
         this.positionRight = this.infinityX;

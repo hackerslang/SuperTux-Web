@@ -1,13 +1,28 @@
-﻿import { GlobalGameConfig } from '../game.js';
-import { Collision } from './collision.js';
-import { Constraints } from './constraints.js';
+﻿import { EPSILON_COLLISION, SHIFT_DELTA, TILE_SIZE } from '../common/constants.js';
+import { SectorScene } from '../scenes/sectorscene.js';
+import { Tile, TileType } from '../object/level/tile.js';
+import { GlobalGameConfig } from '../game.js';
 import { AATriangle } from '../math/aatriangle.js';
 import { Rect } from '../math/rect.js';
-import { Tile } from '../object/level/tile.js';
-import { TILE_SIZE, EPSILON_COLLISION } from '../common/constants.js';
-import { CollisionHit, HitResponse } from './collision_hit.js'; 
+import { Sector } from '../object/level/sector.js';
+import { Collision } from './collision.js';
 import { CollisionGroup } from './collision_group.js';
-import { SHIFT_DELTA } from '../common/constants.js';
+import { CollisionHit, HitResponse } from './collision_hit.js';
+import { Constraints } from './constraints.js';
+
+export class RaycastResult {
+    constructor() {
+        this.isValid = false;
+        this.hit = {}; // Tile or CollisionObject
+        this.box = new Rect();
+    }
+}
+
+export var RaycastIgnore = {
+    IGNORE_NONE: 0,
+    IGNORE_TILES: 1,
+    IGNORE_OBJECTS: 2
+};
 
 export class CollisionSystem {
     constructor(config) {
@@ -25,26 +40,26 @@ export class CollisionSystem {
 
         // Part 1: COLGROUP_MOVING vs COLGROUP_STATIC and tilemap.
         for (var object of this.sectorScene.collisionObjects) {
-            if (object.group === undefined)
+            if (object.getGroup() === undefined)
                 continue;
 
-            if ((object.group != CollisionGroup.COLGROUP_MOVING
-                && object.group != CollisionGroup.COLGROUP_MOVING_STATIC
-                && object.group != CollisionGroup.COLGROUP_MOVING_ONLY_STATIC)
+            if ((object.getGroup() != CollisionGroup.COLGROUP_MOVING
+                && object.getGroup() != CollisionGroup.COLGROUP_MOVING_STATIC
+                && object.getGroup() != CollisionGroup.COLGROUP_MOVING_ONLY_STATIC)
                 || !object.isValid())
                 continue;
-   
+
             this.collisionStaticConstrains(object);
         }
 
         // Part 2: COLGROUP_MOVING vs tile attributes.
         for (var object of this.sectorScene.collisionObjects) {
-            if (object.group === undefined)
+            if (object.getGroup() === undefined)
                 continue;
 
-            if ((object.group != CollisionGroup.COLGROUP_MOVING
-                && object.group != CollisionGroup.COLGROUP_MOVING_STATIC
-                && object.group != CollisionGroup.COLGROUP_MOVING_ONLY_STATIC)
+            if ((object.getGroup() != CollisionGroup.COLGROUP_MOVING
+                && object.getGroup() != CollisionGroup.COLGROUP_MOVING_STATIC
+                && object.getGroup() != CollisionGroup.COLGROUP_MOVING_ONLY_STATIC)
                 || !object.isValid())
                 continue;
 
@@ -55,23 +70,22 @@ export class CollisionSystem {
         }
 
         // Part 2.5: COLGROUP_MOVING vs COLGROUP_TOUCHABLE.
-        for (var object of this.sectorScene.collisionObjects)
-        {
-            if (object.group === undefined)
+        for (var object of this.sectorScene.collisionObjects) {
+            if (object.getGroup() === undefined)
                 continue;
 
-            if ((object.group != CollisionGroup.COLGROUP_MOVING
-                && object.group != CollisionGroup.COLGROUP_MOVING_STATIC)
+            if ((object.getGroup() != CollisionGroup.COLGROUP_MOVING
+                && object.getGroup() != CollisionGroup.COLGROUP_MOVING_STATIC)
                 || !object.isValid())
                 continue;
 
-            for (var object2 in this.sectorScene.collisionObjects) {
-                if (object.group === undefined || object.group != CollisionGroup.COLGROUP_TOUCHABLE
+            for (var object2 of this.sectorScene.collisionObjects) {
+                if (object.getGroup() === undefined || object.getGroup() != CollisionGroup.COLGROUP_TOUCHABLE
                     || !object.isValid())
                     continue;
 
                 if (object.dest.overlaps(object2.dest)) {
-                    var normal = Vector(0, 0);
+                    var normal = Phaser.Math.Vector2(0, 0);
                     var hit = new CollisionHit();
 
                     this.getHitNormal(object, object2, hit, normal);
@@ -86,34 +100,45 @@ export class CollisionSystem {
             }
         }
 
+        var index = 0;
         // Part 3: COLGROUP_MOVING vs COLGROUP_MOVING.
-        for (var i = 0; i != this.sectorScene.collisionObjects.length; ++i) {
-            var object = this.sectorScene.collisionObjects[i];
-
-            if (object.group === undefined)
+        for (var object of this.sectorScene.collisionObjects) {
+            var object = this.sectorScene.collisionObjects[index];
+            index++;
+            if (object.getGroup() === undefined)
                 continue;
-
+                
             if (!object.isValid() ||
-                (object.group != CollisionGroup.COLGROUP_MOVING &&
-                object.group != CollisionGroup.COLGROUP_MOVING_STATIC))
+                (object.getGroup() != CollisionGroup.COLGROUP_MOVING &&
+                object.getGroup() != CollisionGroup.COLGROUP_MOVING_STATIC))
                 continue;
 
-            for (var i2 = i + 1; i2 < this.sectorScene.collisionObjects.length; ++i2) {
+            for (var i2 = index + 1; i2 < this.sectorScene.collisionObjects.length; ++i2) {
                 var object2 = this.sectorScene.collisionObjects[i2];
 
-                if ((object2.group != CollisionGroup.COLGROUP_MOVING
-                    && object2.group != CollisionGroup.COLGROUP_MOVING_STATIC)
+                if ((object2.getGroup() != CollisionGroup.COLGROUP_MOVING
+                    && object2.getGroup() != CollisionGroup.COLGROUP_MOVING_STATIC)
                     || !object2.isValid())
                     continue;
-
+                // if (!object.parent.isEnemy) { // is player? 
+                //     console.log("a", object.bbox, " ", object.dest)
+                // }
                 this.collisionObject(object, object2);
+                // if (!object.parent.isEnemy) { // is player? 
+                //     console.log("b", object.bbox, " ", object.dest)
+                // }
             }
         }
 
         // Apply object movement.
         for (var object of this.sectorScene.collisionObjects) {
+            // if (!object.parent.isEnemy) { // is player? 
+            //     console.log("c", object.bbox, " ", object.dest)
+            // }
             object.bbox = new Rect(object.dest);
-            //object.setVelocity(0, 0);
+            // if (!object.parent.isEnemy) { // is player? 
+            //     console.log("d", object.bbox, " ", object.dest)
+            // }
         }
     }
 
@@ -124,8 +149,6 @@ export class CollisionSystem {
             let cameraY = camera.scrollY;
 
             let graphics = this.sectorScene.add.graphics();
-            
-
         }
     }
 
@@ -138,27 +161,25 @@ export class CollisionSystem {
         let tileData = sectorData.data;
         let tiles = [];
 
-        for (var x = tileXStart; x < tileXEnd; x+= 32) {
-            for (var y = tileYStart; y < tileYEnd; y+= 32) {
+        for (var x = tileXStart; x < tileXEnd; x += 32) {
+            for (var y = tileYStart; y < tileYEnd; y += 32) {
                 var tile = Tile.getTileAtInside(x, y);
 
                 this.drawDebugTile(tile);
             }
         }
-        
-
     }
 
     collisionStaticConstrains(object) {
-        var infinity = 10000000000;
+        var infinity = Number.MAX_VALUE;
         var constraints = new Constraints();
         var movement = object.getMovement(this.delta);
         var pressure = new Phaser.Math.Vector2(0, 0);
-        var dest = object.dest;
+        var dest = new Rect(object.dest);
 
         for (var i = 0; i < 2; ++i) {
             constraints = this.collisionStatic(object, dest, movement, pressure, constraints);
-            
+
             if (!constraints.hasConstraints())
                 break;
         }
@@ -236,17 +257,15 @@ export class CollisionSystem {
         constraints = this.collisionTileMap(movement, dest, object);
 
         // Collision with other (static) objects.
-        for (var i = 0; i != this.sectorScene.collisionObjects.length; ++i)
-        {
+        for (var i = 0; i != this.sectorScene.collisionObjects.length; ++i) {
             var staticObject = this.sectorScene.collisionObjects[i];
 
-            if ((staticObject.group == CollisionGroup.COLGROUP_STATIC || staticObject.group == CollisionGroup.COLGROUP_MOVING_STATIC) &&
-                staticObject.isValid() && staticObject != object) {
+            if ((staticObject.getGroup() == CollisionGroup.COLGROUP_STATIC || staticObject.getGroup() == CollisionGroup.COLGROUP_MOVING_STATIC) &&
+                staticObject.isValid() && !staticObject.equals(object)) {
 
                 var newConstraints = checkCollisions(movement, dest, sprite, staticObject.dest, object, staticObject);
 
                 if (newConstraints.hit.bottom) {
-                    alert("newconstraints)");
                     staticObject.collisionMovingObjectBottom(object);
                 } else if (newConstraints.hit.top) {
                     object.collisionMovingObjectBottom(staticObject);
@@ -263,7 +282,6 @@ export class CollisionSystem {
         var constraints = new Constraints();
 
         var grownOtherObjectRect = otherObjectRect.grown(EPSILON_COLLISION);
-
 
         if (!movingObjectRect.overlaps(grownOtherObjectRect))
             return constraints;
@@ -284,7 +302,7 @@ export class CollisionSystem {
 
         if ((otherObject == null || this.isNotUniSolid(otherObject))
             && (movingObject == null || this.isNotUniSolid(movingObject))) {
-            if (Math.abs(objectMovement.y) > Math.abs(objectMovement.x) ) {
+            if (Math.abs(objectMovement.y) > Math.abs(objectMovement.x)) {
                 if (ileft < SHIFT_DELTA) {
                     constraints.constrainRight(grownOtherObjectRect.left);
                     shiftout = true;
@@ -305,12 +323,11 @@ export class CollisionSystem {
 
         if (!shiftout) {
             if (otherObject != null && !this.isNotUniSolid(otherObject)) {
-                //
                 if (movingObjectRect.getBottom() - objectMovement.y <= grownOtherObjectRect.top - (otherObject.getMovement(this.delta).y - 5)) {
                     constraints.constrainBottom(grownOtherRect.top);
                     constraints.hit.bottom = true;
                 }
-            } else if (otherObject != null && otherObject.group !== undefined && otherObject.group == CollisionGroup.COLGROUP_MOVING_STATIC
+            } else if (otherObject != null && otherObject.getGroup() !== undefined && otherObject.getGroup() == CollisionGroup.COLGROUP_MOVING_STATIC
                 && movingObject != null && !this.isNotUniSolid(movingObject)) {
                 if (grownOtherObjectRect.top - otherObject.getMovement().y <= movingObjectRect.top -
                     (movingObject.getMovement(this.delta).y - 5)) {
@@ -371,15 +388,11 @@ export class CollisionSystem {
         // Later on, we will add multiple tile layers, so we will need to check collisions with all of them. 
         // For now, we only have one tile layer, so we will just check collisions with that one.
         var overlappingTilesRect = Tile.getTilesOverlapping(dest);
-        console.log("dest:");
-        console.log(dest);
-        console.log("overlappingTilesRect:");
-        console.log(overlappingTilesRect);
         var hitsBottom = false;
 
         for (let x = overlappingTilesRect.left; x < overlappingTilesRect.getRight(); ++x) {
             for (let y = overlappingTilesRect.top; y < overlappingTilesRect.getBottom(); ++y) {
-                const tile = Tile.getTileAt(x, y); 
+                const tile = Tile.getTileAt(x, y);
                 if (!tile) continue;
 
                 if (tile.isSolid()) {
@@ -400,22 +413,22 @@ export class CollisionSystem {
 
                     if (isRelativelySolid) {
                         if (tile.isSlope()) {
-                            const triangle = new AATriangle(tileBbox, tile.data);
-                            const result = Collision.rectangleCollidesWithAATriangle(dest, triangle);
-                            alert("slope");
+                            const triangle = new AATriangle({ bbox: tileBbox, direction: tile.data });
+                            const result = Collision.rectangleCollidesWithAATriangle(constraints, dest, triangle, object);
                             if (result && result.hits) {
                                 hitsBottom |= result.hitsRectangleBottom;
                             }
                         } else {
+                            if (object !== undefined && object.parent.objectName == "Spiky") {
+                                var a = 0;
+                            }
+
                             var newConstraints = this.checkCollisions(movement, dest, tileBbox);
-                            console.log("isrelsolid");
                             hitsBottom |= newConstraints.hit.bottom;
                             constraints.mergeConstraints(newConstraints);
                         }
                     }
                 }
-
-
             }
         }
 
@@ -452,7 +465,7 @@ export class CollisionSystem {
                 const tile = Tile.getTileAt(x, y);
 
                 if (tile.isCollisionFul(tile.getTileBbox(), dest, velocity)) {
-                    result |= (tile.getAttributes() & Tile.ICE);
+                    result |= (tile.attributes & TileType.ICE);
                 }
             }
         }
@@ -464,16 +477,16 @@ export class CollisionSystem {
         if (object1.collisionGroup == CollisionGroup.COLGROUP_MOVING_STATIC &&
             object2.collisionGroup == CollisionGroup.COLGROUP_MOVING_STATIC)
             return;
-
-        var rect1 = object1.dest;
-        var rect2 = object2.dest;
+        
+        var rect1 = new Rect(object1.dest);
+        var rect2 = new Rect(object2.dest);
 
         var hit = new CollisionHit();
 
         if (rect1.overlaps(rect2)) {
             var normal = new Phaser.Math.Vector2(0, 0);
 
-            this.hitNormal(object1, object2, hit, normal);
+            ({ hit, normal } = this.hitNormal(object1, object2, hit, normal));
 
             if (!object1.collides(object2, hit))
                 return;
@@ -493,10 +506,10 @@ export class CollisionSystem {
             [hit.top, hit.bottom] = [hit.bottom, hit.top];
 
             var response2 = object2.collision(object1, hit);
-
+  
             if (response1 == HitResponse.CONTINUE && response2 == HitResponse.CONTINUE) {
                 normal.scale(0.5 + EPSILON_COLLISION);
-
+                
                 object1.dest.move(-normal);
                 object2.dest.move(normal);
             } else if (response1 == HitResponse.CONTINUE && response2 == HitResponse.FORCE_MOVE) {
@@ -505,28 +518,27 @@ export class CollisionSystem {
                 object1.dest.move(-normal);
             } else if (response1 == HitResponse.FORCE_MOVE && response2 == HitResponse.CONTINUE) {
                 normal.scale(1 + EPSILON_COLLISION);
-
+                
                 object2.dest.move(normal);
             }
         }
     }
 
-
     hitNormal(object1, object2, hit, normal) {
-        const rect1 = object1.dest;
-        const rect2 = object2.dest;
+        const rect1 = new Rect(object1.dest);
+        const rect2 = new Rect(object2.dest);
 
-        const itop = rect1.bottom - rect2.top;
-        const ibottom = rect2.bottom - rect1.top;
-        const ileft = rect1.right - rect2.left;
-        const iright = rect2.right - rect1.left;
+        const itop = rect1.getBottom() - rect2.top;
+        const ibottom = rect2.getBottom() - rect1.top;
+        const ileft = rect1.getRight() - rect2.left;
+        const iright = rect2.getRight() - rect1.left;
 
         const verticalPenetration = Math.min(itop, ibottom);
         const horizontalPenetration = Math.min(ileft, iright);
 
-        if (object1.isUniSolid() && rect2.bottom - object2.getVelocityY() > rect1.top)
+        if (object1.isUniSolid() && rect2.getBottom() - object2.getVelocityY() > rect1.top)
             return;
-        if (object2.isUniSolid() && rect1.bottom - object1.getVelocityY() > rect2.top)
+        if (object2.isUniSolid() && rect1.getBottom() - object1.getVelocityY() > rect2.top)
             return;
 
         if (verticalPenetration < horizontalPenetration) {
@@ -544,6 +556,123 @@ export class CollisionSystem {
             } else {
                 hit.left = true;
                 normal.x = -horizontalPenetration;
+            }
+        }
+
+        return { hit, normal };
+    }
+
+    getFirstLineIntersection(lineStart, lineEnd, ignore, ignoreObject) {
+        var tileResult = new RaycastResult();
+
+        if (ignore != RaycastIgnore.IGNORE_TILES) {
+            var lsx = lineStart.x;
+            var lex = lineEnd.x;
+            var lsy = lineStart.y;
+            var ley = lineEnd.y;
+
+            var left = lsx > lex;
+            var up = lsy > ley;
+
+            var solidTilemaps = Sector.getCurrentSector().getSolidTilemaps();
+            outerLoop:
+            for (var testX = lsx; left ? testX >= lex : testX <= lex; testX += left ? -16: 16) { // NOLINT.
+                for (var testY = lsy; up ? testY >= ley : testY <= ley; testY += up ? -16: 16) { // NOLINT.
+                    for (var i = 0; i < solidTilemaps.length; i++) {
+                        const solids = solidTilemaps[i];
+                        const testVector = new Phaser.Math.Vector2(testX, testY);
+
+                        if (solids.isOutsideBounds(testVector)) {
+                            continue;
+                        }
+
+                        const tile = solids.getTileAtInside(testX, testY);
+
+                        if (tile == null) { continue; }
+
+                        // FIXME: check collision with slope tiles
+                        if (tile.attributes & TileType.SOLID)
+                        {
+                            tileResult.isValid = true;
+                            tileResult.hit = tile;
+                            tileResult.box = Tile.getTileBbox(parseInt(testVector.x / 32), parseInt(testVector.y / 32));
+
+                            break outerLoop;
+                        }
+                    }
+                }
+            }
+
+            finishTiles:
+            if (ignore == RaycastIgnore.IGNORE_OBJECTS) {
+                return tileResult;
+            }
+
+            var objectResult = new RaycastResult();
+
+            // Check if no object is in the way.
+            for (const object of this.sectorScene.collisionObjects) {
+                if (object.equals(ignoreObject)) continue;
+                if (!object.isValid()) continue;
+                if ((object.getGroup() == CollisionGroup.COLGROUP_MOVING)
+                    || (object.getGroup() == CollisionGroup.COLGROUP_MOVING_STATIC)
+                    || (object.getGroup() == CollisionGroup.COLGROUP_STATIC)) {
+                    if (Collision.intersectsLine(object.bbox, lineStart, lineEnd)) {
+                        objectResult.isValid = true;
+                        objectResult.hit = object;
+                        objectResult.box = object.bbox;
+
+                        break;
+                    }
+                }
+            }
+
+            if (ignore == RaycastIgnore.IGNORE_TILES)
+                return objectResult;
+
+            if (tileResult.isValid && objectResult.isValid) {
+                var tiledist = Phaser.Math.Distance.BetweenPoints(new Rect(tileResult.box).getMiddle(), lineStart);
+                var objdist = Phaser.Math.Distance.BetweenPoints(new Rect(objectResult.box).getMiddle(), lineStart);
+
+                return tiledist < objdist ? tileResult : objectResult;
+            }
+            else if (tileResult.isValid)
+                return tileResult;
+            else if (objectResult.isValid)
+                return objectResult;
+            else {
+                return new RaycastResult();
+            }
+        }
+    }
+
+    isFreeOfTiles(rect, ignoreUnisolid, tiletype) {
+        var solidTilemaps = Sector.getCurrentSector().getSolidTilemaps();
+
+        for (var solids of solidTilemaps) {
+            // Test with all tiles in this rectangle.
+            var testTiles = Tile.getTilesOverlapping(rect);
+
+            for (var x = testTiles.left; x < testTiles.getRight(); ++x) {
+                for (var y = testTiles.top; y < testTiles.getBottom(); ++y) {
+                    var tile = solids.getTileAt(x, y);
+
+                    if (tile == null) { continue; }
+
+                    if (!(tile.attributes & tiletype))
+                        continue;
+                    if (tile.isUnisolid() && ignoreUnisolid)
+                        continue;
+                    if (tile.isSlope()) {
+                        var triangle = {};
+                        var tbbox = solids.getTileBbox(x, y);
+                        triangle = new AATriangle({ bbox: tbbox, direction: tile.data });
+                        var result = Collision.rectangleCollidesWithAATriangle(constraints, rect, triangle);
+                        continue;
+                    }
+                    // We have a solid tile that overlaps the given rectangle.
+                    return false;
+                }
             }
         }
     }

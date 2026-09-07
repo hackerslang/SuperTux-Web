@@ -1,6 +1,12 @@
 ﻿import { Level } from '../object/level/level.js';
+import { Sector } from '../object/level/sector.js';
+import { Tile, TileType } from '../object/level/tile.js';
+import { SectorScene } from '../scenes/sectorscene.js';
 import { CollisionGroup } from '../collision/collision_group.js';
 import { MovingSprite } from '../object/moving_object.js';
+import { RaycastResult } from '../collision/collision_system.js';
+import { Collision } from '../collision/collision.js';
+import { HitResponse } from '../collision/collision_hit.js';
 
 export var EnemyState = {
     STATE_INIT: 0,
@@ -28,15 +34,21 @@ export class Enemy extends MovingSprite {
         this.powerUps = config.powerUps;
 
         this.isTile = false;
+        this.isEnemy = true;
 
         this.playerCollides = true;
         this.canClimb = false;
 
-        this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
+        this.body.setVelocity(0, 0);
         this.body.allowGravity = true;
         this.hasBeenSeen = false;
 
         this.setDepth(900);
+
+        this.frozen = false;
+
+        this.BADGUY_ICE_FRICTION_MULTIPLIER = 0.1;      // Same as player
+        this.BADGUY_ICE_ACCELERATION_MULTIPLIER = 0.25; // Same as player
 
         this.realY = config.realY;
         this.player = config.player;
@@ -70,6 +82,8 @@ export class Enemy extends MovingSprite {
         this.killed = false;
         this.removed = false;
 
+        this.isActiveFlag = false;
+
         this.state = EnemyState.STATE_INIT;
 
         this.TURN_AROUND_WAIT_TIMER = 150;
@@ -80,11 +94,18 @@ export class Enemy extends MovingSprite {
         this.body.pushable = false;
         this.setDepth(101);
 
+        this.onGroundFlag = true;
+        this.floorNormal = new Phaser.Math.Vector2(0, 0);
+        this.detectedSlope = 0;
+
         //Collides with moving tiles, such as platforms or industrial tiles??
         this.collidesWithExtraTiles = true;
 
         this.collidesWithOtherEnemies = true;
 
+        this.normalMaxDropHeight = 600;
+
+        this.group = CollisionGroup.COLGROUP_DISABLED;
         this.collisionGroupActive = CollisionGroup.COLGROUP_MOVING;
     }
 
@@ -169,84 +190,118 @@ export class Enemy extends MovingSprite {
             this.scene.physics.world.overlap(this, this.scene.climbableTilesGroup, this.climbHit);
         }
 
-        if (this.collidesWithOtherEnemies) {
-            this.scene.physics.world.collide(this, this.scene.enemyCollisionGroup, this.enemyHit);
-        } else {
-            console.log(this);
-            this.scene.physics.world.overlap(this, this.scene.enemyCollisionGroup);
-        }
-
-        this.scene.physics.world.collide(this, this.scene.groundLayer);
-
-        if (this.turnAroundWaitTimer > 0) {
-            this.turnAroundWaitTimer -= delta;
-        } else {
-            this.swapTurnAround();//ok
-        }
-
-        if (this.scene.enemyGroupCreated) {
-            if (this.turnAroundWaitTimer <= 0) {
-                this.turnAroundBothEnemiesIfNeeded();
-            }
-        }
-
-        if (!this.player.isDead()) {
-            this.scene.physics.world.collide(this, this.player, this.playerHit);
-        }
-
         if (this.stateTimer > 0) {
             this.stateTimer -= delta;
         }
 
+        // And here it begins ...
+
         if (this.frozen && !this.isGrabbed()) {
-            //setcolgroup??
+            var playerBox = this.getBbox().grown(-2);
+            playerBox.setBottom(this.getBbox().getBottom() + 7);
+
+            if (playerBox.overlaps(player.getBbox()) && this.getVelocityY() > 0 && this.isPortable()) {
+                this.setVelocityY(-250);
+            }
+
+            this.setCollisionGroupActive(Math.abs(this.getVelocityY) < 0.2 && Math.abs(this.getvelocityX()) < 0.2
+                ? CollisionGroup.COLGROUP_MOVING_STATIC : CollisionGroup.COLGROUP_MOVING);
+
             if (this.unfreezeTimer <= 0) {
                 this.unfreeze(false);
             }
         }
 
-        if (this.isActiveFlag && this.isOffScreen()) {
+        if (this.isActiveFlag && this.isOffScreen() && this.getVelocityY() <= 0 && !this.alwaysActive()) {
             this.deActivate();
             this.setState(EnemyState.STATE_INACTIVE);
+        }
+
+        if (this.scene.isFreeOfTiles(this.getBbox().grown(1), true, TileType.WATER) && this.inWater) {
+            this.inWater = false;
+        }
+
+        var watertopbox = this.getBbox();
+        watertopbox.setBottom(this.getBbox().getBottom() - this.getBbox().height / 3);
+        watertopbox.top = this.getBbox().top + this.getBbox.height / 3;
+        var wateroutbox = this.getBbox();
+        wateroutbox.setBottom(this.getBbox().top + this.getBbox().height / 3);
+
+        var middleHasWater = !this.scene.isFreeOfTiles(watertopbox, true, TileType.WATER);
+        var onTopOfWater = (middleHasWater && this.scene.isFreeOfTiles(wateroutbox, true, TileType.WATER));
+
+        var inWaterBigger = !this.scene.isFreeOfTiles(this.getBbox().grown(-4), true, TileType.WATER);
+
+        if (this.gravityEnabled) {
+            this.gravityModifier = middleHasWater ? this.frozen ? 1 : 0.3 : 1;
+        }
+
+        if (inWaterBigger && this.frozen && !this.isGrabbed()) {
+            if (this.getVelocityX() > -2 && this.getVelocityX() < 2) {
+                this.setVelocityX(0);
+                this.setAccelerationX(0);
+            } else {
+                this.setVelocityX(this.getVelocityX() - (this.getVelocityX() > 0 ? 2 : -2));
+            }
+
+            if (!onTopOfWater && this.getVelocityY() < -100) {
+                this.setVelocityY(-100);
+            }
+
+            if (onTopOfWater && this.getVelocityY() <= 0) {
+                this.collisionObject.setMovement(this.collisionObject.getMovement().x, 0);
+                this.setVelocityY(0);
+                this.setAccelerationY(0);
+                this.setGravityModifier(0);
+            }
         }
 
         switch (this.state) {
             case EnemyState.STATE_ACTIVE:
                 this.isActiveFlag = true;
 
-                //NOG DOEN!!
+                // to be done !!
                 if (this.frozen && this.isPortable()) {
-                    //this.freezeSpite
+                    // this.freezeSpite
                 } else {
 
                 }
 
-                this.activeUpdate();
+                this.activeUpdate(time, delta);
                 break;
 
             case EnemyState.STATE_INIT:
             case EnemyState.STATE_INACTIVE:
                 this.isActiveFlag = false;
+                this.inWater = this.scene.isFreeOfTiles(this.collisionObject.getBbox().grown(-4), false, Tile.WATER);
                 this.inActiveUpdate();
                 this.tryActivate();
                 break;
 
             case EnemyState.STATE_BURNING:
                 this.isActiveFlag = false;
-                //to be done ...
+                // to be done ...
                 break;
 
             case EnemyState.STATE_GEAR:
             case EnemyState.STATE_SQUISHED:
                 this.isActiveFlag = false;
 
-                if (this.stateTimer <= 0) {
-                    this.remove();
+                var self = this;
+                if (this.alpha > 0) {
+                    this.tweens.add({
+                        targets: self,
+                        alpha: 0,
+                        duration: self.SQUISH_TIME * 1000,
+                        ease: 'Linear',
+                        onComplete: () => {
+                            self.remove();
+                        }
+                    });
                 }
 
                 break;
-
-            //melting, ground melting to be done ...
+            // melting, ground melting to be done ...
 
             case EnemyState.STATE_FALLING:
                 this.isActiveFlag = false;
@@ -257,14 +312,153 @@ export class Enemy extends MovingSprite {
         this.setWaitTurnTimer -= delta;
     }
 
+    updateOnGroundFlag(hit) {
+        if (hit.bottom) {
+            this.onGroundFlag = true;
+            this.floorNormal = hit.slopeNormal;
+        }
+    }
+
+    collision(other, hit) {
+        if (!this.isActive()) return HitResponse.ABORT_MOVE;
+        if (this.isGrabbed()) return HitResponse.FORCE_MOVE;
+
+        var otherCreature = other !== undefined && other.parent !== undefined ? other.parent : undefined;
+
+        if (otherCreature !== undefined && otherCreature.isEnemy && hit.bottom && this.frozen && otherCreature.getCollisionObject().getGroup() != CollisionGroup.COLGROUP_TOUCHABLE) {
+            this.setVelocityY(otherCreature.getVelocityY);
+
+            if (!otherCreature.isFrozen()) {
+                otherCreature.killFalling();
+            }
+
+            return HitReponse.FORCE_MOVE;
+        } 
+
+        if (otherCreature !== undefined && otherCreature.isEnemy && otherCreature.isActive() && otherCreature.getCollisionObject().getGroup() == CollisionGroup.COLGROUP_MOVING) {
+            return this.collisionEnemy(otherCreature, hit);
+        }
+        var player = (!otherCreature.isEnemy ? otherCreature : undefined);
+
+        if (player !== undefined) {
+            if (player.getBbox().getBottom() < (this.getCollisionObject().getBbox().top + 16)) {
+                // if (player.isStone()) {
+                //     this.killFalling();
+
+                //     return HitResponse.FORCE_MOVE;
+                // }
+
+                if (this.collisionSquished(player)) {
+                    return HitResponse.FORCE_MOVE;
+                }
+            }
+
+            // We leave stone out of it!!
+
+            return this.collisionPlayer(player, hit);
+        }
+    }
+
+    collisionEnemy(enemy, hit) {
+        if (enemy.isFrozen()) {
+            this.collisionSolid(hit);
+        }
+
+        return HitResponse.FORCE_MOVE;
+    }
+
+    collisionPlayer(player, hit) {
+        if (player.invincible || (this.isSnipable() && (player.doesButtJump || player.isSliding()))) {
+            this.killFalling();
+
+            return HitResponse.ABORT_MOVE;
+        }
+
+        if (this.isGrabbed()) {
+            return HitResponse.FORCE_MOVE;
+        }
+        
+        if (player.getGrabbedObject() !== undefined && this.frozen) {
+            var enemy = player.getGrabbedObject();
+
+            if (enemy !== undefined) {
+                player.getGrabbedObject().unGrab(player, player.direction);
+                player.stopGrabbing();
+                enemy.killFalling();
+
+                return HitResponse.ABORT_MOVE;
+            }
+        }
+
+        if (this.frozen) {
+            if (hit.bottom) {
+                this.setVelocityY(-250);
+            }
+        } else {
+            player.kill(false);
+        }
+
+        return HitResponse.FORCE_MOVE;
+    }
+
+    collisionSolid(hit) {
+        if (this.frozen) {
+            if (hit.top || hit.bottom) {
+                this.setVelocityY(0);
+
+                if (hit.bottom) {
+                    super.disableGravityTemporarily();
+                }
+            } else {
+                this.restoreGravityY();
+            }
+
+            if (hit.left || hit.right) {
+                this.setVelocityX(0);
+            }
+
+            if ((this.getVelocityX() > -5) &&
+                (this.getVelocityX() < 5)) {
+                this.setVelocityX(0);
+                this.setAccelerationX(0);
+            } else {
+                this.setVelocityX(this.getVelocityX() - (this.getVelocityX() > 0 ? 5 : -5));
+            }
+        }
+        else
+        {
+            this.saveGravityY();
+            this.body.setGravityY(0);
+            this.setVelocity(0, 0);
+            this.setAccelerationX(0);
+            this.setAccelerationY(0);
+        }
+
+        this.updateOnGroundFlag(hit);
+    }
+
+    saveGravityY() {
+        const gravity = this.body && this.body.gravity ? this.body.gravity : { x: 0, y: 0 };
+
+        this.savedGravityY = gravity.y;
+    }
+
+    restoreGravityY() {
+        if (!this.body || !this._savedGravityY) return;
+
+        this.body.setGravityY(this.savedGravityY || 0);
+    }
+
     setCollisionGroupActive(group) {
         this.collisionGroupActive = group;
         if (this.state == EnemyState.STATE_ACTIVE) setGroup(group);
     }
 
     setGroup(group) {
-        this.collisionObject.group = group;
+        super.setGroup(group);
     }
+
+    isSnipable() { return false; }
 
     turnAroundOnce() {
         this.turnAroundSpeed(Math.abs(this.currentNormalWalkSpeed), this.currentDirection * -1);
@@ -273,9 +467,29 @@ export class Enemy extends MovingSprite {
         this.justTurnAround = true;
     }
 
-    activeUpdate() {
+    activeUpdate(time, delta) {
+        if (!this.iceThisFrame && this.onGround()) {
+            this.onIce = false;
+        }
+
+        this.iceThisFrame = false;
+
+        if (!this.isGrabbed()) {
+            if (this.isInWater && this.waterAffected) {
+                if (this.frozen) {
+                    //                
+                }
+            }
+        }
+
         if (this.frozen) {
-            this.setTexture(this.aims.currentFrame);
+            //this.setTexture(this.anims.currentFrame);
+        }
+
+        this.applyIcePhysics();
+
+        if (this.frozen) {
+            // Stop animation !!!
         }
     }
 
@@ -285,6 +499,23 @@ export class Enemy extends MovingSprite {
 
     deActivate() {
 
+    }
+
+    applyIcePhysics() {
+        if (!this.onIce || !this.onGround())
+            return;
+  
+        var velx = this.getVelocityX();
+        // No artificial velocity threshold - let natural physics handle sliding
+
+        // Use same friction base as player (WALK_ACCELERATION_X = 300)
+        var friction = 300.0 * BADGUY_ICE_FRICTION_MULTIPLIER; // Base friction value
+
+        if (velx < 0) {
+            this.setAccelerationX(friction);
+        } else if (velx > 0) {
+            this.setAccelerationX(-friction);
+        }
     }
 
     //Must be overridden
@@ -399,29 +630,54 @@ export class Enemy extends MovingSprite {
         return false;
     }
 
-    collisionSquished(player) {
+    collisionSquished(creature) {
         if (this.frozen) {
-            if (player != null && player.doesButtJump) {
+            var player = !creature.isEnemy ? creature : undefined;
+
+            if (player !== undefined && player.doesButtJump) {
                 player.bounce(this);
                 this.killFall();
 
                 return true;
             }
-
-            return false;
-        }
-
-        if (this.squishable) {
-            this.anims.play(this.squishedAnim);
-            this.killSquished(this.squishedAnim);
-
-            return true;
         }
 
         return false;
+
+        // if (this.squishable) {
+        //     this.anims.play(this.squishedAnim);
+        //     this.killSquished(this.squishedAnim);
+
+        //     return true;
+        // }
+
+        // return false;
     }
 
-    killSquished() {                //ALMOST DONE!!!
+    killSquished(object) {
+        if (!thisisActive()) {
+            return;
+        }
+
+        //play sound "sounds/squish.wav"
+
+        this.gravityEnabled = true;
+
+        this.setVelocity(0, 0);
+        this.setState(EnemyState.STATE_SQUISHED);
+        this.setGroup(CollisionGroup.COLGROUP_MOVING_ONLY_STATIC);
+
+        if (!object.isEnemy) {
+            var player = object;
+
+            player.bounce(this);
+        }
+
+
+
+    }
+
+    killSquished() {
         if (!this.isActive()) {
             return;
         }
@@ -448,6 +704,10 @@ export class Enemy extends MovingSprite {
     stopMoving() {
         this.setVelocityX(0);
         this.setVelocityY(0);
+    }
+
+    getState() {
+        return this.state;
     }
 
     setState(state) {
@@ -541,7 +801,7 @@ export class Enemy extends MovingSprite {
                 }
             }
         });
-        //console.log("closestFacingEnemy: " + closestFacingEnemy + ", direction: " + this.direction);
+
         return closestFacingEnemy;
     }
 
@@ -608,8 +868,98 @@ export class Enemy extends MovingSprite {
         }
     }
 
-    mightFall() {
-        return (this.direction == this.DIRECTION_LEFT && this.isAtEdgeLeft()) || (this.direction == this.DIRECTION_RIGHT && this.isAtEdgeRight());
+    alwaysActive() { return false; }
+
+    getBbox() {
+        return this.collisionObject.getBbox();
+    }
+
+    mightFall(height) {
+        var raycastResult = new RaycastResult();
+
+        var oy = this.collisionObject.getBbox().getBottom() + 1;
+        var fh = parseFloat(height);
+
+        if (this.detectedSlope == 0) {
+            var eye = new Phaser.Math.Vector2(0, oy - 2);
+            eye.x = this.direction == this.DIRECTION_LEFT ? this.collisionObject.getBbox().left : this.collisionObject.getBbox().getRight();
+            var end = new Phaser.Math.Vector2(eye.x, eye.y + fh + 2);
+
+            var result = Sector.getCurrentSector().getFirstLineIntersection(eye, end, false, this.collisionObject);
+
+            if (!result.isValid) {
+                return true;
+            }
+
+            var tile;
+
+            if (typeof result.hit === "Tile") {
+                tile = result.hit;
+            } else {
+                tile = undefined;
+            }
+
+            if (tile !== undefined && tile.isSlope()) {
+                var triBbox = new Rect();
+                var tri = new AATriangle({ bbox: triBbox, direction: tile.data });
+
+                if (tri.isSouth() && this.direction == this.DIRECTION_LEFT ? tri.isEast() : !tri.isEast()) {
+                    this.detectedSlope = tri.direction;
+                }
+            }
+        }
+
+        if (this.detectedSlope != 0) {
+            var dirmult = (this.direction == this.DIRECTION_LEFT ? 1: -1);
+
+            // X position of the opposite face of the hitbox relative to m_dir.
+            var rearx = (this.direction == this.DIRECTION_LEFT ? this.collisionObject.bbox.getRight() :this.collisionObject.bbox.left);
+
+            // X Offset from rearx used for determining the start of the raycast.
+            var startoff = (this.body.width / 5) * dirmult;
+            var eye = new Phaser.Math.Vector2(rearx - startoff, oy);
+
+            // X Offset from eye's X used for determining the end of the raycast.
+            var endoff = startoff - (2 * dirmult);
+            var end = new Phaser.Math.Vector2(eye.x + endoff, eye.y + 80);
+
+            // The resulting line segment (eye, end) should result in a downwards facing diagonal direction.
+
+            var result = Sector.getCurrentSector().getFirstLineIntersection(eye, end, false, this.collisionObject);
+
+            if (!result.isValid) {
+                // Turn around and climb the slope.
+                this.detectedSlope = 0;
+
+                return true;
+            }
+
+            if (result.box.top - oy > fh + 1)
+            {
+                // Result is not within reach.
+                this.detectedSlope = 0;
+
+                return true;
+            }
+
+            var tile;
+
+            if (typeof result.hit === "Tile") {
+                tile = result.hit;
+            } else {
+                tile = undefined;
+            }
+
+            if (tile !== undefined && tile.isSlope()) {
+                // Still going down a slope. Continue.
+                return false;
+            }
+
+            // No longer going down a slope. Switch off slope mode.
+            this.detectedSlope = 0;
+        }
+
+        return false;
     }
 
     isAtEdgeLeft() {
@@ -661,16 +1011,12 @@ export class Enemy extends MovingSprite {
         this.player.hurtBy(enemy);
     }
 
-    checkKillAtSquishedOrFall(squishedTexture, fallingTexture, delta) {
+    checkKillAtSquishedOrFall(squishedTexture, delta) {
         if (this.killAt > 0) {
             this.killed = true;
             this.body.setVelocityX(0);
 
-            if (!this.killFalling) {
-                this.anims.play(squishedTexture);
-            } else {
-                this.setTexture(fallingTexture);
-            }
+            this.anims.play(squishedTexture);
 
             this.killAt -= delta;
             if (this.killAt <= 0) {
@@ -727,6 +1073,10 @@ export class Enemy extends MovingSprite {
             this.setState(EnemyState.STATE_FALLING);
             this.releasePowerUps();
         }
+    }
+
+    isFrozen() {
+        return this.frozen;
     }
 
     releasePowerUps() {
@@ -838,6 +1188,10 @@ export class Enemy extends MovingSprite {
         this.body.setVelocityY(y);
     }
 
+    setVelocity(x, y) {
+        this.body.setVelocity(x, y);
+    }
+
     setAccelerationX(x) {
         this.body.setAccelerationX(x);
     }
@@ -863,7 +1217,7 @@ export class Enemy extends MovingSprite {
     }
 
     onGround() {
-        return (this.getVelocityY() == 0 && !this.jumping) || this.slightlyAboveGround() || this.onObject();
+        return this.onGroundFlag;
     }
 
     slightlyAboveGround() {
@@ -871,57 +1225,6 @@ export class Enemy extends MovingSprite {
         let groundYDelta = Math.abs(this.lastGroundY - this.y);
 
         return (absVelocityY == 16.625 || absVelocityY == 31.25) && groundYDelta < 0.85;
-    }
-
-    onObject() {
-        var isOnObject = false;
-        var playerX = this.x;
-        var playerY = Math.floor(this.y / 32);
-
-        if (this.onTopOfBlock()) {
-            isOnObject = true;
-        } else if (this.onTopOfEnemy()) {
-            isOnObject = true;
-        }
-
-        return isOnObject;
-    }
-
-    onTopOfBlock() {
-        var isOnTopOfBlock = false;
-        var playerY = Math.floor(this.y / 32);
-
-        Array.from(this.scene.blockGroup.children.entries).forEach(
-            (block) => {
-                var blockY = Math.floor(block.y / 32);
-
-                if (this.x >= block.x - 20 && this.x <= block.x + 20 && playerY == blockY - 2) {
-                    isOnTopOfBlock = true;
-
-                    return;
-                }
-            }
-        );
-
-        return isOnTopOfBlock;
-    }
-
-    onTopOfEnemy() {
-        var isonTopOfEnemy = false;
-
-        Array.from(this.scene.enemyGroup.children.entries).forEach(
-            (enemy) => {
-                if (enemy.enemyType == "krosh") {
-                    if (this.x >= enemy.x - (enemy.width / 2) && this.x <= enemy.x + (enemy.width / 2) //128 40 //enemy still in air, so player moves left and right!!!
-                        && this.y >= enemy.y - 111 && this.y <= enemy.y - 109) {
-                        isonTopOfEnemy = true;
-                        return;
-                    }
-                }
-            }
-        );
-
-        return isonTopOfEnemy;
     }
 
     adjustBody(width, height, offsetX, offsetY) {

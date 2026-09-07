@@ -9,14 +9,17 @@ export class MovingSprite extends Phaser.GameObjects.Sprite  {
         config.scene.physics.world.enable(this);
         config.scene.add.existing(this);
 
-        var collisionGroup = collisionGroup || CollisionGroup.COLGROUP_MOVING;
-
+        this.collisionGroup = collisionGroup || CollisionGroup.COLGROUP_MOVING;
         this.collisionObject = new CollisionObject({ group: collisionGroup, parent: this });
         this.isScheduledForRemoval = false;
     }
 
     getCollisionObject() {
         return this.collisionObject;
+    }
+
+    getBbox() {
+        return this.collisionObject.bbox;
     }
 
     collision(otherObject, hit) {
@@ -41,10 +44,22 @@ export class MovingSprite extends Phaser.GameObjects.Sprite  {
 
     update(time, delta) {
         this.collisionObject.bbox = new Rect({
-            left: this.body.left,
-            top: this.body.top,
+            left: this.body.x,
+            top: this.body.y,
             width: this.body.width,
             height: this.body.height
-        })
+        });
+    }
+
+    getGroup() {
+        return this.collisionGroup;
+    }
+
+    setGroup(group) {
+        this.collisionGroup = group;
+    }
+
+    equals(other) {
+        return this.id == other.id;
     }
 }
