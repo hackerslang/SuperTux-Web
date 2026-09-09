@@ -335,7 +335,6 @@ export class SectorScene extends Phaser.Scene {
     }
 
     createCoinGroup() {
-        this.coinGroup = this.add.group();
         this.coinSprites = [];
     }
 
@@ -363,7 +362,7 @@ export class SectorScene extends Phaser.Scene {
 
         coinTiles.forEach(function (preloadedCoin, idx) {
             let coin = new Coin({
-                id: idx,
+                id: "coin-" + idx,
                 key: 'coin',
                 scene: self,
                 x: preloadedCoin.x,
@@ -372,11 +371,9 @@ export class SectorScene extends Phaser.Scene {
                 level: self.level
             });
 
-            self.coinGroup.add(coin);
             coinSprites.push(coin);
+            self.collisionObjects.push(coin.getCollisionObject());
         });
-
-        this.coinSprites = coinSprites;
     }
 
     addCoinSprite(i, j, coinType) {
@@ -395,8 +392,8 @@ export class SectorScene extends Phaser.Scene {
             coinType: coinType
         });
 
-        this.coinGroup.add(coin);
         this.coinSprites.push(coin);
+        this.collisionObjects.push(coin.getCollisionObject());
     }
 
     addCollectedCoin(coinValue) {
@@ -835,10 +832,15 @@ export class SectorScene extends Phaser.Scene {
     }
 
     createBackground() {
+        var scale = this.sector.getBackgroundImageScale();
         var backgroundImage = this.add.image(0, 0, this.makeBackgroundImageKey());
+
+        scale = scale !== undefined ? scale : 1;
+
         backgroundImage.setOrigin(0, 0);
         backgroundImage.scrollFactorX = 0;
         backgroundImage.scrollFactorY = 0;
+        backgroundImage.setScale(scale);
     }
 
     createBackgroundObject(i, j, offsetX, offsetY, objectType) {
@@ -969,8 +971,8 @@ export class SectorScene extends Phaser.Scene {
         }
     }
 
-    loadBackgroundImage(backgroundImage) {
-        this.preloadImage(this.makeBackgroundImageKey(), backgroundImage);
+    loadBackgroundImage(backgroundImage,) {
+        var background = this.preloadImage(this.makeBackgroundImageKey(), backgroundImage);
     }
 
     makeBackgroundImageKey() {
@@ -982,7 +984,7 @@ export class SectorScene extends Phaser.Scene {
     }
 
     preloadImage(name, value) {
-        this.load.image(name, value);
+        return this.load.image(name, value);
     }
 
     initCamera() {
@@ -1042,11 +1044,13 @@ export class SectorScene extends Phaser.Scene {
     }
 
     loadSounds() {
-        this.load.audio('enemy-fall', './assets/sounds/fall.wav');
+        this.load.audio("enemy-fall", "./assets/sounds/fall.wav");
+        this.load.audio("collect-coin", "./assets/sounds/coin.wav");
     }
 
     makeSounds() {
         this.sound.add('enemy-fall');
+        this.sound.add("collect-coin");
     }
 
     loadAtlasFromData(caption) {
@@ -1180,7 +1184,7 @@ export class SectorScene extends Phaser.Scene {
             }
 
             if (foreground.width == null) {
-                foreground.width = self.sector.sectorData.data[0].length;
+                foreground.width = self.sector.sectorData.tilemaps[0].data[0].length;
             }
 
             foreground.endX = foreground.startX + foreground.width;
@@ -1278,7 +1282,8 @@ export class SectorScene extends Phaser.Scene {
                 height: platform.height
             });
 
-            self.fallingPlatformSprites.push(platformImage);
+            self.collisionObjects.push()
+            self.fallingPlatformSprites.push(platformImage.getCollisionObject());
             self.staticObjects.push(platformImage);
         });
     }
@@ -1636,15 +1641,33 @@ export class SectorScene extends Phaser.Scene {
     }
 
     removeEnemy(enemy) {
-        this.enemyGroup.remove(enemy);
-        var index = enemy.id;
-        this.creatureObjects[index] = null;
+        var collisionObject = this.collisionObjects.find(obj => obj.getId() == enemy.id);
+
+        if (collisionObject !== undefined) {
+            collisionObject.isScheduledForRemoval = true;
+
+            this.collisionObjects = this.collisionObjects.filter(collisionObject => collisionObject.getId() != enemy.id);
+        }
+
+        if (creatureObject !== undefined) {
+            enemy.isScheduledForRemoval = true;
+
+            this.creatureObjects = this.creatureObjects.filter(creature => creature.id != enemy.id);
+        }
     }
 
     removeCoin(coin) {
-        this.coinGroup.remove(coin);
-        var index = coin.id;
-        this.coinSprites[index] = null;
+        var collisionObject = this.collisionObjects.find(obj => obj.id == coin.id);
+
+        if (collisionObject !== undefined) {
+            collisionObject.isScheduledForRemoval = true;
+
+            this.collisionObjects = this.collisionObjects.filter(collisionObject => collisionObject.getId() != coin.id);
+        }
+
+        coin.isScheduledForRemoval = true;
+
+        this.coinSprites = this.coinSprites.filter(c => c.id != coin.id);
     }
 
     removeBlock(block) {

@@ -9,7 +9,6 @@ export class FallingPlatform extends Phaser.GameObjects.Sprite {
         super(config.scene, config.x, config.y, config.key);
         config.scene.physics.world.enable(this);
         config.scene.add.existing(this);
-        this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
         this.body.setImmovable(true);
         this.body.setAllowGravity(false);
         this.setTexture(config.texture);
@@ -33,11 +32,11 @@ export class FallingPlatform extends Phaser.GameObjects.Sprite {
         this.pushable = false;
 
         this.playerCollides = true;
+
+        this.setGroup(CollisionGroup.COLGROUP_STATIC);
     }
 
     update(time, delta) {
-        this.scene.physics.world.collide(this, this.player, this.playerHit);
-
         if (this.playerTouched) {
             if (this.state == PlatformState.STATE_STILL) {
                 this.stayStill(delta);

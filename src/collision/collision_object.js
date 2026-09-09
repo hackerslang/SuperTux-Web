@@ -7,6 +7,12 @@ export class CollisionObject {
         this.bbox = new Rect();
         this.dest = new Rect();
         this.uniSolid = false;
+
+        this.isScheduledForRemoval = false;
+    }
+
+    getId() {
+        return this.parent.id;
     }
 
     setWidth(width) {

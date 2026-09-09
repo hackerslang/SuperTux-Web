@@ -107,6 +107,8 @@ export class Enemy extends MovingSprite {
 
         this.group = CollisionGroup.COLGROUP_DISABLED;
         this.collisionGroupActive = CollisionGroup.COLGROUP_MOVING;
+
+        this.isScheduledForRemoval = false;
     }
 
     initWithGameSession(enemyFromGameSession) {
@@ -158,6 +160,10 @@ export class Enemy extends MovingSprite {
     }
 
     update(time, delta) {
+        if (this.isScheduledForRemoval) {
+            return;
+        }
+
         super.update(time, delta);
 
         if (this.killed) {
@@ -285,20 +291,16 @@ export class Enemy extends MovingSprite {
 
             case EnemyState.STATE_GEAR:
             case EnemyState.STATE_SQUISHED:
-                this.isActiveFlag = false;
-
                 var self = this;
-                if (this.alpha > 0) {
-                    this.tweens.add({
-                        targets: self,
-                        alpha: 0,
-                        duration: self.SQUISH_TIME * 1000,
-                        ease: 'Linear',
-                        onComplete: () => {
-                            self.remove();
-                        }
-                    });
-                }
+                this.scene.tweens.add({
+                    targets: self,
+                    alpha: 0,
+                    duration: self.SQUISH_TIME * 1000,
+                    ease: 'Linear',
+                    onComplete: () => {
+                        self.remove();
+                    }
+                });
 
                 break;
             // melting, ground melting to be done ...
@@ -338,7 +340,7 @@ export class Enemy extends MovingSprite {
         if (otherCreature !== undefined && otherCreature.isEnemy && otherCreature.isActive() && otherCreature.getCollisionObject().getGroup() == CollisionGroup.COLGROUP_MOVING) {
             return this.collisionEnemy(otherCreature, hit);
         }
-        var player = (!otherCreature.isEnemy ? otherCreature : undefined);
+        var player = (!otherCreature.isEnemy && otherCreature.getCollisionObject().getGroup() == CollisionGroup.COLGROUP_MOVING ? otherCreature : undefined);
 
         if (player !== undefined) {
             if (player.getBbox().getBottom() < (this.getCollisionObject().getBbox().top + 16)) {
@@ -377,7 +379,7 @@ export class Enemy extends MovingSprite {
         if (this.isGrabbed()) {
             return HitResponse.FORCE_MOVE;
         }
-        
+        console.log(player);
         if (player.getGrabbedObject() !== undefined && this.frozen) {
             var enemy = player.getGrabbedObject();
 
@@ -655,7 +657,7 @@ export class Enemy extends MovingSprite {
     }
 
     killSquished(object) {
-        if (!thisisActive()) {
+        if (!this.isActive()) {
             return;
         }
 
@@ -672,29 +674,6 @@ export class Enemy extends MovingSprite {
 
             player.bounce(this);
         }
-
-
-
-    }
-
-    killSquished() {
-        if (!this.isActive()) {
-            return;
-        }
-
-        //playSound
-
-        this.stopMoving();
-        this.setState(EnemyState.STATE_SQUISHED);
-
-        if (this.player != null && !this.player.isDead()) {
-            this.player.bounce(this);
-        }
-
-        this.stateTimer = this.SQUISH_TIME * 1000;
-        this.killed = true;
-        this.releasePowerUps();
-        //do dead stuff killAt = ??
     }
 
     isActive() {

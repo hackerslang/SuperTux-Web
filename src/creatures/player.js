@@ -172,6 +172,8 @@ export class Tux extends MovingSprite {
 
         this.isEnemy = false;
 
+        this.isScheduledForRemoval = false;
+
         this.setCustomGravityIfNeeded();
     }
 
@@ -441,6 +443,10 @@ export class Tux extends MovingSprite {
     }
 
     update(time, delta) {
+        if (this.isScheduledForRemoval) {
+            return;
+        }
+
         super.update(time, delta);
 
         if (this.killAt > 0) {

@@ -589,6 +589,18 @@
                     "value": "antarctic-",
                     "start": 1,
                     "end": 8
+                },
+                {
+                    "name": "snowy-tree1",
+                    "value": "snowy_tree1"
+                },
+                 {
+                    "name": "snowy-tree2",
+                    "value": "snowy_tree2"
+                },
+                {
+                    "name": "snowy-tree3",
+                    "value": "snowy_tree3"
                 }
             ]
         },

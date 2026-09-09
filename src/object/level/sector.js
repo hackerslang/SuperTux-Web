@@ -102,6 +102,10 @@ export class Sector {
         return this.sectorData.backgroundImage;
     }
 
+    getBackgroundImageScale() {
+        return this.sectorData.backgroundScale;
+    }
+
     getBackgroundObjects() {
         return this.additionalTiles.backgroundObjects;
     }

@@ -33,6 +33,8 @@ export class CollisionSystem {
         this.delta = delta;
 
         for (var object of this.sectorScene.collisionObjects) {
+            if (object.isScheduledForRemoval) { continue; }
+
             object.dest = new Rect(object.bbox);
             object.pressure = new Phaser.Math.Vector2(0, 0);
             object.dest.move(object.getMovement(delta));
@@ -40,6 +42,8 @@ export class CollisionSystem {
 
         // Part 1: COLGROUP_MOVING vs COLGROUP_STATIC and tilemap.
         for (var object of this.sectorScene.collisionObjects) {
+            if (object.isScheduledForRemoval) { continue; }
+
             if (object.getGroup() === undefined)
                 continue;
 
@@ -54,6 +58,8 @@ export class CollisionSystem {
 
         // Part 2: COLGROUP_MOVING vs tile attributes.
         for (var object of this.sectorScene.collisionObjects) {
+            if (object.isScheduledForRemoval) { continue; }
+
             if (object.getGroup() === undefined)
                 continue;
 
@@ -71,6 +77,8 @@ export class CollisionSystem {
 
         // Part 2.5: COLGROUP_MOVING vs COLGROUP_TOUCHABLE.
         for (var object of this.sectorScene.collisionObjects) {
+            if (object.isScheduledForRemoval) { continue; }
+
             if (object.getGroup() === undefined)
                 continue;
 
@@ -80,15 +88,20 @@ export class CollisionSystem {
                 continue;
 
             for (var object2 of this.sectorScene.collisionObjects) {
-                if (object.getGroup() === undefined || object.getGroup() != CollisionGroup.COLGROUP_TOUCHABLE
-                    || !object.isValid())
+                if (object2.isScheduledForRemoval) { continue; }
+
+                if (object2.getGroup() === undefined || object2.getGroup() != CollisionGroup.COLGROUP_TOUCHABLE
+                    || !object2.isValid())
                     continue;
 
-                if (object.dest.overlaps(object2.dest)) {
-                    var normal = Phaser.Math.Vector2(0, 0);
+                var rect1 = new Rect(object.dest);
+                var rect2 = new Rect(object2.dest);
+
+                if (rect1.overlaps(rect2)) {
+                    var normal = new Phaser.Math.Vector2(0, 0);
                     var hit = new CollisionHit();
 
-                    this.getHitNormal(object, object2, hit, normal);
+                    ({ hit, normal } = this.hitNormal(object, object2, hit, normal));
                     if (!object.collides(object2, hit))
                         continue;
                     if (!object2.collides(object, hit))
@@ -104,7 +117,11 @@ export class CollisionSystem {
         // Part 3: COLGROUP_MOVING vs COLGROUP_MOVING.
         for (var object of this.sectorScene.collisionObjects) {
             var object = this.sectorScene.collisionObjects[index];
+
             index++;
+
+            if (object.isScheduledForRemoval) { continue; }
+
             if (object.getGroup() === undefined)
                 continue;
                 
@@ -115,6 +132,8 @@ export class CollisionSystem {
 
             for (var i2 = index + 1; i2 < this.sectorScene.collisionObjects.length; ++i2) {
                 var object2 = this.sectorScene.collisionObjects[i2];
+
+                if (object2.isScheduledForRemoval) { continue; }
 
                 if ((object2.getGroup() != CollisionGroup.COLGROUP_MOVING
                     && object2.getGroup() != CollisionGroup.COLGROUP_MOVING_STATIC)
