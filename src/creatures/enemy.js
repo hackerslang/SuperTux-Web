@@ -379,7 +379,7 @@ export class Enemy extends MovingSprite {
         if (this.isGrabbed()) {
             return HitResponse.FORCE_MOVE;
         }
-        console.log(player);
+  
         if (player.getGrabbedObject() !== undefined && this.frozen) {
             var enemy = player.getGrabbedObject();
 

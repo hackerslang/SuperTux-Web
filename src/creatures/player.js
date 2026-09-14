@@ -455,7 +455,8 @@ export class Tux extends MovingSprite {
 
         if (this.killed) {
             if (this.killAt <= 0) {
-                this.scene.restartCurrentSector();
+                this.scene.startDestroying();
+                GameSession.playerDied(this.level);
             }
 
             return;
@@ -797,7 +798,8 @@ export class Tux extends MovingSprite {
 
     die() {
         if (this.killed) { return; }
-        
+
+        this.scene.sound.play("tux-killed");
         this.body.setAllowGravity(true);
         this.scene.cameras.main.setLerp(0, 0);
         this.scene.setHealthBar(0);
@@ -811,19 +813,6 @@ export class Tux extends MovingSprite {
         this.isDying = true;
         this.duck = this.crawl = false;
         this.setGroup(CollisionGroup.COLGROUP_DISABLED);
-
-        //GameSession.playerDied(this.level);
-    }
-
-    removeColliders() {
-        if (this.scene.playerGroundCollider != null)
-            this.scene.playerGroundCollider.destroy();
-
-        if (this.scene.woodCollider != null)
-            this.scene.woodCollider.destroy();
-
-        if (this.scene.spikeCollider != null)
-            this.scene.spikeCollider.destroy();
     }
 
     isDead() {

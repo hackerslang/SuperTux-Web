@@ -21,7 +21,7 @@ import { BouncingSnowBall } from '../creatures/bouncing_snowball.js';
 import { FlyingSnowBall } from '../creatures/flying_snowball.js';
 import { Jumpy } from '../creatures/jumpy.js';
 import { Spiky, HellSpiky } from '../creatures/spiky.js';
-import { Fish } from '../creatures/fish.js';
+import { LavaFishJumping } from '../creatures/fish.js';
 import { Coin } from '../object/coin.js';
 import { PlusPowerUp } from '../object/powerup/plus.js';
 import { EggPowerUp } from '../object/powerup/egg.js';
@@ -44,14 +44,6 @@ export class SectorScene extends Phaser.Scene {
     constructor(config) {
         super({ key: config.key });
         this.key = config.key;
-        this.imageLoader = new ImageLoader({ scene: this });
-        this.atlasLoader = new AtlasLoader({ scene: this });
-        this.animationLoader = new AnimationLoader({ scene: this });
-
-        this.DEFAULT_FRAMERATE = 10;
-        this.REPEAT_INFINITELY = -1;
-
-        this.canSaveOrLoad = false;
     }
 
     static currentSectorScene = null;
@@ -62,7 +54,7 @@ export class SectorScene extends Phaser.Scene {
     generateKeyController() {
         this.keyController = new KeyController(this);
     }
-
+    
     activateAndPausePrevious(sectorScene) {
         this.pausePrevious(sectorScene);
         this.activate();
@@ -75,6 +67,48 @@ export class SectorScene extends Phaser.Scene {
 
     activate() {
         this.sector.makeCurrent();
+    }
+
+    startDestroying() {
+        this.destroyingScene = true;
+        this.createDarkeningOverlayAndRestartScene();
+    }
+
+    createDarkeningOverlayAndRestartScene(startAlpha, endAlpha) {
+        startAlpha = startAlpha === undefined ? 0 : startAlpha;
+        endAlpha = endAlpha === undefined ? 1 : endAlpha;
+
+        var startColor = startAlpha === 0 ? 0x000000 : 0xffffff;
+
+        try {
+            if (this.deathOverlay === undefined) {
+                const width = (this.sys && this.sys.game && this.sys.game.config && this.sys.game.config.width) ? this.sys.game.config.width : (this.cameras && this.cameras.main ? this.cameras.main.width : 800);
+                const height = (this.sys && this.sys.game && this.sys.game.config && this.sys.game.config.height) ? this.sys.game.config.height : (this.cameras && this.cameras.main ? this.cameras.main.height : 600);
+
+                this.deathOverlay = this.add.rectangle(0, 0, width, height, 0x000000)
+                    .setOrigin(0, 0)
+                    .setScrollFactor(0)
+                    .setDepth(10000)
+                    .setAlpha(startAlpha);
+            }
+
+            var self = this;
+            this.fadeTweenComplete = true;
+            this.tweens.add({
+                targets: self.deathOverlay,
+                alpha: endAlpha,
+                duration: 1000,
+                ease: 'Linear',
+                onComplete: () => {
+                    self.fadeTweenComplete = true;
+                    if (endAlpha === 1) {
+                        SectorSwapper.restartScene(self);
+                    }
+                }
+            });
+        } catch (e) {
+            console.warn('Failed to start death fade tween', e);
+        }
     }
 
     pausePrevious(sectorScene) {
@@ -151,6 +185,20 @@ export class SectorScene extends Phaser.Scene {
     }
 
     async preload() {
+        this.readyToPlay = false;
+
+        this.imageLoader = new ImageLoader({ scene: this });
+        this.atlasLoader = new AtlasLoader({ scene: this });
+        this.animationLoader = new AnimationLoader({ scene: this });
+
+        this.DEFAULT_FRAMERATE = 10;
+        this.REPEAT_INFINITELY = -1;
+
+        this.canSaveOrLoad = false;
+        this.destroyingScene = false;
+
+        this.readyToPlay = false;
+
         this.canSaveOrLoad = false;
         this.sector = Sector.getCurrentSector();
         
@@ -179,13 +227,13 @@ export class SectorScene extends Phaser.Scene {
 
     async create() {
         this.canSaveOrLoad = false;
+
+        await this.createDarkOverlay();
         if (this.sector != null || !levelsLoaded) {
             this.staticObjects = [];
             this.textsToUpdate = [];
 
-            if (this.creatureObjects == null) {
-                this.creatureObjects = [];
-            }
+            this.creatureObjects = [];
 
             if (this.creatures == null) {
                 this.creatures = [];
@@ -205,10 +253,7 @@ export class SectorScene extends Phaser.Scene {
 
             // Create collision groups (Phaser)
             this.addPlayer();
-            this.createCollisionTilesGroup();
 
-            this.createMovablePlatformsGroup();
-            this.createHurtableTilesGroup();
             this.createCoinGroup();
 
             this.tilemapParser = new TilemapParser({ sectorScene: this, sector: this.sector, sectorData: this.sector.sectorData });
@@ -230,18 +275,11 @@ export class SectorScene extends Phaser.Scene {
 
             this.groundLayer.setDepth(3);
 
-            //this.physics.add.collider(this.coinGroup, this.groundLayer);
-            //this.playerGroundCollider = this.physics.add.collider(this.player, this.groundLayer);
-            //this.woodCollider = this.physics.add.collider(this.player, this.collisionTilesGroup, this.woodHit);
-            //this.enemyCollisionTilesCollider = this.physics.add.collider(this.enemyCollisionExtraTilesGroup, this.collisionTilesGroup, this.woodHit);
-
             this.physics.world.bounds.width = this.groundLayer.width;
             this.physics.world.bounds.height = this.groundLayer.height;
 
             this.physics.world.enable(this.player);
             this.physics.world.setBoundsCollision(true, true, true, true);
-
-            await this.setSlopeTilesCollisionExclusions();
 
             this.createDynamicForeGrounds();
             this.parseLava();
@@ -255,19 +293,49 @@ export class SectorScene extends Phaser.Scene {
             }
 
             this.tilesets = await Tile.getTileDataAndAttributes(this);
-            this.createReady = true;
+        }
+
+        this.readyToPlay = true;
+        await this.presentByOverlay();
+    }
+
+    async createDarkOverlay() {
+        if (this.deathOverlay !== undefined) {
+            this.deathOverlay.destroy();
+        }
+
+        const width = (this.sys && this.sys.game && this.sys.game.config && this.sys.game.config.width) ? this.sys.game.config.width : (this.cameras && this.cameras.main ? this.cameras.main.width : 800);
+        const height = (this.sys && this.sys.game && this.sys.game.config && this.sys.game.config.height) ? this.sys.game.config.height : (this.cameras && this.cameras.main ? this.cameras.main.height : 600);
+
+        this.overlay = this.add.rectangle(0, 0, width, height, 0x000000)
+            .setOrigin(0, 0)
+            .setScrollFactor(0)
+            .setDepth(10000)
+            .setAlpha(1);
+    }
+
+    async presentByOverlay() {
+        var self = this;
+        this.fadeTweenComplete = false;
+        try {
+            var alpha = 1;
+            var self = this;
+            this.tweens.add({
+                targets: self.overlay,
+                alpha: 0,
+                duration: 1500,
+                ease: 'Linear',
+                onComplete: () => {
+                    self.fadeTweenComplete = true;
+                }
+            });
+        } catch (e) {
+            console.warn('Failed to start life again fade tween', e);
         }
     }
 
     isDebug() {
         return GlobalGameConfig.physics.arcade.debug;
-    }
-
-    async setSlopeTilesCollisionExclusions() {
-        var slopeTilesArray = await Tile.getSlopeTiles();
-        var slopeTiles = slopeTilesArray.map(tile => tile.index);
-
-        this.groundLayer.setCollisionByExclusion(slopeTiles);
     }
 
     createMap() {
@@ -334,21 +402,12 @@ export class SectorScene extends Phaser.Scene {
         this.hurtableTiles = [];
     }
 
+    createPowerupGroup() {
+        this.powerUps = [];
+    }
+
     createCoinGroup() {
         this.coinSprites = [];
-    }
-
-    createCollisionTilesGroup() {
-        this.collisionTilesGroup = this.add.group();
-        this.climbableTilesGroup = this.add.group();
-    }
-
-    createPowerupGroup() {
-        this.powerupGroup = this.add.group();
-    }
-
-    createMovablePlatformsGroup() {
-        this.movablePlatformsGroup = this.add.group();
     }
 
     getPlayerCollisionObjectsGroup() {
@@ -591,11 +650,11 @@ export class SectorScene extends Phaser.Scene {
 
                     break;
 
-                case "fish":
-                    creatureObject = new Fish({
+                case "lava-fish-jumping":
+                    creatureObject = new LavaFishJumping({
                         id: enemyId,
-                        scene: this,
-                        key: "fish",
+                        scene: this,    
+                        key: "lava-fish-jumping",
                         x: creature.position.x * 32,
                         y: creature.position.y * 32,
                         realY: creature.position.realY,
@@ -791,22 +850,22 @@ export class SectorScene extends Phaser.Scene {
     //}
 
     addCollisionTile(collisionTileSprite, originalKey) {
-        let sectorData = Sector.getCurrentSector().sectorData;
-        let climbable = originalKey && sectorData.climbableTiles && sectorData.climbableTiles.includes(originalKey);
+        // let sectorData = Sector.getCurrentSector().sectorData;
+        // let climbable = originalKey && sectorData.climbableTiles && sectorData.climbableTiles.includes(originalKey);
 
-        this.physics.world.enableBody(collisionTileSprite, 0);
-        collisionTileSprite.body.setAllowGravity(false);
-        collisionTileSprite.body.setImmovable(true);
-        collisionTileSprite.setOrigin(0, 0);
+        // this.physics.world.enableBody(collisionTileSprite, 0);
+        // collisionTileSprite.body.setAllowGravity(false);
+        // collisionTileSprite.body.setImmovable(true);
+        // collisionTileSprite.setOrigin(0, 0);
 
-        collisionTileSprite.climbable = climbable;
+        // collisionTileSprite.climbable = climbable;
 
-        if (collisionTileSprite.climbable !== undefined && collisionTileSprite.climbable === true) {
-            collisionTileSprite.body.setCollideWorldBounds(false);
-            this.climbableTilesGroup.add(collisionTileSprite);
-        } else {
-            this.collisionTilesGroup.add(collisionTileSprite);
-        }
+        // if (collisionTileSprite.climbable !== undefined && collisionTileSprite.climbable === true) {
+        //     collisionTileSprite.body.setCollideWorldBounds(false);
+        //     this.climbableTilesGroup.add(collisionTileSprite);
+        // } else {
+        //     this.collisionTilesGroup.add(collisionTileSprite);
+        // }
     }
 
     createMovablePlatform(i, j, movablePlatformType) {
@@ -1044,11 +1103,13 @@ export class SectorScene extends Phaser.Scene {
     }
 
     loadSounds() {
+        this.load.audio("tux-killed", "./assets/sounds/kill.wav");
         this.load.audio("enemy-fall", "./assets/sounds/fall.wav");
         this.load.audio("collect-coin", "./assets/sounds/coin.wav");
     }
 
     makeSounds() {
+        this.sound.add("tux-killed");
         this.sound.add('enemy-fall');
         this.sound.add("collect-coin");
     }
@@ -1193,7 +1254,7 @@ export class SectorScene extends Phaser.Scene {
                 for (var x = foreground.startX; x < foreground.endX; x++) {
                     for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
                         if (self.sector.getTileDataValue(x, y) != -1) {
-                            self.createDynamicForeGroundStillTile(level, x, y, 'lava', level.LAVA_ALPHA, 120);
+                            self.createDynamicForeGroundStillTile(level, x, y, 'lava', level.LAVA_ALPHA, 120, 33);
                         }
                     }
                 }
@@ -1221,16 +1282,23 @@ export class SectorScene extends Phaser.Scene {
         }
     }
 
-    createDynamicForeGroundStillTile(level, x, y, key, alpha, depth) {
+    createDynamicForeGroundStillTile(level, x, y, key, alpha, depth, otherTileSize) {
+        var tileSize = otherTileSize !== undefined ? otherTileSize : 32;
+
         var foregroundImage = this.add.sprite(x * 32, y * 32, key);
+
+        if (key == "lava") {
+            foregroundImage.setSize(33, 33);
+        }
 
         foregroundImage.setOrigin(0, 0);
         foregroundImage.alpha = Level.currentLevel.LAVA_ALPHA;
-
+        foregroundImage.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
         if (depth != null) {
             foregroundImage.setDepth(120);
         }
     }
+
 
     fillTilesForeground() {
         var sectorStaticForegrounds = this.sector.getFillTilesForegrounds();
@@ -1370,11 +1438,12 @@ export class SectorScene extends Phaser.Scene {
     }
 
     update(time, delta) {
-        if (!this.createReady) { return; }
+        if (!this.readyToPlay) { return; }
+        if (this.destroyingScene) { return; }   
         if (this.sector == null) { return; }
-        
-        this.canSaveOrLoad = true;
 
+        this.canSaveOrLoad = true;
+        console.log("readyToPlay");
         if (this.quickSaveGameText != null) { this.quickSaveGameText.update(time, delta); }
 
         this.getKeyController().update();
@@ -1385,7 +1454,7 @@ export class SectorScene extends Phaser.Scene {
         this.player.update(time, delta);
         this.player.draw(time, delta);
         this.healthBar.update(time, delta);
-        //Sector.currentSector.update(time, delta);
+        
         this.validateCurrentSectorEnds();
         this.cursor.update(time, delta);
         this.forceUpdateSprites(this.creatureObjects, time, delta);
@@ -1590,7 +1659,7 @@ export class SectorScene extends Phaser.Scene {
     }
 
     updatePowerups(time, delta) {
-        Array.from(this.powerupGroup.children.entries).forEach(
+        this.powerUps.forEach(
             (powerup) => {
                 powerup.update(time, delta);
             });

@@ -75,13 +75,28 @@ export class SectorSwapper {
         var firstFreeSectorSlot = this.getFirstFreeSectorSlot();
 
         if (firstFreeSectorSlot != null) {
-            //var sectorScene = currentScene.scene.add(firstFreeSectorSlot.key, SectorSwapper.getSectorSceneFromSlot(firstFreeSectorSlot), false); //autostart = true/false;
             var sector = Sector.getCurrentSector();
             
             game.scene.pause(currentScene.key);
             game.scene.start(firstFreeSectorSlot.key, { slot: firstFreeSectorSlot });
             firstFreeSectorSlot.loadedSector = sector;
         }
+    }
+
+    static restartScene(currentScene) {
+        var currentSlot = SectorSwapper.getCurrentSectorSlot(currentScene);
+        var currentSceneKey = currentSlot.key;
+
+        if (currentSlot != null) {
+            game.scene.stop(currentSceneKey);
+            game.scene.start(currentSceneKey, { slot: currentSlot });
+        }
+    }
+
+    static getCurrentSectorSlot(currentScene) {
+        var currentSlot = SectorScenesSlots.filter((x) => x.key == currentScene.key)[0];
+
+        return currentSlot;
     }
 
     static getFirstFreeSectorSlot() {

@@ -168,7 +168,7 @@ export class Tile {
                 var attribute = attributes[j];
                 var slopeData = datas[j];
 
-                if (attribute & SLOPE) {
+                if (attribute & TileType.SLOPE) {
                     var slopeTile = new Tile({
                         index: tileset.firstgid + j,
                         attributes: attribute,

@@ -16,12 +16,6 @@
       "firstgid": 43
     }
   ],
-  "additionalTiles": [
-    {
-      "name": "industrial",
-      "value": "../assets/tilemaps/industrial.png"
-    }
-  ],
   "enemiesLoaded": "snowball,jumping-snowball,mr-iceblock,jumpy,flying-snowball",
   "tilemaps": [
     {
@@ -96,7 +90,7 @@
 
   "creatures": [
     {
-      "name": "fish",
+      "name": "lava-fish-jumping",
       "down": "lava-fish-open-closed",
       "up": "lava-fish-open-closed",
       "flip": true,

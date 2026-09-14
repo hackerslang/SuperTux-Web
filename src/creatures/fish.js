@@ -1,10 +1,11 @@
 ﻿import { Enemy } from './enemy.js';
+import { MovingSprite } from '../object/moving_object.js';
+import { CollisionGroup } from '../collision/collision_group.js';
 
-export class Fish extends Enemy {
+export class LavaFishJumping extends Enemy {
     constructor(config) {
         super(config);
 
-        this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
         this.body.setSize(37, 46);
         this.body.setOffset(2, 1);
         this.killAt = 0;
@@ -18,20 +19,13 @@ export class Fish extends Enemy {
         this.flip = config.flip;
         this.anims.play(this.animUp);
         this.jumping = true;
+        this.player = config.player;
         this.setDepth(110);
-
-        //Collides with moving tiles, such as platforms or industrial tiles??
-        this.collidesWithExtraTiles = false;
-
-        super.collidesWithOtherEnemies = false;
+        this.isActiveFlag = true;
     }
 
     update(time, delta) {
         super.update(time, delta);
-
-        if (!this.player.isDead()) {
-            this.scene.physics.world.overlap(this, this.player, this.playerHit);
-        }
 
         this.body.velocity.x = 0;
 
@@ -54,9 +48,19 @@ export class Fish extends Enemy {
         }
     }
 
-    playerHit(enemy, player) {
-        if (!player.invincible) {
-            enemy.hurtPlayer(enemy, player);
+    collides(otherObject, hit) {
+        return true;
+    }
+
+    collisionSolid(hit) {
+
+    }
+
+    collision(other, hit) {
+        var player = !other.parent.isEnemy && !other.parent. isCollectible ? other.parent : undefined;
+
+        if (player !== undefined && (hit.left || hit.right || hit.top || hit.bottom)) {
+            player.kill(false);
         }
     }
 }
