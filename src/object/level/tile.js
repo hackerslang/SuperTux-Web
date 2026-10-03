@@ -53,6 +53,7 @@ export class Tile {
     }
 
     static getTilesOverlapping(rect) {
+
         var left = Math.max(0, Math.floor(rect.left / 32));
         var right = Math.min(Math.floor(Sector.getCurrentSector().sectorWidth / 32), Math.ceil(rect.getRight() / 32));
         var top = Math.max(0, Math.floor(rect.top / 32));

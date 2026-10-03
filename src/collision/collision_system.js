@@ -15,7 +15,7 @@ export class RaycastResult {
         this.isValid = false;
         this.hit = {}; // Tile or CollisionObject
         this.box = new Rect();
-    }
+    }$
 }
 
 export var RaycastIgnore = {
@@ -33,17 +33,18 @@ export class CollisionSystem {
         this.delta = delta;
 
         for (var object of this.sectorScene.collisionObjects) {
-            if (object.isScheduledForRemoval) { continue; }
+            if (object.isScheduledForRemoval || object.parent.isScheduledForRemoval) { continue; }
 
             object.dest = new Rect(object.bbox);
             object.pressure = new Phaser.Math.Vector2(0, 0);
             object.dest.move(object.getMovement(delta));
         }
 
+        var i = 0;
         // Part 1: COLGROUP_MOVING vs COLGROUP_STATIC and tilemap.
         for (var object of this.sectorScene.collisionObjects) {
-            if (object.isScheduledForRemoval) { continue; }
-
+            if (object.isScheduledForRemoval || object.parent.isScheduledForRemoval) { continue; }
+            
             if (object.getGroup() === undefined)
                 continue;
 
@@ -58,7 +59,7 @@ export class CollisionSystem {
 
         // Part 2: COLGROUP_MOVING vs tile attributes.
         for (var object of this.sectorScene.collisionObjects) {
-            if (object.isScheduledForRemoval) { continue; }
+            if (object.isScheduledForRemoval || object.parent.isScheduledForRemoval) { continue; }
 
             if (object.getGroup() === undefined)
                 continue;
@@ -77,7 +78,7 @@ export class CollisionSystem {
 
         // Part 2.5: COLGROUP_MOVING vs COLGROUP_TOUCHABLE.
         for (var object of this.sectorScene.collisionObjects) {
-            if (object.isScheduledForRemoval) { continue; }
+            if (object.isScheduledForRemoval || object.parent.isScheduledForRemoval) { continue; }
 
             if (object.getGroup() === undefined)
                 continue;
@@ -88,7 +89,7 @@ export class CollisionSystem {
                 continue;
 
             for (var object2 of this.sectorScene.collisionObjects) {
-                if (object2.isScheduledForRemoval) { continue; }
+                if (object2.isScheduledForRemoval || object2.parent.isScheduledForRemoval) { continue; }
 
                 if (object2.getGroup() === undefined || object2.getGroup() != CollisionGroup.COLGROUP_TOUCHABLE
                     || !object2.isValid())
@@ -116,11 +117,9 @@ export class CollisionSystem {
         var index = 0;
         // Part 3: COLGROUP_MOVING vs COLGROUP_MOVING.
         for (var object of this.sectorScene.collisionObjects) {
-            var object = this.sectorScene.collisionObjects[index];
-
             index++;
 
-            if (object.isScheduledForRemoval) { continue; }
+            if (object.isScheduledForRemoval || object.parent.isScheduledForRemoval) { continue; }
 
             if (object.getGroup() === undefined)
                 continue;
@@ -133,31 +132,20 @@ export class CollisionSystem {
             for (var i2 = index + 1; i2 < this.sectorScene.collisionObjects.length; ++i2) {
                 var object2 = this.sectorScene.collisionObjects[i2];
 
-                if (object2.isScheduledForRemoval) { continue; }
+                if (object2.isScheduledForRemoval || object2.parent.isScheduledForRemoval) { continue; }
 
                 if ((object2.getGroup() != CollisionGroup.COLGROUP_MOVING
                     && object2.getGroup() != CollisionGroup.COLGROUP_MOVING_STATIC)
                     || !object2.isValid())
                     continue;
-                // if (!object.parent.isEnemy) { // is player? 
-                //     console.log("a", object.bbox, " ", object.dest)
-                // }
+
                 this.collisionObject(object, object2);
-                // if (!object.parent.isEnemy) { // is player? 
-                //     console.log("b", object.bbox, " ", object.dest)
-                // }
             }
         }
 
         // Apply object movement.
         for (var object of this.sectorScene.collisionObjects) {
-            // if (!object.parent.isEnemy) { // is player? 
-            //     console.log("c", object.bbox, " ", object.dest)
-            // }
             object.bbox = new Rect(object.dest);
-            // if (!object.parent.isEnemy) { // is player? 
-            //     console.log("d", object.bbox, " ", object.dest)
-            // }
         }
     }
 
@@ -251,6 +239,13 @@ export class CollisionSystem {
             dest.right = dest.left + object.bbox.width;
         }
 
+        if (constraints.hasConstraints()) {
+            if (constraints.hit.left || constraints.hit.right
+                || constraints.hit.top || constraints.hit.bottom
+                || constraints.hit.crush)
+                object.collisionSolid(constraints.hit);
+        }
+
         if (pressure.y > 0) {
             constraints = new Constraints();
 
@@ -266,7 +261,6 @@ export class CollisionSystem {
                     hit.bottom = true;
                     hit.crush = pressure.x > 16;
                     object.collisionSolid(hit);
-
                 }
             }
         }
@@ -274,7 +268,7 @@ export class CollisionSystem {
 
     collisionStatic(object, dest, movement, pressure, constraints) {
         constraints = this.collisionTileMap(movement, dest, object);
-
+        
         // Collision with other (static) objects.
         for (var i = 0; i != this.sectorScene.collisionObjects.length; ++i) {
             var staticObject = this.sectorScene.collisionObjects[i];
@@ -282,7 +276,7 @@ export class CollisionSystem {
             if ((staticObject.getGroup() == CollisionGroup.COLGROUP_STATIC || staticObject.getGroup() == CollisionGroup.COLGROUP_MOVING_STATIC) &&
                 staticObject.isValid() && !staticObject.equals(object)) {
 
-                var newConstraints = checkCollisions(movement, dest, sprite, staticObject.dest, object, staticObject);
+                var newConstraints = this.checkCollisions(movement, dest, sprite, staticObject.dest, object, staticObject);
 
                 if (newConstraints.hit.bottom) {
                     staticObject.collisionMovingObjectBottom(object);
@@ -293,6 +287,8 @@ export class CollisionSystem {
                 constraints.mergeConstraints(newConstraints);
             }
         }
+
+        
 
         return constraints;
     }
@@ -305,7 +301,7 @@ export class CollisionSystem {
         if (!movingObjectRect.overlaps(grownOtherObjectRect))
             return constraints;
 
-        const dummmy = new CollisionHit();
+        const dummy = new CollisionHit();
 
         if (otherObject != null && movingObject != null && !otherObject.collides(movingObject, dummy))
             return constraints;
@@ -406,7 +402,7 @@ export class CollisionSystem {
         var constraints = new Constraints();
         // Later on, we will add multiple tile layers, so we will need to check collisions with all of them. 
         // For now, we only have one tile layer, so we will just check collisions with that one.
-        var overlappingTilesRect = Tile.getTilesOverlapping(dest);
+        var overlappingTilesRect = new Rect(Tile.getTilesOverlapping(dest));
         var hitsBottom = false;
 
         for (let x = overlappingTilesRect.left; x < overlappingTilesRect.getRight(); ++x) {
@@ -429,7 +425,7 @@ export class CollisionSystem {
                             isRelativelySolid = false;
                         }
                     }
-
+                    
                     if (isRelativelySolid) {
                         if (tile.isSlope()) {
                             const triangle = new AATriangle({ bbox: tileBbox, direction: tile.data });
@@ -438,10 +434,6 @@ export class CollisionSystem {
                                 hitsBottom |= result.hitsRectangleBottom;
                             }
                         } else {
-                            if (object !== undefined && object.parent.objectName == "Spiky") {
-                                var a = 0;
-                            }
-
                             var newConstraints = this.checkCollisions(movement, dest, tileBbox);
                             hitsBottom |= newConstraints.hit.bottom;
                             constraints.mergeConstraints(newConstraints);
@@ -450,6 +442,8 @@ export class CollisionSystem {
                 }
             }
         }
+
+        
 
         if (hitsBottom) {
             //todo!

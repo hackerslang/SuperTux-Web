@@ -42,6 +42,22 @@ export class MovingSprite extends Phaser.GameObjects.Sprite  {
         return this.body.velocity.y;
     }
 
+    setVelocityX(x) {
+        this.body.velocity.x = x;
+    }
+
+    setVelocityY(y) {
+        this.body.velocity.y = y;
+    }
+
+    setAccelerationX(x) {
+        this.body.acceleration.x = x;
+    }
+
+    setAccelerationY(y) {
+        this.body.acceleration.y = y;
+    }
+
     update(time, delta) {
         this.collisionObject.bbox = new Rect({
             left: this.body.x,
@@ -49,6 +65,18 @@ export class MovingSprite extends Phaser.GameObjects.Sprite  {
             width: this.body.width,
             height: this.body.height
         });
+    }
+
+    saveGravityY() {
+        const gravity = this.body && this.body.gravity ? this.body.gravity : { x: 0, y: 0 };
+
+        this.savedGravityY = gravity.y;
+    }
+
+    restoreGravityY() {
+        if (!this.body || !this._savedGravityY) return;
+
+        this.body.setGravityY(this.savedGravityY || 0);
     }
 
     getGroup() {

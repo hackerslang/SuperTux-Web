@@ -1,42 +1,40 @@
-import { game, CANVAS_WIDTH, CANVAS_HEIGHT } from '../game.js';
-import { Cursor } from '../object/ui/cursor.js';
-import { AtlasLoader } from '../helpers/atlasloader.js';
-import { ImageLoader } from '../helpers/imageloader.js';
-import { AnimationLoader } from '../helpers/animationloader.js';
-import { AnimationCreator } from '../helpers/animationcreator.js';
-import { FontLoader } from '../object/ui/fontloader.js';
-import { KeyController } from '../object/controller.js';
-import { SpriteKeyConstants } from '../object/level/tile_creator.js';
-import { TilemapParser } from '../object/level/tilemap_parser.js';
-import { Level } from '../object/level/level.js';
-import { Sector } from '../object/level/sector.js';
-import { Tile } from '../object/level/tile.js';
-import { GameSession } from '../object/game_session.js';
-import { gameSession } from './levelselectscene.js';
-import { SectorSwapper } from '../object/level/sector_swapper.js';
-import { Tux } from '../creatures/player.js';
-import { MrIceBlock } from '../creatures/mr_iceblock.js';
-import { SnowBall } from '../creatures/snowball.js';
-import { BouncingSnowBall } from '../creatures/bouncing_snowball.js';
+import { CollisionSystem } from '../collision/collision_system.js';
+import { LavaFishJumping } from '../creatures/fish.js';
 import { FlyingSnowBall } from '../creatures/flying_snowball.js';
 import { Jumpy } from '../creatures/jumpy.js';
-import { Spiky, HellSpiky } from '../creatures/spiky.js';
-import { LavaFishJumping } from '../creatures/fish.js';
+import { MrIceBlock } from '../creatures/mr_iceblock.js';
+import { LeanTux, Tux } from '../creatures/player.js';
+import { SnowBall } from '../creatures/snowball.js';
+import { HellSpiky, Spiky } from '../creatures/spiky.js';
+import { CANVAS_HEIGHT, CANVAS_WIDTH, game, GlobalGameConfig } from '../game.js';
+import { AnimationCreator } from '../helpers/animationcreator.js';
+import { AnimationLoader } from '../helpers/animationloader.js';
+import { AtlasLoader } from '../helpers/atlasloader.js';
+import { AudioLoader } from '../helpers/audioloader.js';
+import { ImageLoader } from '../helpers/imageloader.js';
+import { FallingPlatform } from '../object/blocks/fallingplatform.js';
+import { InvisibleWallBlock } from '../object/blocks/invisiblewallblock.js';
+import { Platform } from '../object/blocks/platform.js';
 import { Coin } from '../object/coin.js';
-import { PlusPowerUp } from '../object/powerup/plus.js';
+import { KeyController } from '../object/controller.js';
+import { StompEffect } from '../object/effects/tremble_effect.js';
+import { GameSession } from '../object/game_session.js';
+import { Lava } from '../object/lava.js';
+import { Level } from '../object/level/level.js';
+import { Sector } from '../object/level/sector.js';
+import { SectorSwapper } from '../object/level/sector_swapper.js';
+import { Tile } from '../object/level/tile.js';
+import { SpriteKeyConstants } from '../object/level/tile_creator.js';
+import { TilemapParser } from '../object/level/tilemap_parser.js';
 import { EggPowerUp } from '../object/powerup/egg.js';
+import { PlusPowerUp } from '../object/powerup/plus.js';
+import { Spike } from '../object/spike.js';
+import { CoinsDisplay } from '../object/ui/coinsdisplay.js';
+import { Cursor } from '../object/ui/cursor.js';
+import { CameraButtons } from '../object/ui/debug/camerabuttons.js';
+import { FontLoader } from '../object/ui/fontloader.js';
 import { HealthBar } from '../object/ui/healthbar.js';
 import { LivesDisplay } from '../object/ui/livesdisplay.js';
-import { CoinsDisplay } from '../object/ui/coinsdisplay.js';
-import { FallingPlatform } from '../object/blocks/fallingplatform.js';
-import { Platform } from '../object/blocks/platform.js';
-import { InvisibleWallBlock } from '../object/blocks/invisiblewallblock.js';
-import { Lava } from '../object/lava.js';
-import { Spike } from '../object/spike.js';
-import { GlobalGameConfig } from '../game.js';
-import { CameraButtons } from '../object/ui/debug/camerabuttons.js';
-import { TrembleEffect, StompEffect } from '../object/effects/tremble_effect.js';
-import { CollisionSystem } from '../collision/collision_system.js';
 
 export var currentSceneKey = "";
 
@@ -44,6 +42,7 @@ export class SectorScene extends Phaser.Scene {
     constructor(config) {
         super({ key: config.key });
         this.key = config.key;
+        this.authors = config.authors || ["Hackerslang"];
     }
 
     static currentSectorScene = null;
@@ -59,7 +58,7 @@ export class SectorScene extends Phaser.Scene {
         this.pausePrevious(sectorScene);
         this.activate();
     }
-
+      
     activateAndDestroyPrevious(sectorScene) {
         this.destroyPrevious(sectorScene);
         this.activate();
@@ -68,7 +67,7 @@ export class SectorScene extends Phaser.Scene {
     activate() {
         this.sector.makeCurrent();
     }
-
+    
     startDestroying() {
         this.destroyingScene = true;
         this.createDarkeningOverlayAndRestartScene();
@@ -181,15 +180,186 @@ export class SectorScene extends Phaser.Scene {
     }
 
     init(data) {
-        data.slot.loadedScene = this;
+        // store reference in the slot so SectorSwapper can find this scene instance
+        if (data && data.slot) {
+            data.slot.loadedScene = this;
+        }
+
+        // If launched with preloadOnly flag, remember it so we can sleep after create
+        this._preloadOnly = data && data.preloadOnly;
+
+
     }
 
-    async preload() {
+    createTitle() {
+        this.titleText = this.add.text(CANVAS_WIDTH / 2, (CANVAS_HEIGHT / 2) + 50, this.levelTitle, {
+            fontFamily: 'SuperTux-Medium',
+            fontSize: '24px',
+            color: '#007fb4'
+        }).setOrigin(0.5, 0.5).setDepth(199999);
+    }
+
+    createAuthors() {
+        var authors = this.authors.join(", ");
+        var contributedBy = "Created by " + authors;
+
+        this.authorsText =this.add.text(CANVAS_WIDTH / 2, (CANVAS_HEIGHT / 2) + 50 + 35, contributedBy , {
+            fontFamily: 'SuperTux-Medium',
+            fontSize: '24px',
+            color: '#ffffff'
+        }).setScale(0.7).setOrigin(0.5, 0.5).setDepth(199999);
+    }
+
+    addLeanPlayer() {
+        this.leanPlayer = new LeanTux({ x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 + 200, key: "tux-strtlvl", scene: this }).setDepth(10005);
+    }
+
+    createLevelScreen() {
+        //this.load.plugin('rexlineprogressplugin', '../../plugins/rexlineprogressplugin.min.js', true);
+        //var self = this;
+        this.progressBar = this.add.rexLineProgress(CANVAS_WIDTH / 2, CANVAS_HEIGHT - 50, CANVAS_WIDTH * 0.8, 20, 0x366237).setDepth(199999);
+        this.progressBar.setScrollFactor(0);
+        this.progressBar.setValue(0.05);
+
+        // this.load.on('filecomplete', (fileKey /*, fileType, data */) => {
+        //     // Plugin should now be registered; try common factory locations
+        //     if (this.add && typeof this.add.rexLineProgress === 'function') {
+        //         // factory registered on scene add
+
+        //     } else {
+        //         // fallback: try the plugin manager (depends on how plugin registers itself)
+        //         const plugin = this.plugins.get && this.plugins.get('rexlineprogressplugin');
+        //         if (plugin && typeof plugin.add === 'function') {
+        //             this.progressBar = self.add.rexLineProgress({ x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT - 50, color: 0x366237, width: CANVAS_WIDTH * 0.8, height: 20 }).setDepth(199999);
+
+        //             this.progressBar.setValue(0, 1, 100);
+        //         }
+        //     }
+        // });
+
+        // progress update
+        this.load.on('progress', (value) => {
+            if (this.progressBar) {
+                this.progressBar.setValue(value);
+            }
+        });
+
+        var self = this;
+
+        // queue font
+        this.levelTitle = "Antarctica, the beginning";
+        this.load.font('SuperTux-Medium', '../../assets/fonts/SuperTux-Medium.ttf', 'truetype');
+        this.load.once('complete', () => {
+            self.createTitle();
+            self.createAuthors();
+        });
+
+        // Background should be behind UI -> give it a low depth
+        const background = this.add.rectangle(0, 0, CANVAS_WIDTH * 2, CANVAS_HEIGHT * 2, 0x000000)
+            .setOrigin(0, 0)
+            .setDepth(0)          // low depth so UI is above it
+            .setScrollFactor(0);
+
+        // key handlers...
+        this.input.keyboard.on('keydown-ENTER', () => {
+            if (this.createHasEnded) {
+                this.clearLevelScreen();
+                this.presentByOverlay();
+                this.physics.resume();
+                this.levelIntroHasEnded = true;
+            }
+        });
+
+        this.input.keyboard.on('keydown-SPACE', () => {
+            if (this.createHasEnded) {
+                this.clearLevelScreen();
+                this.presentByOverlay();
+                this.physics.resume();
+                this.levelIntroHasEnded = true;
+            }
+        });
+
+        this.load.start();
+    }
+
+    clearLevelScreen() {
+        if (this.titleText) {
+            this.titleText.destroy();
+            this.titleText = null;
+        }
+
+        if (this.authorsText) {
+            this.authorsText.destroy();
+            this.authorsText = null;
+        }
+
+        if (this.progressBar) {
+            this.progressBar.destroy();
+            this.progressBar = null;
+        }
+
+        if (this.leanPlayer) {
+            this.leanPlayer.destroy();
+            this.leanPlayer = null;
+        }
+    }
+
+    createTitle() {
+        // create text and push it above overlays; lock to camera with setScrollFactor(0)
+        this.titleText = this.add.text(CANVAS_WIDTH / 2, (CANVAS_HEIGHT / 2) + 50, this.levelTitle, {
+            fontFamily: 'SuperTux-Medium',
+            fontSize: '24px',
+            color: '#007fb4'
+        }).setOrigin(0.5, 0.5)
+            .setDepth(20000)
+            .setScrollFactor(0);
+    }
+
+    createAuthors() {
+        var authors = this.authors ? this.authors.join(", ") : "";
+        var contributedBy = "Created by " + authors;
+
+        this.authorsText = this.add.text(CANVAS_WIDTH / 2, (CANVAS_HEIGHT / 2) + 85, contributedBy, {
+            fontFamily: 'SuperTux-Medium',
+            fontSize: '24px',
+            color: '#ffffff'
+        }).setScale(0.7).setOrigin(0.5, 0.5)
+            .setDepth(20000)
+            .setScrollFactor(0);
+    }
+
+    loadTexturesLeanTux() {
+        var keys = ["tux-lean-startlvlscreen"];
+        for (const key of keys) {
+            this.imageLoader.loadImagesFromData(key, this);
+        }
+    }
+
+    loadAnimationsLeanTux() {
+        var keys = ["tux-lean-startlvlscreen"];
+        for (const key of keys) {
+            this.animationLoader.loadAnimationsFromData(key, this);
+        }
+    }
+    
+    preload() {
+        this.leanTuxLoaded = false;
+        this.levelIntroHasEnded = false;
         this.readyToPlay = false;
+
+        this.createHasEnded = false;
 
         this.imageLoader = new ImageLoader({ scene: this });
         this.atlasLoader = new AtlasLoader({ scene: this });
         this.animationLoader = new AnimationLoader({ scene: this });
+        this.audioLoader = new AudioLoader({ scene: this });
+
+        // Create the level screen UI (title, authors, progress bar). It is safe if createLevelScreen
+        // also tries to queue the tux assets again because Phaser will ignore duplicate keys.
+        this.loadTexturesLeanTux();
+        this.createLevelScreen();
+
+        this.physics.pause();
 
         this.DEFAULT_FRAMERATE = 10;
         this.REPEAT_INFINITELY = -1;
@@ -201,7 +371,9 @@ export class SectorScene extends Phaser.Scene {
 
         this.canSaveOrLoad = false;
         this.sector = Sector.getCurrentSector();
-        
+
+        this.progressBar.setValue(0, 10, 100);
+
         if (this.sector != null) {
             this.creatures = this.sector.sectorData.creatures;
             this.sectorCoinsCollected = 0;
@@ -213,23 +385,40 @@ export class SectorScene extends Phaser.Scene {
 
             this.loadFonts();
             this.loadImages();
+            this.loadSounds();
+
+            this.progressBar.setValue(20);
 
             this.fillTilesForeground();
-            await this.loadTilemaps();
+            this.preloadTilesets();
             this.loadCoinTiles();
             this.loadBackgroundImage(this.sector.getBackgroundImage());
-            this.loadSounds();
             this.generateKeyController();
 
             this.collisionSystem = new CollisionSystem({ sectorScene: this });
         }
+        
+        this.progressBar.setValue(0.35);
     }
 
-    async create() {
+    preloadTilesets() {
+        var sectorTilesets = this.sector.getTilesets();
+
+        sectorTilesets.forEach(ts => {
+            if (!this.textures.exists(ts.name)) {
+                this.load.image(ts.name, ts.value);
+            }
+        });
+    }
+
+    create() {
         this.canSaveOrLoad = false;
 
-        await this.createDarkOverlay();
-        if (this.sector != null || !levelsLoaded) {
+        this.loadAnimationsLeanTux();
+        this.addLeanPlayer();
+
+        this.createDarkOverlay();
+        if (this.sector != null) {
             this.staticObjects = [];
             this.textsToUpdate = [];
 
@@ -243,13 +432,19 @@ export class SectorScene extends Phaser.Scene {
                 this.collisionObjects = [];
             }
 
+            if (this.climbableTiles === undefined) {
+                this.climbableTiles = [];
+            }
+            
             this.createBackground();
             this.makeAnimations();
 
             this.parseAntarcticWater();
             
-            this.makeSounds();
+            this.addSounds();
             this.createMap();
+
+            this.progressBar.setValue(0.45);
 
             // Create collision groups (Phaser)
             this.addPlayer();
@@ -259,15 +454,21 @@ export class SectorScene extends Phaser.Scene {
             this.tilemapParser = new TilemapParser({ sectorScene: this, sector: this.sector, sectorData: this.sector.sectorData });
             this.tilemapParser.parse();
 
+            this.progressBar.setValue(0.65);
+
             this.createEnemySpritesGroup();
 
             this.parseInvisibleWallBlocks();
             this.createFallingPlatforms();
 
+            this.progressBar.setValue(0.75);
+
             this.addHealthBar();
             this.addLivesDisplay();
             this.addCoinsDisplay();
             this.initCamera();
+
+            this.progressBar.setValue(0.87);
 
             this.initCursor();
             
@@ -275,11 +476,7 @@ export class SectorScene extends Phaser.Scene {
 
             this.groundLayer.setDepth(3);
 
-            this.physics.world.bounds.width = this.groundLayer.width;
-            this.physics.world.bounds.height = this.groundLayer.height;
-
             this.physics.world.enable(this.player);
-            this.physics.world.setBoundsCollision(true, true, true, true);
 
             this.createDynamicForeGrounds();
             this.parseLava();
@@ -292,11 +489,18 @@ export class SectorScene extends Phaser.Scene {
                 this.cameraDebugButtons = new CameraButtons({ scene: this });
             }
 
-            this.tilesets = await Tile.getTileDataAndAttributes(this);
+            this.tilesets = Tile.getTileDataAndAttributes(this);
         }
 
-        this.readyToPlay = true;
-        await this.presentByOverlay();
+        this.events.emit('loadProgress', { loaded: 100, total: 100 });
+
+        this.createHasEnded = true;
+        this.progressBar.setValue(1);
+        this.pressAnyKey();
+    }
+
+    pressAnyKey() {
+
     }
 
     async createDarkOverlay() {
@@ -314,7 +518,7 @@ export class SectorScene extends Phaser.Scene {
             .setAlpha(1);
     }
 
-    async presentByOverlay() {
+    presentByOverlay() {
         var self = this;
         this.fadeTweenComplete = false;
         try {
@@ -376,7 +580,7 @@ export class SectorScene extends Phaser.Scene {
             scene: this,
             x: playerPositionX,
             y: playerPositionY,
-            health: GameSession.session.sectorKey == this.sector.sectorData.key ? GameSession.session.health : null,
+            health: GameSession.session.sectorKey == this.sector.sectorData.key ? GameSession.session.health : 3,
             level: Level.getCurrentLevel()
         });
 
@@ -403,15 +607,13 @@ export class SectorScene extends Phaser.Scene {
     }
 
     createPowerupGroup() {
-        this.powerUps = [];
+        if (this.powerUps === undefined) {
+            this.powerUps = [];
+        }
     }
 
     createCoinGroup() {
         this.coinSprites = [];
-    }
-
-    getPlayerCollisionObjectsGroup() {
-        return this.playerCollisionObjectsGroup;
     }
 
     parseCoinLayer() {
@@ -521,6 +723,16 @@ export class SectorScene extends Phaser.Scene {
         return this.enemyId;
     }
 
+    getPowerUpId() {
+        if (this.powerupCounter === undefined) {
+            this.powerupCounter = 0;
+        } else {
+            this.powerupCounter++;
+        }
+
+        return "powerup-" + this.powerupCounter;
+    }
+
     pushPreCreaturesList(enemy) {
         if (this.preCreatures === undefined) {
             this.preCreatures = [];
@@ -569,7 +781,7 @@ export class SectorScene extends Phaser.Scene {
             for (var i = 0; i < this.preCreatures.length; i++) {
                 var preCreature = this.preCreatures[i];
 
-                this.addCreature(this.preCreature);
+                this.addCreature(preCreature);
             }
         }
 
@@ -649,7 +861,7 @@ export class SectorScene extends Phaser.Scene {
                     });
 
                     break;
-
+                    
                 case "lava-fish-jumping":
                     creatureObject = new LavaFishJumping({
                         id: enemyId,
@@ -744,51 +956,51 @@ export class SectorScene extends Phaser.Scene {
     }
 
     parseCollisionTilesLayer() {
-        //var sectorCollisionTiles = this.sector.getCollisionTiles();
-        //var self = this;
+        var sectorCollisionTiles = this.sector.getCollisionTiles();
+        var self = this;
 
-        //sectorCollisionTiles.forEach(function (collisionTile, idx) {
-        //    var tile;
+        sectorCollisionTiles.forEach(function (collisionTile, idx) {
+           var tile;
 
-        //    if (collisionTile.type.startsWith("icebridge-")) {
-        //        let tileIndex = 2;
+           if (collisionTile.type.startsWith("icebridge-")) {
+               let tileIndex = 2;
 
-        //        if (collisionTile.type == "icebridge-start") {
-        //            tileIndex = 0;
-        //        } else if (collisionTile.type == "icebridge-mid") {
-        //            tileIndex = 1;
-        //        }
+               if (collisionTile.type == "icebridge-start") {
+                   tileIndex = 0;
+               } else if (collisionTile.type == "icebridge-mid") {
+                   tileIndex = 1;
+               }
 
-        //        tile = self.add.sprite(collisionTile.x, collisionTile.y, "icebridge", tileIndex);
-        //    } else if (collisionTile.type == "single-wood") {
-        //        tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood-single");
-        //    } else if (collisionTile.type == "wood-start") {
-        //        tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood", 0);
-        //    } else if (collisionTile.type == "wood-mid") {
-        //        tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood", 1);
-        //    } else if (collisionTile.type == "wood-end") {
-        //        tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood", 4);
-        //    } else if (collisionTile.type == "ind-ladder") {
-        //        alert("ladder");
-        //        tile = self.add.sprite(collisionTile.x, collisionTile.y, "ind-ladder");
-        //    } else if (collisionTile.type.startsWith(SpriteKeyConstants.INDUSTRIAL)) {
-        //        tile = self.add.sprite(collisionTile.x, collisionTile.y, "industrial", collisionTile.type.replace(SpriteKeyConstants.INDUSTRIAL, ""));
-        //    } else {
-        //        return;
-        //    }
+               tile = self.add.sprite(collisionTile.x, collisionTile.y, "icebridge", tileIndex);
+           } else if (collisionTile.type == "single-wood") {
+               tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood-single");
+           } else if (collisionTile.type == "wood-start") {
+               tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood", 0);
+           } else if (collisionTile.type == "wood-mid") {
+               tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood", 1);
+           } else if (collisionTile.type == "wood-end") {
+               tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood", 4);
+           } else if (collisionTile.type == "ind-ladder") {
+               alert("ladder");
+               tile = self.add.sprite(collisionTile.x, collisionTile.y, "ind-ladder");
+           } else if (collisionTile.type.startsWith(SpriteKeyConstants.INDUSTRIAL)) {
+               tile = self.add.sprite(collisionTile.x, collisionTile.y, "industrial", collisionTile.type.replace(SpriteKeyConstants.INDUSTRIAL, ""));
+           } else {
+               return;
+           }
 
-        //    self.physics.world.enableBody(tile, 0);
-        //    tile.body.setAllowGravity(false);
-        //    tile.body.setImmovable(true);
-        //    tile.setOrigin(0, 0);
+           self.physics.world.enableBody(tile, 0);
+           tile.body.setAllowGravity(false);
+           tile.body.setImmovable(true);
+           tile.setOrigin(0, 0);
 
-        //    if (collisionTile.climbable !== undefined && collisionTile.climbable === true) {
-        //        tile.body.setCollideWorldBounds(false);
-        //        self.climbableTilesGroup.add(tile);
-        //    } else {
-        //        self.collisionTilesGroup.add(tile);
-        //    }
-        //});
+           if (collisionTile.climbable !== undefined && collisionTile.climbable === true) {
+               tile.body.setCollideWorldBounds(false);
+               self.climbableTiles.push(tile);
+           } else {
+               self.collisionTiles.push(tile);
+           }
+        });
     }
 
     addSprite(i, j, type, index) {
@@ -1053,23 +1265,18 @@ export class SectorScene extends Phaser.Scene {
     }
 
     loadImages() {
-        this.loadNecessaryAtlas();
-        this.loadNecessaryImages();
-        this.loadEnemyImages();
-        this.loadParticleImages();
-        this.loadTileImages();
-        this.loadSlopeImages();
-        this.loadLevelMiscImages();
-        this.loadWeatherImages();
-    }
+        var keys =
+            ["arrow", "invisible-wall", "UI", "debug-camera", "tux", "backgrounds", "coin", "hell-coin", "powerup",
+                "sparkle", "smoke",
 
-    async loadTilemaps() {
-        var self = this;
-        var tilesets = this.sector.getTilesets();
+                "coin", "blocks", "industrial", "snow", "lava", "home-exit", "acid-rain", "spike",
 
-        tilesets.forEach(function (tileset, idx) {
-            self.preloadImage(tileset.name, tileset.value);//correct
-        });
+                "snowball", "bouncing-snowball", "flying-snowball", "plasma-gun", "platforms",
+                "mr-iceblock", "mr-bomb", "hell-crusher", "krosh", "fish", "ghoul", "jumpy", "spiky", "creature-thinking",
+
+                "level-misc"];
+
+        this.loadImagesForKeys(keys);
     }
 
     loadNecessaryAtlas() {
@@ -1078,40 +1285,28 @@ export class SectorScene extends Phaser.Scene {
         this.loadAtlasForKeys(keys);
     }
 
-    loadNecessaryImages() {
-        var keys = ["arrow", "invisible-wall", "UI", "debug-camera", "tux", "backgrounds", "coin", "hell-coin", "powerup"];
-
-        this.loadImagesForKeys(keys);
-    }
-
-    loadTileImages() {
-        var keys = ["coin", "blocks", "industrial", "snow", "lava", "home-exit", "acid-rain", "spike"];
-
-        this.loadImagesForKeys(keys);
-    }
-
-    loadWeatherImages() {
-        var keys = ["acid-rain"];
-
-        this.loadImagesForKeys(keys);
-    }
-
-    loadParticleImages() {
-        var keys = ["sparkle", "smoke"];
-
-        this.loadImagesForKeys(keys);
-    }
-
     loadSounds() {
-        this.load.audio("tux-killed", "./assets/sounds/kill.wav");
-        this.load.audio("enemy-fall", "./assets/sounds/fall.wav");
-        this.load.audio("collect-coin", "./assets/sounds/coin.wav");
+        var keys = ["tux", "common", "enemy"];
+
+        this.loadSoundsForKeys(keys);
     }
 
-    makeSounds() {
-        this.sound.add("tux-killed");
-        this.sound.add('enemy-fall');
-        this.sound.add("collect-coin");
+    loadSoundsForKeys(keys) {
+        var self = this;
+
+        keys.forEach(key => self.audioLoader.loadAudioFromData(key));
+    }
+
+    addSounds() {
+        var keys = ["tux", "common", "enemy"];
+
+        this.addSoundsForKeys(keys);
+    }
+
+    addSoundsForKeys(keys) {
+        var self = this;
+
+        keys.forEach(key => self.audioLoader.addSoundsFromData(key));
     }
 
     loadAtlasFromData(caption) {
@@ -1119,43 +1314,19 @@ export class SectorScene extends Phaser.Scene {
     }
 
     loadImage(caption, path) {
-        this.imageLoader.loadImage(caption, path, 'png');
+        this.imageLoader.loadImage(caption, path, 'png', scene);
     }
 
     loadMultipleImages(caption, path, start, end) {
-        this.imageLoader.loadMultipleImages(caption, path, 'png', start, end);
+        this.imageLoader.loadMultipleImages(caption, path, 'png', start, end, scene);
     }
 
     loadSpriteSheet(caption, path, frameWidth, frameHeight, n) {
-        this.imageLoader.loadSpriteSheet(caption, path, frameWidth, frameHeight, n);
-    }
-
-    loadImagesFromData(key) {
-        this.imageLoader.loadImagesFromData(key);
-    }
-
-    loadAnimationsFromData(key) {
-        this.animationLoader.loadAnimationsFromData(key);
+        this.imageLoader.loadSpriteSheet(caption, path, frameWidth, frameHeight, n, scene);
     }
 
     animationIsLoaded(key) {
         return this.anims.anims.entries != null && this.anims.anims.entries.length > 0 && this.anims.exists(key) != null;
-    }
-
-    loadSlopeImages() {
-        this.imageLoader.loadImagesFromData("slope-particles");
-        this.imageLoader.loadImagesFromData("slopes");
-    }
-
-    loadLevelMiscImages() {
-        this.imageLoader.loadImagesFromData("level-misc");
-    }
-
-    loadEnemyImages() {
-        var enemyImageKeys = ["snowball", "bouncing-snowball", "flying-snowball", "plasma-gun", "platforms",
-            "mr-iceblock", "mr-bomb", "hell-crusher", "krosh", "fish", "ghoul", "jumpy", "spiky", "creature-thinking"];
-
-        this.loadImagesForKeys(enemyImageKeys);
     }
 
     loadAtlasForKeys(atlasKeys) {
@@ -1165,9 +1336,10 @@ export class SectorScene extends Phaser.Scene {
     }
 
     loadImagesForKeys(imageKeys) {
+        var imageLoader = new ImageLoader({ scene: this });
         var self = this;
 
-        imageKeys.forEach(imageKey => self.loadImagesFromData(imageKey));
+        imageKeys.forEach(imageKey => imageLoader.loadImagesFromData(imageKey, self));
     }
 
     createAnimation(key, frames, frameRate, repeat) {
@@ -1192,18 +1364,19 @@ export class SectorScene extends Phaser.Scene {
         this.makeAnimationsForKeys(animationKeys);
     }
 
-    isFreeOfTiles(rect, ignoreUnisolid, tiletype) {
-        return this.collisionSystem.isFreeOfTiles(rect, ignoreUnisolid, tiletype);
-    }
+        isFreeOfTiles(rect, ignoreUnisolid, tiletype) {
+            return this.collisionSystem.isFreeOfTiles(rect, ignoreUnisolid, tiletype);
+        }
 
     static loadedAnimations = [];
 
     makeAnimationsForKeys(animationKeys) {
+        var animationLoader = this.animationLoader;
         var self = this;
 
         animationKeys.forEach(animationKey => {
             if (SectorScene.loadedAnimations.indexOf(animationKey) === -1) {
-                self.loadAnimationsFromData(animationKey);
+                animationLoader.loadAnimationsFromData(animationKey, this);
                 SectorScene.loadedAnimations.push(animationKey);
             }
         });
@@ -1437,13 +1610,29 @@ export class SectorScene extends Phaser.Scene {
         }
     }
 
+    updateReadyToPlay(time, delta) {
+
+    }
+
     update(time, delta) {
-        if (!this.readyToPlay) { return; }
+
+        if (!this.levelIntroHasEnded) {
+            if (this.leanPlayer) {
+                this.leanPlayer.update(time, delta);
+            } else {
+            }
+        }
+        
+        if(!this.readyToPlay) {
+            this.updateReadyToPlay(time, delta);
+            return;
+        }
+
         if (this.destroyingScene) { return; }   
         if (this.sector == null) { return; }
 
         this.canSaveOrLoad = true;
-        console.log("readyToPlay");
+
         if (this.quickSaveGameText != null) { this.quickSaveGameText.update(time, delta); }
 
         this.getKeyController().update();
@@ -1659,6 +1848,9 @@ export class SectorScene extends Phaser.Scene {
     }
 
     updatePowerups(time, delta) {
+        if (this.powerUps === undefined) {
+            return;
+        }
         this.powerUps.forEach(
             (powerup) => {
                 powerup.update(time, delta);
@@ -1677,7 +1869,7 @@ export class SectorScene extends Phaser.Scene {
             incollectableForTimer: timer
         });
 
-        this.powerupGroup.add(egg);
+        this.addPowerUp(egg);
     }
 
     addPlus(x, y, direction, timer) {
@@ -1692,7 +1884,7 @@ export class SectorScene extends Phaser.Scene {
             incollectableForTimer: timer
         });
 
-        this.powerupGroup.add(plus);
+        this.addPowerUp(plus);
     }
 
     addBouncyCoin(x, y, emerge) {
@@ -1706,19 +1898,28 @@ export class SectorScene extends Phaser.Scene {
             emerge: emerge
         });
 
-        this.powerupGroup.add(bouncyCoin);
+        this.addPowerUp(bouncyCoin);
     }
+
+    addPowerUp(powerup) {
+        if (this.powerUps === undefined) {
+            this.powerUps = [];
+        }
+
+        this.powerUps.push(powerup);
+        this.collisionObjects.push(powerup.getCollisionObject());
+    }   
 
     removeEnemy(enemy) {
         var collisionObject = this.collisionObjects.find(obj => obj.getId() == enemy.id);
 
-        if (collisionObject !== undefined) {
+        if (collisionObject !== undefined || (collisionObject.parent !== undefined && collisionObject.parent.isScheduledForRemoval)) {
             collisionObject.isScheduledForRemoval = true;
 
             this.collisionObjects = this.collisionObjects.filter(collisionObject => collisionObject.getId() != enemy.id);
         }
 
-        if (creatureObject !== undefined) {
+        if (enemy !== undefined || enemy.isScheduledForRemoval) {
             enemy.isScheduledForRemoval = true;
 
             this.creatureObjects = this.creatureObjects.filter(creature => creature.id != enemy.id);
@@ -1738,6 +1939,20 @@ export class SectorScene extends Phaser.Scene {
 
         this.coinSprites = this.coinSprites.filter(c => c.id != coin.id);
     }
+
+    removePowerUp(powerup) {
+        var collisionObject = this.collisionObjects.find(obj => obj.id == powerup.id);
+
+        if (collisionObject !== undefined) {
+            collisionObject.isScheduledForRemoval = true;
+
+            this.collisionObjects = this.collisionObjects.filter(collisionObject => collisionObject.getId() != powerup.id);
+        }
+
+        powerup.isScheduledForRemoval = true;
+
+    this.powerUps = this.powerUps.filter(p => p.id != powerup.id);
+    }  
 
     removeBlock(block) {
         this.blockGroup.remove(block);

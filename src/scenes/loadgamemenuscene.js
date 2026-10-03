@@ -25,7 +25,7 @@
     }
 
     preloadImages() {
-        var imageLoader = new ImageLoader({ scene: this });
+        var imageLoader = ImageLoader.getInstance(this);
 
         imageLoader.loadImagesFromData("menu");
     }

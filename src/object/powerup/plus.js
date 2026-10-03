@@ -1,24 +1,23 @@
-﻿export class PlusPowerUp extends Phaser.GameObjects.Sprite {
+﻿import { MovingSprite } from "../moving_object.js";
+import { CollisionGroup } from "../../collision/collision_group.js";
+import { PowerUp } from "./powerup.js";
+
+export class PlusPowerUp extends PowerUp {
     constructor(config) {
-        super(config.scene, config.x, config.y, config.key);
-        config.scene.physics.world.enable(this);
-        config.scene.add.existing(this);
-        this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
+        super(config, CollisionGroup.COLGROUP_MOVING);
 
         this.incollectableForTimer = 0;
 
         if (this.incollectableForTimer != null) {
             this.incollectableForTimer = config.incollectableForTimer;
         }
-
+        
         this.body.setAllowGravity(true);
         this.player = config.player;
         this.sector = config.sector;
         this.scene = config.scene;
-        this.id = config.id
+        this.id = this.scene.getPowerUpId();
         this.anims.play('plus-flickering');
-        this.body.setBounce(0);
-        this.body.setImmovable(true);
         this.direction = config.direction;
         this.initialDirection = this.direction;
 
@@ -27,19 +26,20 @@
 
         this.startedTimer = 1500;
         this.bounceBack = false;
+        this.objectName = "PowerupPlus";
+        this.isScheduledForRemoval = false;
+        this.group = CollisionGroup.COLGROUP_MOVING;
     }
 
     update(time, delta) {
-        if (this.killed) {
-            this.scene.powerupGroup.remove(this);
+        if (this.isScheduledForRemoval) {
+            this.scene.removePowerUp(this);
             this.destroy();
 
             return;
         }
 
-        if (this.incollectableForTimer > 0) {
-            this.incollectableForTimer -= delta;
-        }
+        super.update(time, delta);
 
         if (this.startedTimer > 0) {
             this.startedTimer -= delta;
@@ -58,22 +58,24 @@
         } else {
             this.angle += this.direction * 5;
         }
-
-        this.scene.physics.world.collide(this, this.scene.groundLayer);
-        this.scene.physics.world.collide(this, this.scene.woodGroup);
-        this.scene.physics.world.collide(this, this.scene.blockGroup);
-
-        this.scene.physics.world.overlap(this, this.player, this.collected);
     }
 
-    collected(plus, player) {
-        if (plus.incollectableForTimer <= 0) {
-            plus.collect(plus, player);
+    isValid() {
+        return true;
+    }
+
+    collect() {
+        if (this.incollectableForTimer <= 0) {
+            this.player.addHealth(2);
+            this.isScheduledForRemoval = true;
         }
     }
 
-    collect(plus, player) {
-        player.addHealth(2);
-        plus.killed = true;
+    collisionSolid(hit) {
+        super.collisionSolid(hit);
+    }
+
+    collision(other, hit) {
+        super.collision(other, hit);
     }
 }

@@ -1,4 +1,5 @@
 ﻿import { animationsData } from '../../assets/data/animations.js';
+import { AsyncLock } from '../common/asynclock.js';
 
 var loadedAnimationGroups = [];
 
@@ -10,17 +11,20 @@ export class AnimationLoader {
         this.REPEAT_INFINITELY = -1;
     }
 
-    loadAnimationsFromData(key) {
+    loadAnimationsFromData(key, scene) {
         if (!loadedAnimationGroups.includes(key)) {
-            this.doLoadAnimationsFromData(key);
+            this.doLoadAnimationsFromData(key, scene);
         }
     }
 
-    doLoadAnimationsFromData(key) {
-        var entities = this.animationsData.animations[key];
+    doLoadAnimationsFromData(key, scene) {
+        var entity = this.animationsData && this.animationsData.animations ? this.animationsData.animations[key] : null;
+        if (!entity || !entity.animations) {
+            console.warn('AnimationLoader: no animations found for group:', key);
+            return;
+        }
 
-        entities.animations.forEach(animation => this.loadAnimationFromData(animation));
-
+        entity.animations.forEach(animation => this.loadAnimationFromData(animation));
         loadedAnimationGroups.push(key);
     }
 
@@ -28,56 +32,109 @@ export class AnimationLoader {
         var key = entity.key;
         var frameRate = this.getFrameRateFromDataItem(entity);
         var repeat = this.getRepeatFromDataItem(entity);
-        var frames = this.getFramesFromDataItem(entity);
+        var frames = this.getFramesFromDataItem(entity) || [];
 
         this.createAnimation(key, frames, frameRate, repeat);
     }
 
     getFrameRateFromDataItem(entity) {
         var frameRate = this.DEFAULT_FRAMERATE;
-
-
-        if (entity.frameRate != null) {
+        if (entity && entity.frameRate != null) {
             frameRate = entity.frameRate;
         }
-
         return frameRate;
     }
 
     getRepeatFromDataItem(entity) {
         var repeat = this.REPEAT_INFINITELY;
-
-        if (entity.repeat != null) {
+        if (entity && entity.repeat != null) {
             repeat = entity.repeat;
         }
-
         return repeat;
     }
 
     getFramesFromDataItem(entity) {
-        var frames = entity.frames;
+        if (!entity) { return []; }
 
-        if (entity.spriteSheet != null) {
-            frames = this.scene.anims.generateFrameNumbers(entity.spriteSheet);
-        } else if (entity.start != null) {
-            frames = [];
-
-            for (var i = entity.start; i < entity.end + 1; i++) {
-                frames.push({ key: entity.caption + i });
+        // start/end + caption naming
+        if (entity.start != null && entity.end != null) {
+            const textureKey = entity.key;
+            const caption = entity.caption || '';
+            const duration = entity.frameDuration || 100;
+            const frames = [];
+            for (let i = entity.start; i <= entity.end; i++) {
+                frames.push({ key: caption + i });
             }
+
+            return frames;
         }
-        
-        return frames;
+
+        // nothing could be built
+        console.warn('AnimationLoader: could not generate frames for entity', entity);
+        return [];
     }
 
     createAnimation(key, frames, frameRate, repeat) {
-        this.scene.anims.create(
-            {
+        if (!Array.isArray(frames) || frames.length === 0) {
+            console.warn(`AnimationLoader: skipping animation '${key}' — no frames`, frames);
+            return;
+        }
+
+        // Normalize frames: ensure objects and have key/frame
+        const normalized = frames.map(f => {
+            if (typeof f === 'string' || typeof f === 'number') {
+                return { key: f, frame: f };
+            }
+            return f;
+        });
+
+        // Collect unique texture keys used by this animation
+        const textureKeys = Array.from(new Set(normalized.map(f => f.key).filter(k => k !== undefined && k !== null)));
+
+        // Find missing textures
+        const missing = textureKeys.filter(k => !this.scene.textures.exists(k));
+        if (missing.length > 0) {
+            // Defer creation until missing textures are added. Register once listeners for each missing key.
+            const tryCreate = () => {
+                const stillMissing = textureKeys.filter(k => !this.scene.textures.exists(k));
+                if (stillMissing.length === 0) {
+                    // All textures present — create animation
+                    try {
+                        this.scene.anims.create({
+                            key: key,
+                            frames: normalized,
+                            frameRate: frameRate,
+                            repeat: repeat
+                        });
+                        // console.log('AnimationLoader: created deferred animation', key);
+                    } catch (e) {
+                        console.warn('AnimationLoader: failed creating deferred animation', key, e);
+                    }
+                }
+            };
+
+            // Attach a one-time listener for texture additions. If several textures are missing, we'll tryCreate after each add.
+            missing.forEach(mk => {
+                this.scene.textures.once('add', (addedKey) => {
+                    if (addedKey === mk) {
+                        tryCreate();
+                    }
+                });
+            });
+
+            return;
+        }
+
+        // All textures exist — create immediately
+        try {
+            this.scene.anims.create({
                 key: key,
-                frames: frames,
+                frames: normalized,
                 frameRate: frameRate,
                 repeat: repeat
-            }
-        );
+            });
+        } catch (e) {
+            console.warn('AnimationLoader: failed creating animation', key, e);
+        }
     }
 }

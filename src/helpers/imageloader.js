@@ -1,50 +1,58 @@
 import { imagesData } from '../../assets/data/images.js';
+import { AsyncLock } from '../common/asynclock.js';
 
 export class ImageLoader {
     constructor(config) {
-        this.scene = config.scene;
         this.imagesData = imagesData;
+        this.alreadyImportedKeys = [];
+        this.lock = new AsyncLock();
     }
 
-    loadImagesFromData(key) {
-        var entity = this.imagesData.images[key];
-        var path = "";
-        var sprites = entity.sprites;
-        var spritesheets = entity.spritesheets;
+    loadImagesFromData(key, scene) {
+            if (this.alreadyImportedKeys[key] !== undefined && this.alreadyImportedKeys[key]) { return; }
 
-        if (entity.path != null) {
-            path = entity.path;
-        }
+            var entity = this.imagesData.images[key];
+            if (!entity) { return; }
 
-        if (sprites != null) {
-            sprites.forEach(sprite => this.loadImageFromData(path, sprite));
-        }
+            var path = "";
+            var sprites = entity.sprites;
+            var spritesheets = entity.spritesheets;
 
-        if (spritesheets != null) {
-            spritesheets.forEach(spritesheet => this.loadSpritesheetFromData(path, spritesheet));
-        }
+            if (entity.path != null) {
+                path = entity.path;
+            }
+
+            if (sprites != null) {
+                sprites.forEach(sprite => this.loadImageFromData(path, sprite, scene));
+            }
+
+            if (spritesheets != null) {
+                spritesheets.forEach(spritesheet => this.loadSpritesheetFromData(path, spritesheet, scene));
+            }
+
+            this.alreadyImportedKeys[key] = true;
     }
 
-    loadImageFromData(path, spriteObject) {
+    loadImageFromData(path, spriteObject, scene) {
         if (!spriteObject.hasOwnProperty("end")) {
-            this.loadImage(spriteObject.name, path + spriteObject.value, "png");
+            this.loadImage(spriteObject.name, path + spriteObject.value, "png", scene);
         } else {
             for (var i = spriteObject.start; i <= spriteObject.end; i++) {
-                this.loadImage(spriteObject.name + i, path + spriteObject.value + i, "png");
+                this.loadImage(spriteObject.name + i, path + spriteObject.value + i, "png", scene);
             }
         }
     }
 
-    loadImage(caption, path, ext) {
-        this.scene.load.image(caption, path + '.' + ext);
+    loadImage(caption, path, ext, scene) {
+        scene.load.image(caption, path + '.' + ext);
     }
 
-    loadSpritesheetFromData(path, spritesheet) {
-        this.loadSpriteSheet(spritesheet.name, path + spritesheet.value, spritesheet.frameWidth, spritesheet.frameHeight, spritesheet.number);
+    loadSpritesheetFromData(path, spritesheet, scene) {
+        this.loadSpriteSheet(spritesheet.name, path + spritesheet.value, spritesheet.frameWidth, spritesheet.frameHeight, spritesheet.number, scene);
     }
 
-    loadSpriteSheet(caption, path, frameWidth, frameHeight, n) {
-        this.scene.load.spritesheet({
+    loadSpriteSheet(caption, path, frameWidth, frameHeight, n, scene) {
+        scene.load.spritesheet({
             key: caption,
             url: path + '.png',
             frameConfig: {
@@ -56,9 +64,9 @@ export class ImageLoader {
         });
     }
 
-    loadMultipleImages(caption, path, ext, start, end) {
+    loadMultipleImages(caption, path, ext, start, end, scene) {
         for (var i = start; i < end + 1; i++) {
-            this.loadImage(caption + i, path + i, ext);
+            this.loadImage(caption + i, path + i, ext, scene);
         }
     }
 }

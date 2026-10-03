@@ -1,3 +1,4 @@
+import { Sector } from '../object/level/sector.js';
 import { Enemy, EnemyState } from './enemy.js';
 
 export var LedgeBehavior = {
@@ -19,6 +20,7 @@ export class WalkingEnemy extends Enemy { //everything implemented except collis
         this.maxDropHeight = -1;
 
         this.stayOnPlatformOverridden = false;
+        this.hasTurnedAroundAtLevelEnd = false;
     }
 
     initWalkSpeed(config) {
@@ -72,7 +74,7 @@ export class WalkingEnemy extends Enemy { //everything implemented except collis
     }
 
     activeUpdate(delta) {
-        activeUpdate(delta, (this.direction == Direction_LEFT) ? -walk_speed : +walk_speed);
+        activeUpdate(delta, (this.direction == this.Direction_LEFT) ? -walk_speed : +walk_speed);
     }
 
     activeUpdate(delta, destinationXVelocity, modifier) {
@@ -83,6 +85,16 @@ export class WalkingEnemy extends Enemy { //everything implemented except collis
         super.activeUpdate();
 
         modifier = 0;
+
+        if (!this.hasTurnedAroundAtLevelEnd) {
+            if (this.body.left <= 0) {
+                this.turnAround();
+                this.hasTurnedAroundAtLevelEnd = true;
+            } else if (this.body.right >= Sector.getCurrentSectorWidth() * 32) {
+                this.turnAround();
+                this.hasTurnedAroundAtLevelEnd = true;
+            }
+        }
 
         // Walk down the slopes easily ...
 
@@ -111,7 +123,9 @@ export class WalkingEnemy extends Enemy { //everything implemented except collis
             this.setAccelerationX((-1) * destinationXVelocity * iceMultiplier);
         }
 
-        if (this.maxDropHeight > -1 && this.onGround() && super.mightFall(this.maxDropHeight + 1) && !this.stayOnPlatformOverridden) {
+        if (!this.hasTurnedAroundAtLevelEnd && this.maxDropHeight > -1 &&
+            this.onGround() && super.mightFall(this.maxDropHeight + 1) &&
+            !this.stayOnPlatformOverridden) {
             this.turnAround();
         }
         
@@ -166,8 +180,8 @@ export class WalkingEnemy extends Enemy { //everything implemented except collis
         }
 
         if (hit.slopeNormal.x == 0 &&
-            (hit.left && this.direction == Direction.LEFT) ||
-                (hit.right && this.direction == Direction.RIGHT)) {
+            (hit.left && this.direction == this.DIRECTION_LEFT) ||
+                (hit.right && this.direction == this.DIRECTION_RIGHT)) {
             this.turnAround();
         }
     }

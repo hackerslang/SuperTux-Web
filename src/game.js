@@ -5,6 +5,9 @@ import { PauseScene } from './scenes/pausescene.js';
 import { GameMenuScene } from './scenes/gamemenuscene.js';
 import { GameSlotMenuScene } from './scenes/gameslotmenuscene.js';
 import { SettingsMenuScene } from './scenes/settingsmenu.js';
+import { LevelStartScene } from './scenes/levelstartscene.js';
+import { BootScene } from './scenes/bootscene.js';
+const LineProgressPlugin = window.LineProgressPlugin || window.rexlineprogressplugin || window.rexPlugins?.LineProgressPlugin;
 
 export const CANVAS_WIDTH = 1024;
 export const CANVAS_HEIGHT = 768;
@@ -14,6 +17,11 @@ export const GlobalGameConfig = {
     type: Phaser.CANVAS,
     width: CANVAS_WIDTH,
     height: CANVAS_HEIGHT,
+    plugins: {
+        global: [
+            { key: 'rexLineProgressPlugin', plugin: LineProgressPlugin, start: true }
+        ]
+    },
     physics: {
         default: 'arcade',
         arcade: {
@@ -23,6 +31,7 @@ export const GlobalGameConfig = {
         }
     },
     scene: [
+        BootScene,
         LevelSelectScene,
         LoadGameScene,
         SectorScene1,

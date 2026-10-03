@@ -37,7 +37,7 @@ export class MenuScene extends Phaser.Scene {
 
     initImageLoader() {
         if (this.imageLoader === undefined) {
-            this.imageLoader = new ImageLoader({ scene: this });
+            this.imageLoader = ImageLoader.getInstance(this);
         }
     }
 

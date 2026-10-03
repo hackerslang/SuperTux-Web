@@ -2,9 +2,31 @@ import { CollisionGroup } from '../collision/collision_group.js';
 import { HitResponse } from '../collision/collision_hit.js';
 import { GAME_GRAVITY } from '../game.js';
 import { GameSession } from '../object/game_session.js';
-import { Level } from '../object/level/Level.js';
+import { Level } from '../object/level/level.js';
 import { Sector } from '../object/level/sector.js';
 import { MovingSprite } from '../object/moving_object.js';
+import { Rect } from '../math/rect.js';
+import { EPSILON_COLLISION, SHIFT_DELTA } from '../common/constants.js';
+
+export class LeanTux extends Phaser.GameObjects.Sprite {
+    constructor(config) {
+        super(config.scene, config.x, config.y, config.key);
+        this.scene = config.scene;
+        this.scene.add.existing(this);
+
+        this.setScrollFactor(0);
+        this.setDepth(10002);
+        this.drawWalking();
+    }
+
+    drawWalking() {
+        this.anims.play("tux-strtlvl-walk", true);
+    }
+
+    update(time, delta) {
+        this.drawWalking();
+    }
+}
 
 export class Tux extends MovingSprite {
     constructor(config) {
@@ -13,8 +35,6 @@ export class Tux extends MovingSprite {
         this.level = config.level;
         this.originalLevel = config.level;
         this.scene = config.scene;
-        //this.anims.play("tux-stand");
-        this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
 
         this.id = -10;
 
@@ -344,7 +364,7 @@ export class Tux extends MovingSprite {
             if (this.getVelocityY() > 0) {
                 this.setVelocityY(0);
                 this.setAccelerationY(0);
-                this.saveGravityY();
+                super.saveGravityY();
                 this.body.setGravityY(0);
             }
 
@@ -360,7 +380,7 @@ export class Tux extends MovingSprite {
                 this.setVelocityY(0.2);
             }
         } else {
-            this.restoreGravityY();
+            super.restoreGravityY();
         }
 
         if ((hit.left || hit.right) && hit.slopeNormal.x == 0) {
@@ -370,18 +390,6 @@ export class Tux extends MovingSprite {
         if (hit.crush) {
 
         } 
-    }
-
-    saveGravityY() {
-        const gravity = this.body && this.body.gravity ? this.body.gravity : { x: 0, y: 0 };
-
-        this.savedGravityY = gravity.y;
-    }
-
-    restoreGravityY() {
-        if (!this.body || !this._savedGravityY) return;
-
-        this.body.setGravityY(this.savedGravityY || 0);
     }
 
     collision(other, hit) {
@@ -398,7 +406,7 @@ export class Tux extends MovingSprite {
         }
 
         if (hit.left || hit.right) {
-            this.tryGrab(); //grab objects right now, in update it will be too late
+            this.tryGrab();
         }
 
         // if (other.getGroup() == CollissionGroup.COLGROUP_TOUCHABLE) {
@@ -466,7 +474,32 @@ export class Tux extends MovingSprite {
 
         // Rounding bug phaser, character lowers slowly without this fix!
         if (!this.isClimbing) { this.body.y = Math.floor(this.body.y); }
-        
+
+        var dest = new Rect(this.getCollisionObject().bbox);
+        var grownDest = dest.grown(EPSILON_COLLISION);
+
+        var levelStart = 0 + EPSILON_COLLISION;
+        var levelEnd = (Sector.getCurrentSectorWidth() * 32) - EPSILON_COLLISION;
+
+        if (grownDest.left <= levelStart && this.getVelocityX() < 0) {
+            var shiftLeft = EPSILON_COLLISION - grownDest.left;
+            this.body.x = shiftLeft;
+            
+            this.setVelocityX(0);
+            this.setAccelerationX(0);
+
+            return;
+        } else if (grownDest.right >= levelEnd && this.getVelocityX() > 0) {
+            var shiftRight = grownDest.right - ((levelEnd * 32) - EPSILON_COLLISION);
+
+            this.body.x = shiftRight;
+
+            this.setVelocityX(0);
+            this.setAccelerationX(0);
+
+            return;
+        }
+
         if (this.body.y >= Math.floor(Level.getMaxLevelHeightY() * 32 - this.body.height) && !this.killed) {
             this.die();
 
@@ -1313,6 +1346,8 @@ export class Tux extends MovingSprite {
         this.jumping = true;
         this.isOnGround = false;
         this.canJump = false;
+
+        this.scene.sound.play("bigjump");
     }
 
     draw(time, delta) {

@@ -43,7 +43,7 @@
                     caption: 'tux-gameover-',
                     start: 0,
                     end: 3,
-                    frameRate: 8,
+                    frameRate: 20,
                     repeat: -1
                 },
                 {
@@ -147,6 +147,26 @@
                     start: 0,
                     end: 7,
                     frameRate: 12,
+                    repeat: -1
+                }
+            ]
+        },
+        "tux-lean-startlvlscreen": {
+            "animations": [
+                {
+                    key: 'tux-strtlvl-walk',
+                    caption: 'tux-l-walk-',
+                    start: 0,
+                    end: 7,
+                    frameRate: 12,
+                    repeat: -1
+                },
+                {
+                    key: 'tux-strtlvl-jump',
+                    caption: 'tux-l-jump-',
+                    start: 0,
+                    end: 2,
+                    frameRate: 24,
                     repeat: -1
                 }
             ]
@@ -394,6 +414,24 @@
                     ],
                     frameRate: 10,
                     repeat: -1
+                }
+            ]
+        },
+        "smartball": {
+            "animations": [
+                {
+                    key: 'smartball-walk',
+                    caption: "smartball-walk-",
+                    start: 0,
+                    end: 7,
+                    frameRate: 12,
+                    repeat: -1
+                },
+                {
+                    key: "smartball-squished",
+                    frames: [
+                        { key: "smartball-squished" }
+                    ]
                 }
             ]
         },

@@ -349,7 +349,7 @@ export class Enemy extends MovingSprite {
 
                 //     return HitResponse.FORCE_MOVE;
                 // }
-
+                
                 if (this.collisionSquished(player)) {
                     return HitResponse.FORCE_MOVE;
                 }
@@ -357,7 +357,7 @@ export class Enemy extends MovingSprite {
 
             // We leave stone out of it!!
 
-            return this.collisionPlayer(player, hit);
+            return this.collisionPlayer(this.player, hit);
         }
     }
 
@@ -661,7 +661,7 @@ export class Enemy extends MovingSprite {
             return;
         }
 
-        //play sound "sounds/squish.wav"
+        this.scene.sound.play("squish");
 
         this.gravityEnabled = true;
 
@@ -673,6 +673,10 @@ export class Enemy extends MovingSprite {
             var player = object;
 
             player.bounce(this);
+        }
+
+        if (this.powerUps !== undefined) {
+            this.releasePowerUps();
         }
     }
 

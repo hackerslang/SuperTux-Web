@@ -1,9 +1,10 @@
-﻿export class EggPowerUp extends Phaser.GameObjects.Sprite {
+﻿import { MovingSprite } from "../moving_object.js";
+import { CollisionGroup } from "../../collision/collision_group.js";
+import { PowerUp } from "./powerup.js";
+
+export class EggPowerUp extends PowerUp {
     constructor(config) {
-        super(config.scene, config.x, config.y, config.key);
-        config.scene.physics.world.enable(this);
-        config.scene.add.existing(this);
-        this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
+        super(config, CollisionGroup.COLGROUP_MOVING);
 
         this.incollectableForTimer = 0;
 
@@ -15,7 +16,7 @@
         this.player = config.player;
         this.sector = config.sector;
         this.scene = config.scene;
-        this.id = config.id
+        this.id = this.scene.getPowerUpId();
         this.setTexture('egg');
         this.startY = config.y;
         this.isEmpty = false;
@@ -24,36 +25,42 @@
         this.body.setImmovable(true);
         this.direction = config.direction;
         this.body.velocity.x = this.direction * 70;
+        this.objectName = "PowerupEgg";
+        this.isScheduledForRemoval = false;
+        this.group = CollisionGroup.COLGROUP_MOVING;
     }
 
     update(time, delta) {
-        if (this.killed) {
-            this.scene.powerupGroup.remove(this);
+        if (this.isScheduledForRemoval) {
+            this.scene.removePowerUp(this);
             this.destroy();
-
-            return;
         }
+
+        super.update(time, delta);
 
         if (this.incollectableForTimer > 0) {
             this.incollectableForTimer -= delta;
         }
 
         this.angle += 1;
-
-        this.scene.physics.world.collide(this, this.scene.groundLayer);
-        this.scene.physics.world.collide(this, this.scene.woodGroup);
-        this.scene.physics.world.collide(this, this.scene.blockGroup);
-        this.scene.physics.world.overlap(this, this.player, this.collected);
     }
 
-    collected(egg, player) {
-        if (egg.incollectableForTimer <= 0) {
-            egg.collect(egg, player);
+    collect() {
+        if (this.incollectableForTimer <= 0) {
+            this.player.addHealth(1);
+            this.isScheduledForRemoval = true;
         }
     }
 
-    collect(egg, player) {
-        player.addHealth(1);
-        egg.killed = true;
+    isValid() {
+        return true;
+    }
+
+    collisionSolid(hit) {
+        super.collisionSolid(hit);
+    }
+
+    collision(other, hit) {
+        super.collision(other, hit);
     }
 }

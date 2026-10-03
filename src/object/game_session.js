@@ -121,6 +121,7 @@ export class GameSession {
         GameSession.session.playerPosition = null;
         GameSession.session.playerVelocity = null;
         GameSession.enemiesPositions = null;
+        GameSession.session.health = 3;
     }
 
     //We store current game stats inside the GameSession.session, because:

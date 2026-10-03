@@ -75,7 +75,7 @@ export class Level {
     }
 
     static canHangOnClimbableSprite(creature, scene) {
-        let climbableObjects = scene.climbableTilesGroup.getChildren();
+        let climbableObjects = scene.climbableTiles;
         
         for (var i = 0; i < climbableObjects.length; i++) {
             let climbableObject = climbableObjects[i];
@@ -424,7 +424,8 @@ export class Level {
         
     }
 
-    woodHit(player) {
+
+    Hit(player) {
     }
 
     spikeHit(player) {

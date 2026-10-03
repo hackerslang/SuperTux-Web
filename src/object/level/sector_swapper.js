@@ -82,6 +82,24 @@ export class SectorSwapper {
             firstFreeSectorSlot.loadedSector = sector;
         }
     }
+            
+    // Launch a sector scene in the background (preload/create) without stopping the current scene.
+    // The sector scene will put itself to sleep if it receives { preloadOnly: true } in data.
+    static createNewSectorSceneInBackground(currentScene) {
+        var firstFreeSectorSlot = this.getFirstFreeSectorSlot();
+
+        if (firstFreeSectorSlot != null) {
+            var sector = Sector.getCurrentSector();
+
+            // Launch the scene so it runs in parallel with the current scene
+            currentScene.scene.launch(firstFreeSectorSlot.key, { slot: firstFreeSectorSlot, preloadOnly: true });
+            firstFreeSectorSlot.loadedSector = sector;
+
+            return firstFreeSectorSlot;
+        }
+
+        return null;
+    }
 
     static restartScene(currentScene) {
         var currentSlot = SectorSwapper.getCurrentSectorSlot(currentScene);

@@ -91,6 +91,23 @@
                 }
             ]
         },
+        "tux-lean-startlvlscreen": {
+            "path": "./assets/images/creatures/tux/",
+            "sprites": [
+                {
+                    "name": "tux-l-walk-",
+                    "value": "walk-",
+                    "start": 0,
+                    "end": 7
+                },
+                {
+                    "name": "tux-l-jump-",
+                    "value": "jump-",
+                    "start": 0,
+                    "end": 2
+                }
+            ]
+        },
         "acid-rain": {
             "path": "./assets/images/level/weather/",
             "sprites": [
@@ -150,6 +167,18 @@
                 {
                     "name": "grass2",
                     "value": "./assets/images/doodads/grass2"
+                },
+                {
+                    "name": "snowy-tree1",
+                    "value": "./assets/images/level/snow/snowy-tree1"
+                },
+                {
+                    "name": "snowy-tree2",
+                    "value": "./assets/images/level/snow/snowy-tree2"
+                },
+                {
+                    "name": "snowy-tree3",
+                    "value": "./assets/images/level/snow/snowy-tree3"
                 }
             ]
         },
@@ -616,6 +645,21 @@
                 {
                     "name": "snowball-squished",
                     "value": "snowball-squished-left"
+                }
+            ]
+        },
+        "smartball": {
+            "path": "./assets/images/creatures/smartball/",
+            "sprites": [
+                {
+                    "name": "smartball-walk-",
+                    "value": "smartball-",
+                    "start": 0,
+                    "end": 7
+                },
+                {
+                    "name": "smartball-squished",
+                    "value": "smartball-squished"
                 }
             ]
         },
