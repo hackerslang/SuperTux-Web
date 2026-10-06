@@ -43,6 +43,7 @@ export class SectorScene extends Phaser.Scene {
         super({ key: config.key });
         this.key = config.key;
         this.authors = config.authors || ["Hackerslang"];
+        this.isFirstPlay = true;
     }
 
     static currentSectorScene = null;
@@ -221,22 +222,6 @@ export class SectorScene extends Phaser.Scene {
         this.progressBar.setScrollFactor(0);
         this.progressBar.setValue(0.05);
 
-        // this.load.on('filecomplete', (fileKey /*, fileType, data */) => {
-        //     // Plugin should now be registered; try common factory locations
-        //     if (this.add && typeof this.add.rexLineProgress === 'function') {
-        //         // factory registered on scene add
-
-        //     } else {
-        //         // fallback: try the plugin manager (depends on how plugin registers itself)
-        //         const plugin = this.plugins.get && this.plugins.get('rexlineprogressplugin');
-        //         if (plugin && typeof plugin.add === 'function') {
-        //             this.progressBar = self.add.rexLineProgress({ x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT - 50, color: 0x366237, width: CANVAS_WIDTH * 0.8, height: 20 }).setDepth(199999);
-
-        //             this.progressBar.setValue(0, 1, 100);
-        //         }
-        //     }
-        // });
-
         // progress update
         this.load.on('progress', (value) => {
             if (this.progressBar) {
@@ -263,23 +248,25 @@ export class SectorScene extends Phaser.Scene {
         // key handlers...
         this.input.keyboard.on('keydown-ENTER', () => {
             if (this.createHasEnded) {
-                this.clearLevelScreen();
-                this.presentByOverlay();
-                this.physics.resume();
-                this.levelIntroHasEnded = true;
+                self.endLevelIntro();
             }
         });
 
         this.input.keyboard.on('keydown-SPACE', () => {
             if (this.createHasEnded) {
-                this.clearLevelScreen();
-                this.presentByOverlay();
-                this.physics.resume();
-                this.levelIntroHasEnded = true;
+                self.endLevelIntro();
             }
         });
 
         this.load.start();
+    }
+
+    endLevelIntro() {
+        this.clearLevelScreen();
+        this.presentByOverlay();
+        this.physics.resume();
+        this.levelIntroHasEnded = true;
+        this.readyToPlay = true;
     }
 
     clearLevelScreen() {
@@ -354,12 +341,14 @@ export class SectorScene extends Phaser.Scene {
         this.animationLoader = new AnimationLoader({ scene: this });
         this.audioLoader = new AudioLoader({ scene: this });
 
-        // Create the level screen UI (title, authors, progress bar). It is safe if createLevelScreen
-        // also tries to queue the tux assets again because Phaser will ignore duplicate keys.
-        this.loadTexturesLeanTux();
-        this.createLevelScreen();
+        if (this.isFirstPlay) {
+            // Create the level screen UI (title, authors, progress bar). It is safe if createLevelScreen
+            // also tries to queue the tux assets again because Phaser will ignore duplicate keys.
+            this.loadTexturesLeanTux();
+            this.createLevelScreen();
 
-        this.physics.pause();
+            this.physics.pause();
+        }
 
         this.DEFAULT_FRAMERATE = 10;
         this.REPEAT_INFINITELY = -1;
@@ -372,7 +361,7 @@ export class SectorScene extends Phaser.Scene {
         this.canSaveOrLoad = false;
         this.sector = Sector.getCurrentSector();
 
-        this.progressBar.setValue(0, 10, 100);
+        this.initProgressBar();
 
         if (this.sector != null) {
             this.creatures = this.sector.sectorData.creatures;
@@ -387,7 +376,7 @@ export class SectorScene extends Phaser.Scene {
             this.loadImages();
             this.loadSounds();
 
-            this.progressBar.setValue(20);
+            this.setProgressBarValue(20);
 
             this.fillTilesForeground();
             this.preloadTilesets();
@@ -398,7 +387,19 @@ export class SectorScene extends Phaser.Scene {
             this.collisionSystem = new CollisionSystem({ sectorScene: this });
         }
         
-        this.progressBar.setValue(0.35);
+        this.setProgressBarValue(0.35);
+    }
+
+    initProgressBar() {
+        if (this.isFirstPlay) {
+            this.progressBar.setValue(0, 10, 100);
+        }
+    }
+
+    setProgressBarValue(value) {
+        if (this.isFirstPlay) {
+            this.progressBar.setValue(value);
+        }
     }
 
     preloadTilesets() {
@@ -414,8 +415,10 @@ export class SectorScene extends Phaser.Scene {
     create() {
         this.canSaveOrLoad = false;
 
-        this.loadAnimationsLeanTux();
-        this.addLeanPlayer();
+        if (this.isFirstPlay) {
+            this.loadAnimationsLeanTux();
+            this.addLeanPlayer();
+        }
 
         this.createDarkOverlay();
         if (this.sector != null) {
@@ -435,16 +438,16 @@ export class SectorScene extends Phaser.Scene {
             if (this.climbableTiles === undefined) {
                 this.climbableTiles = [];
             }
-            
+
             this.createBackground();
             this.makeAnimations();
 
             this.parseAntarcticWater();
-            
+
             this.addSounds();
             this.createMap();
 
-            this.progressBar.setValue(0.45);
+            this.setProgressBarValue(0.45);
 
             // Create collision groups (Phaser)
             this.addPlayer();
@@ -454,24 +457,24 @@ export class SectorScene extends Phaser.Scene {
             this.tilemapParser = new TilemapParser({ sectorScene: this, sector: this.sector, sectorData: this.sector.sectorData });
             this.tilemapParser.parse();
 
-            this.progressBar.setValue(0.65);
+            this.setProgressBarValue(0.65);
 
             this.createEnemySpritesGroup();
 
             this.parseInvisibleWallBlocks();
             this.createFallingPlatforms();
 
-            this.progressBar.setValue(0.75);
+            this.setProgressBarValue(0.75);
 
             this.addHealthBar();
             this.addLivesDisplay();
             this.addCoinsDisplay();
             this.initCamera();
 
-            this.progressBar.setValue(0.87);
+            this.setProgressBarValue(0.87);
 
             this.initCursor();
-            
+
             this.createPowerupGroup();
 
             this.groundLayer.setDepth(3);
@@ -495,12 +498,7 @@ export class SectorScene extends Phaser.Scene {
         this.events.emit('loadProgress', { loaded: 100, total: 100 });
 
         this.createHasEnded = true;
-        this.progressBar.setValue(1);
-        this.pressAnyKey();
-    }
-
-    pressAnyKey() {
-
+        this.setProgressBarValue(1);
     }
 
     async createDarkOverlay() {
@@ -1364,9 +1362,9 @@ export class SectorScene extends Phaser.Scene {
         this.makeAnimationsForKeys(animationKeys);
     }
 
-        isFreeOfTiles(rect, ignoreUnisolid, tiletype) {
-            return this.collisionSystem.isFreeOfTiles(rect, ignoreUnisolid, tiletype);
-        }
+    isFreeOfTiles(rect, ignoreUnisolid, tiletype) {
+        return this.collisionSystem.isFreeOfTiles(rect, ignoreUnisolid, tiletype);
+    }
 
     static loadedAnimations = [];
 
@@ -1622,12 +1620,12 @@ export class SectorScene extends Phaser.Scene {
             } else {
             }
         }
-        
+        console.log("level intro ended ...");
         if(!this.readyToPlay) {
             this.updateReadyToPlay(time, delta);
             return;
         }
-
+        console.log("ready to play ...");
         if (this.destroyingScene) { return; }   
         if (this.sector == null) { return; }
 

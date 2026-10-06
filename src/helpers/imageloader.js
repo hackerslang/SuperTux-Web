@@ -9,28 +9,28 @@ export class ImageLoader {
     }
 
     loadImagesFromData(key, scene) {
-            if (this.alreadyImportedKeys[key] !== undefined && this.alreadyImportedKeys[key]) { return; }
+        if (this.alreadyImportedKeys[key] !== undefined && this.alreadyImportedKeys[key]) { return; }
 
-            var entity = this.imagesData.images[key];
-            if (!entity) { return; }
+        var entity = this.imagesData.images[key];
+        if (!entity) { return; }
 
-            var path = "";
-            var sprites = entity.sprites;
-            var spritesheets = entity.spritesheets;
+        var path = "";
+        var sprites = entity.sprites;
+        var spritesheets = entity.spritesheets;
 
-            if (entity.path != null) {
-                path = entity.path;
-            }
+        if (entity.path != null) {
+            path = entity.path;
+        }
 
-            if (sprites != null) {
-                sprites.forEach(sprite => this.loadImageFromData(path, sprite, scene));
-            }
+        if (sprites != null) {
+            sprites.forEach(sprite => this.loadImageFromData(path, sprite, scene));
+        }
 
-            if (spritesheets != null) {
-                spritesheets.forEach(spritesheet => this.loadSpritesheetFromData(path, spritesheet, scene));
-            }
+        if (spritesheets != null) {
+            spritesheets.forEach(spritesheet => this.loadSpritesheetFromData(path, spritesheet, scene));
+        }
 
-            this.alreadyImportedKeys[key] = true;
+        this.alreadyImportedKeys[key] = true;
     }
 
     loadImageFromData(path, spriteObject, scene) {
@@ -59,7 +59,7 @@ export class ImageLoader {
                 frameWidth: frameWidth,
                 frameHeight: frameHeight,
                 startFrame: 0,
-                endFrame: n
+                endFrame: (typeof n === 'number' && n > 0) ? (n - 1) : n
             }
         });
     }

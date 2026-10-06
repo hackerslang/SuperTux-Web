@@ -194,6 +194,8 @@ export class Tux extends MovingSprite {
 
         this.isScheduledForRemoval = false;
 
+        this.hasDiedBefore = false;
+
         this.setCustomGravityIfNeeded();
     }
 
@@ -465,6 +467,7 @@ export class Tux extends MovingSprite {
             if (this.killAt <= 0) {
                 this.scene.startDestroying();
                 GameSession.playerDied(this.level);
+                this.hasDiedBefore = true;
             }
 
             return;
@@ -846,6 +849,8 @@ export class Tux extends MovingSprite {
         this.isDying = true;
         this.duck = this.crawl = false;
         this.setGroup(CollisionGroup.COLGROUP_DISABLED);
+
+        this.scene.isFirstPlay = false;
     }
 
     isDead() {

@@ -14,7 +14,7 @@ export class AnimationLoader {
     loadAnimationsFromData(key, scene) {
         if (!loadedAnimationGroups.includes(key)) {
             this.doLoadAnimationsFromData(key, scene);
-        }
+        }   
     }
 
     doLoadAnimationsFromData(key, scene) {
@@ -34,7 +34,7 @@ export class AnimationLoader {
         var repeat = this.getRepeatFromDataItem(entity);
         var frames = this.getFramesFromDataItem(entity) || [];
 
-        this.createAnimation(key, frames, frameRate, repeat);
+        this.createAnimation(key, frames, frameRate, repeat, entity);
     }
 
     getFrameRateFromDataItem(entity) {
@@ -56,6 +56,11 @@ export class AnimationLoader {
     getFramesFromDataItem(entity) {
         if (!entity) { return []; }
 
+        // If frames are explicitly provided in data, use them directly
+        if (entity.frames != null && Array.isArray(entity.frames)) {
+            return entity.frames;
+        }
+
         // start/end + caption naming
         if (entity.start != null && entity.end != null) {
             const textureKey = entity.key;
@@ -74,10 +79,29 @@ export class AnimationLoader {
         return [];
     }
 
-    createAnimation(key, frames, frameRate, repeat) {
+    createAnimation(key, frames, frameRate, repeat, entity) {
         if (!Array.isArray(frames) || frames.length === 0) {
-            console.warn(`AnimationLoader: skipping animation '${key}' — no frames`, frames);
-            return;
+            // If an entity refers to a spritesheet, try to build frames from that spritesheet.
+            if (entity && entity.spriteSheet) {
+                const sheetKey = entity.spriteSheet;
+                if (this.scene.textures.exists(sheetKey)) {
+                    try {
+                        const frameNames = this.scene.textures.get(sheetKey).getFrameNames();
+                        // Build frames using numeric indices when possible
+                        frames = frameNames.map((n, i) => ({ key: sheetKey, frame: isNaN(+n) ? n : i }));
+                    } catch (e) {
+                        console.warn('AnimationLoader: failed building frames from spritesheet', sheetKey, e);
+                    }
+                } else {
+                    // Defer creation until the spritesheet texture is added — the existing missing-texture logic handles this below.
+                    frames = [{ key: sheetKey, frame: 0 }];
+                }
+            }
+
+            if (!Array.isArray(frames) || frames.length === 0) {
+                console.warn(`AnimationLoader: skipping animation '${key}' — no frames`, frames);
+                return;
+            }
         }
 
         // Normalize frames: ensure objects and have key/frame
@@ -98,11 +122,28 @@ export class AnimationLoader {
             const tryCreate = () => {
                 const stillMissing = textureKeys.filter(k => !this.scene.textures.exists(k));
                 if (stillMissing.length === 0) {
-                    // All textures present — create animation
+                    // All textures present — rebuild frames from spritesheet if needed
+                    let framesToUse = frames;
+                    if (entity && entity.spriteSheet) {
+                        try {
+                            framesToUse = this.getFramesFromDataItem(entity) || frames;
+                        } catch (e) {
+                            console.warn('AnimationLoader: failed rebuilding frames for', key, e);
+                        }
+                    }
+
+                    // Normalize again
+                    const normalizedFinal = (framesToUse || []).map(f => {
+                        if (typeof f === 'string' || typeof f === 'number') {
+                            return { key: f, frame: f };
+                        }
+                        return f;
+                    });
+
                     try {
                         this.scene.anims.create({
                             key: key,
-                            frames: normalized,
+                            frames: normalizedFinal,
                             frameRate: frameRate,
                             repeat: repeat
                         });
