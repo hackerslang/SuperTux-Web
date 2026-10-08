@@ -24,7 +24,6 @@ export var TileType = {
 }
 
 
-
 export class SlopeTiles {
     constructor(config) {
 
@@ -70,6 +69,7 @@ export class Tile {
     }
 
     static getTileAt(x, y) {
+        var tilesetsWithAttributes = Tile.getTileDataAndAttributes();
         var sectorData = Sector.getCurrentSector().sectorData;
         var data = sectorData.tilemaps[0].data;
         var tilesets = sectorData.tilesets;
@@ -82,8 +82,8 @@ export class Tile {
 
         var tileIndex = data[y][x];
 
-        for (var i = 0; i < tilesets.length; i++) {
-            var tileset = tilesets[i];
+        for (var i = 0; i < tilesetsWithAttributes.length; i++) {
+            var tileset = tilesetsWithAttributes[i];
 
             if (tileset.lastgid === undefined) {
                 if (i + 1 < tilesets.length) {
@@ -114,73 +114,79 @@ export class Tile {
         return (this.attributes & TileType.UNISOLID) != 0;
     }
 
-    static async getTileDataAndAttributes() {
-        var currentSector = Sector.getCurrentSector();
-        var sectorData = currentSector.sectorData;
-        var tilesets = sectorData.tilesets;
-        var newTilesets = [];
+    static _tilesetsWithDataAndAttributes = null;
+    static _tilesetPromise = null;
 
-        for (var i = 0; i < tilesets.length; i++) {
-            var tileset = tilesets[i];
-            var tileJsonUrl = tileset.jsonUrl;
+    static getTileDataAndAttributes() {
+        if (this._tilesetsWithDataAndAttributes) return this._tilesetsWithDataAndAttributes;
+        if (this._tilesetPromise) return this._tilesetPromise;
 
-            if (tileJsonUrl === undefined) {
-                tileJsonUrl = tileset.value.substring(0, tileset.value.lastIndexOf('.')) + '.json';
-            }
+        this._tilesetPromise = (async () => {
+            var currentSector = Sector.getCurrentSector();
+            var sectorData = currentSector.sectorData;
+            var tilesets = sectorData.tilesets;
+            var newTilesets = [];
 
-            if (tileJsonUrl !== null) {
-                try {
-                    const response = await fetch(tileJsonUrl);
+            for (var i = 0; i < tilesets.length; i++) {
+                var tileset = tilesets[i];
+                var tileJsonUrl = tileset.jsonUrl;
 
-                    if (!response.ok) {
+                if (tileJsonUrl === undefined) {
+                    tileJsonUrl = tileset.value.substring(0, tileset.value.lastIndexOf('.')) + '.json';
+                }
+
+                if (tileJsonUrl !== null) {
+                    try {
+                        const response = await fetch(tileJsonUrl);
+                        if (!response.ok) continue;
+                        const json = await response.json();
+                        tileset.attributes = json.attributes;
+                        tileset.datas = json.datas;
+                    } catch (error) {
                         continue;
                     }
-
-                    const json = await response.json();
-
-                    tileset.attributes = json.attributes;
-                    tileset.datas = json.datas;
-                } catch (error) {
-                    continue;
                 }
+
+                newTilesets.push(tileset);
             }
 
-            newTilesets.push(tileset);
-        }
+            this._tilesetsWithDataAndAttributes = newTilesets;
+            return newTilesets;
+        })();
 
-        return newTilesets;
+        return this._tilesetPromise;
     }
 
-    static async getSlopeTiles() {
-        var tilesetsWithAttributes = await this.getTileDataAndAttributes();
-        var slopeTiles = [];
+    //static getSlopeTiles() {
+    //    var tilesetsWithAttributes = this.getTileDataAndAttributes();
+    //    var slopeTiles = [];
 
-        for (var i = 0; i < tilesetsWithAttributes.length; i++) {
-            var tileset = tilesetsWithAttributes[i];
+    //    for (var i = 0; i < tilesetsWithAttributes.length; i++) {
+    //        var tileset = tilesetsWithAttributes[i];
 
-            if (tileset.attributes === undefined || tileset.datas === undefined) { continue; }
+    //        if (tileset.attributes === undefined || tileset.datas === undefined) { continue; }
 
-            var attributes = tileset.attributes;
-            var datas = tileset.datas;
-            var start = 0;
-            var end = tileset.lastgid - tileset.firstgid;
+    //        var attributes = tileset.attributes;
+    //        var datas = tileset.datas;
+    //        var start = 0;
+    //        var end = tileset.lastgid - tileset.firstgid;
 
-            for (var j = start; j < end && j < attributes.length && j < datas.length; j++) {
-                var attribute = attributes[j];
-                var slopeData = datas[j];
+    //        for (var j = start; j < end && j < attributes.length && j < datas.length; j++) {
+    //            var attribute = attributes[j];
+    //            var slopeData = datas[j];
 
-                if (attribute & TileType.SLOPE) {
-                    var slopeTile = new Tile({
-                        index: tileset.firstgid + j,
-                        attributes: attribute,
-                        data: slopeData
-                    });
+    //            if (attribute & TileType.SLOPE) {
+    //                var slopeTile = new Tile({
+    //                    index: tileset.firstgid + j,
+    //                    attributes: attribute,
+    //                    data: slopeData
+    //                });
 
-                    slopeTiles.push(slopeTile);
-                }
-            }
-        }
+    //                slopeTiles.push(slopeTile);
+    //            }
+    //        }
+    //    }
 
-        return slopeTiles;
-    }
+    //    return slopeTiles;
+    //}
 }

@@ -122,6 +122,8 @@ export class TilemapParser {
                     spriteFactory.createMovablePlatform(i, j, currentTile);
                 } else if (currentTile == TilemapConstants.HOME) {
                     spriteFactory.addHome(i, j);
+                } else if (currentTile.startsWith("sntree")) {
+                    spriteFactory.addSnowyTree(i, j, currentTile.replace("sntree", ""));
                 }
             }
         }
@@ -152,6 +154,10 @@ export class TilemapParser {
             default:
                 break;
         }
+    }
+
+    addSnowyTree(i, j, type) {
+        this.sectorScene.addSnowyTree(i, j, type);
     }
 
     createPreloadedWater(i, j) {
@@ -227,6 +233,10 @@ class SpriteFactory {
     
     addCoinSprite(x, y, coinType) {
         this.sectorScene.addCoinSprite(x, y, coinType);
+    }
+
+    addSnowyTree(x, y, type) {
+        this.sectorScene.addSnowyTree(x, y, type);
     }
 
     addSprite(i, j, key) {

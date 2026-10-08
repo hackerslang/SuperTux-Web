@@ -70,7 +70,6 @@ export class SectorScene extends Phaser.Scene {
     }
     
     startDestroying() {
-        this.destroyingScene = true;
         this.createDarkeningOverlayAndRestartScene();
     }
 
@@ -248,25 +247,33 @@ export class SectorScene extends Phaser.Scene {
         // key handlers...
         this.input.keyboard.on('keydown-ENTER', () => {
             if (this.createHasEnded) {
-                self.endLevelIntro();
+                self.endLoadingScreen();
             }
         });
 
         this.input.keyboard.on('keydown-SPACE', () => {
             if (this.createHasEnded) {
-                self.endLevelIntro();
+                self.endLoadingScreen();
             }
         });
 
         this.load.start();
     }
 
-    endLevelIntro() {
+    endLoadingScreen() {
         this.clearLevelScreen();
         this.presentByOverlay();
         this.physics.resume();
         this.levelIntroHasEnded = true;
         this.readyToPlay = true;
+    }
+
+    startLevelIntro() {
+        if (!this.isFirstPlay) {
+            this.presentByOverlay();
+            this.levelIntroHasEnded = true;
+            this.readyToPlay = true;
+        }
     }
 
     clearLevelScreen() {
@@ -354,7 +361,6 @@ export class SectorScene extends Phaser.Scene {
         this.REPEAT_INFINITELY = -1;
 
         this.canSaveOrLoad = false;
-        this.destroyingScene = false;
 
         this.readyToPlay = false;
 
@@ -495,7 +501,9 @@ export class SectorScene extends Phaser.Scene {
             this.tilesets = Tile.getTileDataAndAttributes(this);
         }
 
-        this.events.emit('loadProgress', { loaded: 100, total: 100 });
+        this.setProgressBarValue(1);
+
+        this.startLevelIntro();
 
         this.createHasEnded = true;
         this.setProgressBarValue(1);
@@ -651,6 +659,7 @@ export class SectorScene extends Phaser.Scene {
             coinType: coinType
         });
 
+        coin.setDepth(100);
         this.coinSprites.push(coin);
         this.collisionObjects.push(coin.getCollisionObject());
     }
@@ -1620,7 +1629,7 @@ export class SectorScene extends Phaser.Scene {
             } else {
             }
         }
-        console.log("level intro ended ...");
+
         if(!this.readyToPlay) {
             this.updateReadyToPlay(time, delta);
             return;
@@ -1885,6 +1894,16 @@ export class SectorScene extends Phaser.Scene {
         this.addPowerUp(plus);
     }
 
+    addSnowyTree(x, y, type) {
+        let snowyTree = this.add.image(x * 32, y * 32, 'snowy-tree' + type);
+        snowyTree.y -= snowyTree.height - 40;
+        this.physics.world.enableBody(snowyTree, 0);
+        snowyTree.body.setAllowGravity(false);
+        snowyTree.body.setImmovable(true);
+        snowyTree.setDepth(1);
+        snowyTree.setOrigin(0, 0);
+    }
+
     addBouncyCoin(x, y, emerge) {
         let bouncyCoin = new BouncyCoin({
             scene: this.scene,
@@ -1949,7 +1968,7 @@ export class SectorScene extends Phaser.Scene {
 
         powerup.isScheduledForRemoval = true;
 
-    this.powerUps = this.powerUps.filter(p => p.id != powerup.id);
+        this.powerUps = this.powerUps.filter(p => p.id != powerup.id);
     }  
 
     removeBlock(block) {

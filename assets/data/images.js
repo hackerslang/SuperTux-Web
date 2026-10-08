@@ -170,15 +170,15 @@
                 },
                 {
                     "name": "snowy-tree1",
-                    "value": "./assets/images/level/snow/snowy-tree1"
+                    "value": "./assets/images/level/snow/snowy_tree1"
                 },
                 {
                     "name": "snowy-tree2",
-                    "value": "./assets/images/level/snow/snowy-tree2"
+                    "value": "./assets/images/level/snow/snowy_tree2"
                 },
                 {
                     "name": "snowy-tree3",
-                    "value": "./assets/images/level/snow/snowy-tree3"
+                    "value": "./assets/images/level/snow/snowy_tree3"
                 }
             ]
         },
