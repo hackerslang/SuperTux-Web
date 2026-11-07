@@ -24,7 +24,7 @@ export class PowerUp extends MovingSprite {
     }
 
     update(time, delta) {
-        if (this.isScheduledForRemoval) {
+        if (this.isScheduledForRemoval || !this.body) {
             return;
         }
 

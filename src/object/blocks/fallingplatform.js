@@ -32,7 +32,7 @@ export class FallingPlatform extends Phaser.GameObjects.Sprite {
         this.pushable = false;
 
         this.playerCollides = true;
-
+        
         this.setGroup(CollisionGroup.COLGROUP_STATIC);
     }
 

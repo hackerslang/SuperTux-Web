@@ -3,6 +3,7 @@
         super(config.scene, config.x, config.y, config.key);
         config.scene.physics.world.enable(this);
         config.scene.add.existing(this);
+        this.scene = config.scene;
         this.body.setVelocity(0, 0).setBounce(0, 0).setCollideWorldBounds(false);
 
         this.body.setImmovable(true);
@@ -16,25 +17,36 @@
         this.body.setAllowGravity(allowGravity);
         this.key = config.key;
         this.level = config.level;
-        this.scene = config.scene;
         this.body.setBounce(0);
         this.setDepth(config.depth);
+        this.texture = config.texture;
+        this.velocity = config.velocity || new Phaser.Math.Vector2(0, 0);
+        this.setVelocity(this.velocity.x, this.velocity.y);
 
+        this.removed = false;
 
         if (this.key != null) {
-            this.anims.play(this.key).once('animationcomplete', () => {
+            this.anims.play(this.texture).once('animationcomplete', () => {
+                this.removed = true;
                 this.destroy();
             });
-            
         } else if (this.texture != null) {
             this.setTexture(this.texture);
         }
     }
 
     update(time, delta) {
+        if (this.removed) return;
+
         if (this.y > this.scene.cameras.main.scrollY + this.scene.sys.game.canvas.height + 32) {
+            this.removed = true;
             this.destroy();
         }
+    }
+
+    setVelocity(x, y) {
+        this.body.velocity.x = x;
+        this.body.velocity.y = y;
     }
 }
 

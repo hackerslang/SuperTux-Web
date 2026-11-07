@@ -122,6 +122,10 @@ export class TilemapParser {
                     spriteFactory.createMovablePlatform(i, j, currentTile);
                 } else if (currentTile == TilemapConstants.HOME) {
                     spriteFactory.addHome(i, j);
+                } else if (currentTile.startsWith("bb-")) {
+                    spriteFactory.addBonusBlock(i, j, currentTile);
+                } else if (currentTile == "br") {
+                    spriteFactory.addBrick(i, j);
                 } else if (currentTile.startsWith("sntree")) {
                     spriteFactory.addSnowyTree(i, j, currentTile.replace("sntree", ""));
                 }
@@ -241,6 +245,14 @@ class SpriteFactory {
 
     addSprite(i, j, key) {
         this.sectorScene.addSprite(i, j, key);
+    }
+
+    addBonusBlock(i, j, type) {
+        this.sectorScene.addBonusBlock(i, j, type);
+    }
+
+    addBrick(i, j) {
+        this.sectorScene.addBrick(i, j);
     }
 
     createCollisionTile(i, j, key) {

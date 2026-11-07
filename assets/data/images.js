@@ -195,18 +195,6 @@
             ],
             "sprites": [
                 {
-                    "name": "wood-single",
-                    "value": "wood-tiny"
-                },
-                {
-                    "name": "bonus-block",
-                    "value": "bonus-block"
-                },
-                {
-                    "name": "bonus-block-empty",
-                    "value": "block-empty",
-                },
-                {
                     "name": "brick",
                     "value": "brick"
                 },
@@ -225,6 +213,51 @@
                     "value": "brick_piece",
                     "start": 1,
                     "end": 6
+                }
+            ]
+        },
+        "blocks2": {
+            "path": "./assets/images/objects/blocks/",
+            "sprites": [
+                {
+                    "name": "wood-single",
+                    "value": "wood-tiny"
+                },
+                {
+                    "name": "blue-bonus-block-empty",
+                    "value": "empty"
+                },
+                {
+                    "name": "blue-bonus-block",
+                    "value": "full-0"
+                },
+                {
+                    "name": "orange-bonus-block-empty",
+                    "value": "orange_empty"
+                },
+                {
+                    "name": "orange-bonus-block",
+                    "value": "orange-",
+                    "start": 0,
+                    "end": 4
+                },
+                {
+                    "name": "purple-bonus-block-empty",
+                    "value": "purple_empty"
+                },
+                {
+                    "name": "purple-bonus-block",
+                    "value": "purple-",
+                    "start": 0,
+                    "end": 4
+                },
+                {
+                    "name": "retro-info-block",
+                    "value": "retro_info"
+                },
+                {
+                    "name": "bonus-block-empty",
+                    "value": "block-empty",
                 }
             ]
         },
@@ -349,6 +382,91 @@
                 }
             ]
         },
+        "goal": {
+            "path": "./assets/image/Level/goal/",
+            "sprites": [
+                {  
+                    "name": "goal1-1",
+                    "value": "goal1-1"
+                },
+                {
+                    "name": "goal1-2",
+                    "value": "goal1-2"
+                },
+                {
+                    "name": "goal1-3",
+                    "value": "goal1-3"
+                },
+                {
+                    "name": "goal1-4",
+                    "value": "goal1-4"
+                },
+                {
+                    "name": "goal1-5",
+                    "value": "goal1-5"
+                },
+                {
+                    "name": "goal2-1",
+                    "value": "goal2-1"
+                },
+                {
+                    "name": "goal2-2",
+                    "value": "goal2-2"
+                },
+                {
+                    "name": "goal2-3",
+                    "value": "goal2-3"
+                },
+                {
+                    "name": "goal2-4",
+                    "value": "goal2-4"
+                },
+                {
+                    "name": "goal2-5",
+                    "value": "goal2-5"
+                },
+                {
+                    "name": "goal3-1",
+                    "value": "goal3-1"
+                },
+                {
+                    "name": "goal3-2",
+                    "value": "goal3-2"
+                },
+                {
+                    "name": "goal3-3",
+                    "value": "goal3-3"
+                },
+                {
+                    "name": "goal3-4",
+                    "value": "goal3-4"
+                },
+                {
+                    "name": "goal3-5",
+                    "value": "goal3-5"
+                },
+                {
+                    "name": "goal4-1",
+                    "value": "goal4-1"
+                },
+                {
+                    "name": "goal4-2",
+                    "value": "goal4-2"
+                },
+                {
+                    "name": "goal4-3",
+                    "value": "goal4-3"
+                },
+                {
+                    "name": "goal4-4",
+                    "value": "goal4-4"
+                },
+                {
+                    "name": "goal4-5",
+                    "value": "goal4-5"
+                },
+            ]
+        },
         "hell": {
             "path": "./assets/images/level/hell/",
             "sprites": [
@@ -357,7 +475,7 @@
                     "value": "rock-d"
                 },
                 {
-                    "name": "hell-meidum-block",
+                    "name": "hell-medium-block",
                     "value": "rock-b"
                 },
                 {
@@ -808,6 +926,18 @@
                     "end": 9
                 }
 
+            ]
+        },
+        "snow-rocks": {
+            "path": "./assets/images/level/snow/",
+            "spritesheets": [
+                {
+                    "name": "snow-rocks",
+                    "value": "rocks-snow",
+                    "frameWidth": 32,
+                    "frameHeight": 32,
+                    "number": 16
+                }
             ]
         },
         "debug-camera": {

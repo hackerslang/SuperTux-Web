@@ -241,6 +241,15 @@
                 }
             ]
         },
+        "brick": {
+            "animations": [
+                {
+                    key: 'brick-piece',
+                    frames: [{ key: 'brick' }],
+                    frameRate: 24
+                },
+            ],
+        },
         "captain-snowball": {
             "animations": [
                 {

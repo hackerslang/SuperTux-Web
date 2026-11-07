@@ -35,11 +35,15 @@ export class Tux extends MovingSprite {
         this.level = config.level;
         this.originalLevel = config.level;
         this.scene = config.scene;
+        
+        this.HIT_FROM_BELOW_GRACE_TIME = 200;
+        this.hitFromBelowGraceTimer = 0;
 
         this.id = -10;
 
         this.isTile = false;
         this.isEnemy = false;
+        this.isPlayer = true;
 
         this.REAL_COLLISION_BOX_WIDTH = 40;
         this.REAL_COLLISION_BOX_HEIGHT = 60;
@@ -55,6 +59,8 @@ export class Tux extends MovingSprite {
         this.x = config.x;
         this.y = config.y;
         this.scene = config.scene;
+        
+        this.previouslyHitFromBelow = false;
 
         this.killTimer = 0;
         this.wasHurt = 0;
@@ -69,8 +75,8 @@ export class Tux extends MovingSprite {
 
         this.canJump = true;
         this.isDucked = false;
-        this.isBig = true;
-        this.isOnGround = true;
+        this.isBigFlag = true;
+        this.isOnGroundFlag = true;
         this.fallMode = this.ON_GROUND;
 
         this.ON_GROUND = 0;
@@ -196,11 +202,28 @@ export class Tux extends MovingSprite {
 
         this.hasDiedBefore = false;
 
+        this.isSwimBoosting = false;
+
+        this.previouslySavedGravity = false;
+        this.previouslyHitFromBelow = false;
+
         this.setCustomGravityIfNeeded();
     }
 
     isValid() {
         return true;
+    }
+
+    isSliding() {
+        return false;
+    }
+
+    isSwimming() {
+        return false;
+    }
+
+    isWaterJumping() {
+        return false;
     }
 
     setCustomGravityIfNeeded() {
@@ -209,6 +232,8 @@ export class Tux extends MovingSprite {
         if (customGravity !== undefined) {
             this.body.setGravityX(customGravity.x || 0);
             this.body.setGravityY(customGravity.y || GAME_GRAVITY);
+
+            this.saveGravityY();
         }
     }
 
@@ -363,23 +388,40 @@ export class Tux extends MovingSprite {
 
     handleCollisionLogic(hit) {
         if (hit.bottom) {
+            // Ignore transient "standing" hits immediately after a head bump.
+            // This prevents getting stuck under bouncing blocks when top/bottom
+            // contacts are reported in quick succession.
+            if (this.hitFromBelowGraceTimer > 0 && this.previouslyHitFromBelow) {
+                this.isOnGroundFlag = false;
+                super.restoreGravityY();
+
+                return;
+            }
+
             if (this.getVelocityY() > 0) {
+                super.saveGravityY();
                 this.setVelocityY(0);
                 this.setAccelerationY(0);
-                super.saveGravityY();
                 this.body.setGravityY(0);
             }
 
-            if (!this.isSwimming) {
-                this.isOnGround = true;
+            if (!this.isSwimming()) {
+                this.isOnGroundFlag = true;
+                this.previouslyHitFromBelow = false;
+                this.hitFromBelowGraceTimer = 0;
             }
 
             this.floorNormal = hit.slopeNormal;
             this.isSlideJumpingFalling = false;
             this.slideJumping = false;
         } else if (hit.top) {
-            if (this.getVelocityY < 0) {
-                this.setVelocityY(0.2);
+            if (this.hitFromBelowGraceTimer <= 0) {
+                this.setVelocityY(30);
+                this.setAccelerationY(0);
+                this.previouslyHitFromBelow = true;
+                this.hitFromBelowGraceTimer = this.HIT_FROM_BELOW_GRACE_TIME;
+                this.isOnGroundFlag = false;
+                super.restoreGravityY();
             }
         } else {
             super.restoreGravityY();
@@ -394,6 +436,10 @@ export class Tux extends MovingSprite {
         } 
     }
 
+    isBig() {
+        return this.isBigFlag;
+    }
+
     collision(other, hit) {
         var bullet = other;
 
@@ -401,10 +447,30 @@ export class Tux extends MovingSprite {
         //     return FORCE_MOVE;
         // }
 
-        var player = !other.parent.isEnemy ? other.parent : undefined;
+        var player = other.parent.isPlayer ? other.parent : undefined;
 
         if (player !== undefined) {
             return HitResponse.ABORT_MOVE;
+        }
+
+        if (other.parent.isBlock !== undefined && other.parent.isBlock && hit.top) {
+            this.handleCollisionLogic(hit);
+        }
+
+        if (hit.left || hit.right) {
+            this.tryGrab();
+        }
+
+        if (other.getGroup() == CollisionGroup.COLGROUP_TOUCHABLE) {
+            var trigger = other.parent.isTrigger ? other.parent : null;
+
+            if (trigger !== undefined && !this.deActivated()) {
+                if (this.keyController.pressed("UP")) {
+                    trigger.event(this, TriggerBase.EVENT_ACTIVATE);
+                }
+            }
+
+            return HitResponse.FORCE_MOVE;
         }
 
         if (hit.left || hit.right) {
@@ -423,13 +489,14 @@ export class Tux extends MovingSprite {
 
         var enemy = other.parent.isEnemy ? other.parent : undefined;
 
-
-        if (this.isIntentionallySafe || this.postDamageSafetyTimer > 0 || this.tempSafetyTimer > 0 || this.invincibleTimer > 0)
-            return HitResponse.FORCE_MOVE;
-        if (this.stone)
-            return HitResponse.ABORT_MOVE;
-        if (enemy.isFrozen() && enemy.getVelocityY() != 0) {
-            this.handleCollisionLogic(hit);
+        if (enemy !== undefined) {
+            if (this.isIntentionallySafe || this.postDamageSafetyTimer > 0 || this.tempSafetyTimer > 0 || this.invincibleTimer > 0)
+                return HitResponse.FORCE_MOVE;
+            if (this.stone)
+                return HitResponse.ABORT_MOVE;
+            if (enemy.isFrozen() && enemy.getVelocityY() != 0) {
+                this.handleCollisionLogic(hit);
+            }
         }
 
         return HitResponse.CONTINUE;
@@ -473,10 +540,18 @@ export class Tux extends MovingSprite {
             return;
         }
 
+        if (this.hitFromBelowGraceTimer > 0) {
+            this.hitFromBelowGraceTimer -= delta;
+        }
+
         //this.stayInStaticsIfNeeded();
 
         // Rounding bug phaser, character lowers slowly without this fix!
         if (!this.isClimbing) { this.body.y = Math.floor(this.body.y); }
+
+        if (!this.onGround()) {
+            this.previouslySavedGravity = false;
+        }
 
         var dest = new Rect(this.getCollisionObject().bbox);
         var grownDest = dest.grown(EPSILON_COLLISION);
@@ -521,6 +596,10 @@ export class Tux extends MovingSprite {
 
         if (this.skiddingTimer > 0) {
             this.skiddingTimer -= delta;
+        }
+
+        if (this.hitFromBelowGraceTimer > 0) {
+            this.hitFromBelowGraceTimer -= delta;
         }
 
         if (this.kickTimer > 0) {
@@ -799,6 +878,14 @@ export class Tux extends MovingSprite {
         }
     }
 
+    bounce(enemy) {
+        if (!(get_bonus() == BONUS_AIR))
+            this.setVelocityY(this.keyController.hold(Control.JUMP) ? -520.0 : -300.0);
+        else {
+            this.setVelocityY(this.keyController.hold(Control.JUMP) ? -580.0 : -340.0);
+        }
+    }
+
     kill(completely) {
         if (this.dying || this.isDeactivated || this.isWinning) {
             return;
@@ -862,7 +949,7 @@ export class Tux extends MovingSprite {
             return;
         } 
 
-        if (!this.isBig) {
+        if (!this.isBig()) {
             return;
         }
 
@@ -878,17 +965,7 @@ export class Tux extends MovingSprite {
     }
 
     onGround() {
-        return this.isOnGround || (this.getVelocityY() == 0 && !this.jumping) || this.slightlyAboveGround(); //|| this.onObject(); //|| this.slightlyAboveObject();
-    }
-
-    slightlyAboveGround() {
-        var x = this.body.x;
-        var bottomY = this.body.bottom - 10;
-        var bottomY2 = this.body.bottom + 15;
-        var y = this.body.y + 32;
-
-        return false;
-        return Level.isOnTopOfObjects(x, y, this.scene) || Level.isOnTopOfPlayerCollisionObject(x, bottomY, bottomY2, this.scene);
+        return this.isOnGroundFlag;
     }
 
     onObject() {
@@ -953,7 +1030,7 @@ export class Tux extends MovingSprite {
             return;
         }
 
-        if (!this.isBig) {
+        if (!this.isBig()) {
             return;
         }
 
@@ -1336,7 +1413,7 @@ export class Tux extends MovingSprite {
             if (controller.pressed('jump')) {
                 this.fallingFlagStart = true;
                 this.fallingStartTimer = 0;
-                this.doJump(Math.abs(vx) > this.MAX_WALK_XM ? -620 : -550);
+                this.doJump(Math.abs(vx) > this.MAX_WALK_XM ? -500 : -470);
             } 
         }
 
@@ -1345,11 +1422,14 @@ export class Tux extends MovingSprite {
 
     doJump(speed) {
         if (!this.onGround()) { return; }
+
+        super.restoreGravityY();
         
         this.setVelocityY(speed);
 
         this.jumping = true;
-        this.isOnGround = false;
+        this.isOnGroundFlag = false;
+        
         this.canJump = false;
 
         this.scene.sound.play("bigjump");
@@ -1363,7 +1443,7 @@ export class Tux extends MovingSprite {
 
         if (this.unControllable !== undefined && this.unControllable) {
             this.drawShakenUncontrollable();
-        } else if (this.ducked && this.isBig) {
+        } else if (this.ducked && this.isBig()) {
             this.drawDuck();
         } else if (this.skiddingTimer > 0) {
             this.drawSkid();

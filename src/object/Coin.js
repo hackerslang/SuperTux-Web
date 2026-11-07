@@ -17,6 +17,7 @@ export class Coin extends StillSprite {
         this.destroyed = false;
 
         this.isCollectible = true;
+        this.isCoin = true;
         this.setCoinType(config);
     }
 
@@ -32,12 +33,16 @@ export class Coin extends StillSprite {
         this.coinType = "coin";
         this.coinValue = 1;
         this.anims.play('coin-moving');
+
+        return this;
     }
 
     setCoinTypeHell() {
         this.coinType = "hell-coin";
         this.coinValue = 2;
         this.anims.play('hell-coin-moving');
+
+        return this;
     }
 
     update(time, delta) {
@@ -132,6 +137,7 @@ export class Coin extends StillSprite {
         this.soundTimer = 1000;
 
         this.scene.sound.play("collect-coin", { detune: pitch * 100 });
+        this.scene.addBouncyCoin(this.x, this.y, false);
         this.scene.addCollectedCoin(this.coinValue);
 
         this.destroyCoin();
@@ -145,61 +151,5 @@ export class Coin extends StillSprite {
 
     remove() {
         this.scene.removeCoin(this);
-    }
-}
-
-class BouncyCoin extends Phaser.GameObjects.Sprite {
-    constructor(config) {
-        super(config.scene, config.x, config.y, config.key);
-        config.scene.physics.world.enable(this);
-        config.scene.add.existing(this);
-
-        this.id = config.id;
-        this.body.setAllowGravity(false);
-        this.setOrigin(0, 0);
-        this.FADE_TIME = 200;
-        this.LIFE_TIME = 500;
-        this.level = config.level;
-        this.timer = this.LIFE_TIME;
-
-        if (config.emerge) {
-            this.emergeDistance = 32;
-        }
-        
-        this.alpha = 1;
-        this.isRemoved = false;
-        this.anims.play('coin-moving');
-    }
-
-    update(time, delta) {
-        if (this.isRemoved) { return; }
-
-        var distance = -200 * (delta / 1000);
-        
-        this.timer -= delta;
-
-        this.y += distance;
-        this.emergeDistance += distance;
-
-        if (this.timer <= 0) {
-            this.level.powerupGroup.remove(this);
-            this.isRemoved = true;
-            this.destroy();
-        } else {
-            var timeLeft = this.timer;
-            var isFading = timeLeft < this.FADE_TIME && this.timer > 0;
-
-            if (isFading) {
-                var alpha = timeLeft / this.FADE_TIME;
-
-                this.alpha = alpha;
-            }
-
-            if (this.emergeDistance > 0) {
-                this.setDepth(900 - 5);
-            } else {
-                this.setDepth(900 + 5);
-            }
-        }
     }
 }

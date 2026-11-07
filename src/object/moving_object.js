@@ -9,8 +9,8 @@ export class MovingSprite extends Phaser.GameObjects.Sprite  {
         config.scene.physics.world.enable(this);
         config.scene.add.existing(this);
 
-        this.collisionGroup = collisionGroup || CollisionGroup.COLGROUP_MOVING;
-        this.collisionObject = new CollisionObject({ group: collisionGroup, parent: this });
+        this.collisionGroup = collisionGroup !== undefined ? collisionGroup : CollisionGroup.COLGROUP_MOVING;
+        this.collisionObject = new CollisionObject({ group: this.collisionGroup, parent: this });
         this.isScheduledForRemoval = false;
     }
 
@@ -70,11 +70,13 @@ export class MovingSprite extends Phaser.GameObjects.Sprite  {
     saveGravityY() {
         const gravity = this.body && this.body.gravity ? this.body.gravity : { x: 0, y: 0 };
 
-        this.savedGravityY = gravity.y;
+        if (gravity.y !== 0) {
+            this.savedGravityY = gravity.y;
+        }
     }
 
     restoreGravityY() {
-        if (!this.body || !this._savedGravityY) return;
+        if (!this.body || this.savedGravityY === undefined) return;
 
         this.body.setGravityY(this.savedGravityY || 0);
     }

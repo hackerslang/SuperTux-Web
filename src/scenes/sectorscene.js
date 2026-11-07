@@ -35,6 +35,11 @@ import { CameraButtons } from '../object/ui/debug/camerabuttons.js';
 import { FontLoader } from '../object/ui/fontloader.js';
 import { HealthBar } from '../object/ui/healthbar.js';
 import { LivesDisplay } from '../object/ui/livesdisplay.js';
+import { BonusBlock } from '../object/blocks/bonusblock.js';
+import { Brick } from '../object/blocks/brick.js';
+import { BouncyCoin } from '../object/powerup/bouncy_coin.js';
+import { PowerUpContent } from '../object/blocks/bonusblock.js';
+import { Particle } from '../object/particles/sparkle.js';
 
 export var currentSceneKey = "";
 
@@ -196,7 +201,7 @@ export class SectorScene extends Phaser.Scene {
             fontFamily: 'SuperTux-Medium',
             fontSize: '24px',
             color: '#007fb4'
-        }).setOrigin(0.5, 0.5).setDepth(199999);
+        }).setOrigin(0.5, 0.5).setDepth(10005);
     }
 
     createAuthors() {
@@ -207,17 +212,17 @@ export class SectorScene extends Phaser.Scene {
             fontFamily: 'SuperTux-Medium',
             fontSize: '24px',
             color: '#ffffff'
-        }).setScale(0.7).setOrigin(0.5, 0.5).setDepth(199999);
+        }).setScale(0.7).setOrigin(0.5, 0.5).setDepth(100005);
     }
 
     addLeanPlayer() {
-        this.leanPlayer = new LeanTux({ x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 + 200, key: "tux-strtlvl", scene: this }).setDepth(10005);
+        this.leanPlayer = new LeanTux({ x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 + 200, key: "tux-strtlvl", scene: this }).setDepth(100003);
     }
 
     createLevelScreen() {
         //this.load.plugin('rexlineprogressplugin', '../../plugins/rexlineprogressplugin.min.js', true);
         //var self = this;
-        this.progressBar = this.add.rexLineProgress(CANVAS_WIDTH / 2, CANVAS_HEIGHT - 50, CANVAS_WIDTH * 0.8, 20, 0x366237).setDepth(199999);
+        this.progressBar = this.add.rexLineProgress(CANVAS_WIDTH / 2, CANVAS_HEIGHT - 50, CANVAS_WIDTH * 0.8, 20, 0x366237).setDepth(100003);
         this.progressBar.setScrollFactor(0);
         this.progressBar.setValue(0.05);
 
@@ -371,6 +376,7 @@ export class SectorScene extends Phaser.Scene {
 
         if (this.sector != null) {
             this.creatures = this.sector.sectorData.creatures;
+            this.objects = this.sector.sectorData.objects; // Not CollisionObjects!! Sprites, p.e. rocks, stones, frozen fish, skeletons, etc.
             this.sectorCoinsCollected = 0;
 
             this.collisionObjects = [];
@@ -469,6 +475,8 @@ export class SectorScene extends Phaser.Scene {
 
             this.parseInvisibleWallBlocks();
             this.createFallingPlatforms();
+            
+            this.createLevelObjects();
 
             this.setProgressBarValue(0.75);
 
@@ -758,6 +766,16 @@ export class SectorScene extends Phaser.Scene {
         return this.movableObjectId;
     }
 
+    getObjectId() {
+        if (this.objectId === undefined) {
+            this.objectId = 0;
+        } else {
+            this.objectId++;
+        }
+
+        return "obj" +this.objectId;
+    }
+
     getCoinId() {
         if (this.coinId === undefined) {
             this.coinId = 0;
@@ -766,6 +784,68 @@ export class SectorScene extends Phaser.Scene {
         }
 
         return this.coinId;
+    }
+
+    createLevelObjects() {
+        if (this.objects === undefined) {
+            this.objects = [];
+        }
+
+        for (var i = 0; i < this.objects.length; i++) {
+            var object = this.objects[i];
+            if (object.name.startsWith("smallSnowRock")) {
+                var n = parseInt(object.name.replace("smallSnowRock", ""));
+                var frame = 0;
+
+                switch (n) {
+                    case 4:
+                        frame = 7;
+                        break;
+                    default:
+                        frame = 0;
+                }
+
+                this.addObject({
+                    id: this.getObjectId(),
+                    scene: this,
+                    // the tile for this object lives in the 'snow-rocks' spritesheet
+                    texture: 'snow-rocks',
+                    frame: frame,
+                    x: object.position.x * 32,
+                    y: object.position.y * 32,
+                    depth: object.depth
+                });
+            }
+        }
+    }
+
+    addObject(config) {
+        // create a static sprite from a spritesheet or image texture
+        let depth = config.depth !== undefined ? config.depth : 100;
+        const tex = config.texture || config.key;
+        const frame = config.frame;
+
+        // create sprite at world coordinates (origin top-left)
+        const sprite = this.add.sprite(config.x, config.y, tex, frame).setOrigin(0, 0).setDepth(depth);
+
+        // enable arcade physics and make it static/immovable
+        this.physics.world.enable(sprite);
+        if (sprite.body) {
+            sprite.body.allowGravity = false;
+            if (typeof sprite.body.setImmovable === 'function') {
+                sprite.body.setImmovable(true);
+            } else {
+                sprite.body.immovable = true;
+            }
+        }
+
+        // keep track of static objects for collision checks and cleanup
+        if (this.staticObjects === undefined) {
+            this.staticObjects = [];
+        }
+        this.staticObjects.push(sprite);
+
+        return sprite;
     }
 
     parseEnemyLayer() {
@@ -1276,7 +1356,9 @@ export class SectorScene extends Phaser.Scene {
             ["arrow", "invisible-wall", "UI", "debug-camera", "tux", "backgrounds", "coin", "hell-coin", "powerup",
                 "sparkle", "smoke",
 
-                "coin", "blocks", "industrial", "snow", "lava", "home-exit", "acid-rain", "spike",
+                "coin", "blocks", "blocks2", "industrial", "snow", "lava", "home-exit", "acid-rain", "spike",
+
+                "snow-rocks",
 
                 "snowball", "bouncing-snowball", "flying-snowball", "plasma-gun", "platforms",
                 "mr-iceblock", "mr-bomb", "hell-crusher", "krosh", "fish", "ghoul", "jumpy", "spiky", "creature-thinking",
@@ -1363,7 +1445,7 @@ export class SectorScene extends Phaser.Scene {
 
     makeAnimations() {
         var animationKeys = [
-            "mr-bomb", "sparkle", "smoke", "tux", "ghoul", "lava",
+            "mr-bomb", "sparkle", "smoke", "tux", "ghoul", "lava", "brick",
             "bouncing-snowball", "flying-snowball", "snowball", "mr-iceblock", "spiky",
             "fish", "lava-fish", "antarctic-water", "star-moving", "plus-flickering", "coin", "hell-coin"
         ];
@@ -1661,6 +1743,8 @@ export class SectorScene extends Phaser.Scene {
         this.forceUpdateSprites(this.fallingPlatformSprites, time, delta);
         this.forceUpdateSprites(this.hurtableTiles, time, delta);
         this.forceUpdateSprites(this.movablePlatformsSprites, time, delta);
+        this.forceUpdateSprites(this.blocks, time, delta);
+        this.forceUpdateSprites(this.powerUps, time, delta);
 
         this.collisionSystem.update(time, delta);
 
@@ -1905,17 +1989,115 @@ export class SectorScene extends Phaser.Scene {
     }
 
     addBouncyCoin(x, y, emerge) {
+        emerge = emerge === undefined ? true : emerge;
+
         let bouncyCoin = new BouncyCoin({
-            scene: this.scene,
+            scene: this,
             key: "bouncy-coin",
             x: x,
             y: y,
             player: this.player,
             sector: this,
-            emerge: emerge
+            emerge: emerge,
+            id: this.getObjectId()
         });
 
         this.addPowerUp(bouncyCoin);
+    }
+
+    addBonusBlock(x, y, key) {
+        var powerupType = "";
+        key = key.replace("bb-", "");
+
+        switch (key[0]) {
+            case "e":
+                powerupType = PowerUpContent.EGG;
+                break;
+            case "c":
+                powerupType = PowerUpContent.COIN;
+                break;
+        }
+
+        var color = "blue";
+
+        if (key.length > 1) {
+            key = key.substring(1).trim('-');
+
+            switch (key) {
+                case "bl":
+                    color = "blue";
+                    break;
+                case "ppl":
+                    color = "purple";
+                    break;
+                case "rtr":
+                    color = "retro";
+                    break;  
+                default:
+                    color = "blue";
+                    break;
+            }
+        } 
+
+        let bonusBlock = new BonusBlock({
+            scene: this,
+            key: "bonus-block",
+            x: x * 32,
+            y: y * 32,
+            player: this.player,
+            contents: powerupType,
+            color: color,
+            id: this.getObjectId(),
+            sector: this
+        });
+
+        this.addBlock(bonusBlock);
+        this.collisionObjects.push(bonusBlock.getCollisionObject());
+    }
+    
+    addBrick(x, y) {
+        let brick = new Brick({
+            scene: this,
+            key: "brick",
+            x: x * 32,
+            y: y * 32,
+            player: this.player,
+            id: this.getObjectId(),
+            brickSprite: "brick-ice"
+        });
+
+        this.addBlock(brick);
+        this.collisionObjects.push(brick.getCollisionObject());
+    }
+
+    addBlock(bounceableBlock) {
+        if (this.blocks === undefined) {
+            this.blocks = [];
+        }
+
+        this.blocks.push(bounceableBlock);
+    }
+
+    addParticle(x, y, texture, velocity, acceleration) {
+        let particle = new Particle({
+            scene: this,
+            key: "brick-particle",
+            x: x * 32,
+            y: y * 32,
+            velocity: velocity,
+            texture: texture,
+            id: this.getObjectId()
+        });
+
+        this.addParticleSprite(particle);
+    }
+
+    addParticleSprite(particle) {
+        if (this.particleSprites === undefined) {
+            this.particleSprites = [];
+        }
+
+        this.particleSprites.push(particle);
     }
 
     addPowerUp(powerup) {
@@ -1924,7 +2106,10 @@ export class SectorScene extends Phaser.Scene {
         }
 
         this.powerUps.push(powerup);
-        this.collisionObjects.push(powerup.getCollisionObject());
+
+        if (powerup.getCollisionObject !== undefined) {
+            this.collisionObjects.push(powerup.getCollisionObject());
+        }
     }   
 
     removeEnemy(enemy) {
@@ -1940,6 +2125,22 @@ export class SectorScene extends Phaser.Scene {
             enemy.isScheduledForRemoval = true;
 
             this.creatureObjects = this.creatureObjects.filter(creature => creature.id != enemy.id);
+        }
+    }
+
+    removeBlock(block) {
+        var collisionObject = this.collisionObjects.find(obj => obj.getId() == block.id);
+
+        if (collisionObject !== undefined || (collisionObject.parent !== undefined && collisionObject.parent.isScheduledForRemoval)) {
+            collisionObject.isScheduledForRemoval = true;
+
+            this.collisionObjects = this.collisionObjects.filter(collisionObject => collisionObject.getId() != block.id);
+        }
+
+        if (block !== undefined || block.isScheduledForRemoval) {
+            block.isScheduledForRemoval = true;
+
+            this.blocks = this.blocks.filter(bl => bl.id != block.id);
         }
     }
 
@@ -1969,10 +2170,10 @@ export class SectorScene extends Phaser.Scene {
         powerup.isScheduledForRemoval = true;
 
         this.powerUps = this.powerUps.filter(p => p.id != powerup.id);
-    }  
+    }
 
-    removeBlock(block) {
-        this.blockGroup.remove(block);
+    removeBouncyCoin(bouncyCoin) {
+        this.powerUps = this.powerUps.filter(powerUp => powerUp.id != bouncyCoin.id);
     }
 }
 

@@ -669,7 +669,7 @@ export class Enemy extends MovingSprite {
         this.setState(EnemyState.STATE_SQUISHED);
         this.setGroup(CollisionGroup.COLGROUP_MOVING_ONLY_STATIC);
 
-        if (!object.isEnemy) {
+        if (object.isPlayer) {
             var player = object;
 
             player.bounce(this);
@@ -1048,7 +1048,7 @@ export class Enemy extends MovingSprite {
             //playSound
             //Do Stuff ...
         } else {
-            this.scene.sound.play('enemy-fall');
+            this.scene.sound.play('fall');
             this.body.setVelocityX(0);
             this.body.setVelocityY(0);
             this.killAt = 1500;
@@ -1056,6 +1056,10 @@ export class Enemy extends MovingSprite {
             this.setState(EnemyState.STATE_FALLING);
             this.releasePowerUps();
         }
+    }
+
+    canBreak() {
+        return false;
     }
 
     isFrozen() {

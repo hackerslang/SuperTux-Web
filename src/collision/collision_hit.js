@@ -13,4 +13,8 @@ export class CollisionHit {
         this.crush = false;
         this.slopeNormal = new Phaser.Math.Vector2(0, 0);
     }
+
+    hasDirection() {
+    return this.left || this.right || this.top || this.bottom;
+  }
 }

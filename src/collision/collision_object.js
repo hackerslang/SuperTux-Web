@@ -1,4 +1,5 @@
 ﻿import { Rect } from "../math/rect.js";
+import { CollisionGroup } from "../collision/collision_group.js";
 
 export class CollisionObject {
     constructor(config) {
@@ -7,6 +8,8 @@ export class CollisionObject {
         this.bbox = new Rect();
         this.dest = new Rect();
         this.uniSolid = false;
+
+        this.objectsHitBottom = [];
 
         this.isScheduledForRemoval = false;
     }
@@ -48,6 +51,13 @@ export class CollisionObject {
         const dt = (typeof delta === 'number') ? delta / 1000 : 1 / 60;
 
         this.parent.setVelocity(movement.x / dt, movement.y / dt);
+    }
+
+    collisionMovingObjectBottom(other) {
+        if (this.group == CollisionGroup.COLGROUP_STATIC
+            || this.group == CollisionGroup.COLGROUP_MOVING_STATIC) {
+            this.objectsHitBottom.push(other);
+        }
     }
 
     getVelocityX() {

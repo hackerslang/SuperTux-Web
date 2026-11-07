@@ -15,7 +15,7 @@ export class RaycastResult {
         this.isValid = false;
         this.hit = {}; // Tile or CollisionObject
         this.box = new Rect();
-    }$
+    }
 }
 
 export var RaycastIgnore = {
@@ -35,6 +35,10 @@ export class CollisionSystem {
         for (var object of this.sectorScene.collisionObjects) {
             if (object.isScheduledForRemoval || object.parent.isScheduledForRemoval) { continue; }
 
+            if (object.parent.isBlock !== undefined && object.parent.isBlock) {
+                var a = 0;
+            }
+
             object.dest = new Rect(object.bbox);
             object.pressure = new Phaser.Math.Vector2(0, 0);
             object.dest.move(object.getMovement(delta));
@@ -45,7 +49,7 @@ export class CollisionSystem {
         for (var object of this.sectorScene.collisionObjects) {
             if (object.isScheduledForRemoval || object.parent.isScheduledForRemoval) { continue; }
             
-            if (object.getGroup() === undefined)
+            if (object.group === 'undefined' || object.getGroup() === undefined)
                 continue;
 
             if ((object.getGroup() != CollisionGroup.COLGROUP_MOVING
@@ -61,10 +65,11 @@ export class CollisionSystem {
         for (var object of this.sectorScene.collisionObjects) {
             if (object.isScheduledForRemoval || object.parent.isScheduledForRemoval) { continue; }
 
-            if (object.getGroup() === undefined)
+            if (object.group === 'undefined' || object.getGroup() === undefined)
                 continue;
 
-            if ((object.getGroup() != CollisionGroup.COLGROUP_MOVING
+            if ((object.group !== 'undefined' && object.getGroup() !== undefined
+                && object.getGroup() != CollisionGroup.COLGROUP_MOVING
                 && object.getGroup() != CollisionGroup.COLGROUP_MOVING_STATIC
                 && object.getGroup() != CollisionGroup.COLGROUP_MOVING_ONLY_STATIC)
                 || !object.isValid())
@@ -80,10 +85,11 @@ export class CollisionSystem {
         for (var object of this.sectorScene.collisionObjects) {
             if (object.isScheduledForRemoval || object.parent.isScheduledForRemoval) { continue; }
 
-            if (object.getGroup() === undefined)
+            if (object.group === 'undefined' || object.getGroup() === undefined)
                 continue;
 
-            if ((object.getGroup() != CollisionGroup.COLGROUP_MOVING
+            if (((object.group === undefined || object.getGroup() === undefined)
+                && object.getGroup() != CollisionGroup.COLGROUP_MOVING
                 && object.getGroup() != CollisionGroup.COLGROUP_MOVING_STATIC)
                 || !object.isValid())
                 continue;
@@ -134,7 +140,8 @@ export class CollisionSystem {
 
                 if (object2.isScheduledForRemoval || object2.parent.isScheduledForRemoval) { continue; }
 
-                if ((object2.getGroup() != CollisionGroup.COLGROUP_MOVING
+                if ((object2.group !== undefined && object2.getGroup() !== undefined
+                    && object2.getGroup() != CollisionGroup.COLGROUP_MOVING
                     && object2.getGroup() != CollisionGroup.COLGROUP_MOVING_STATIC)
                     || !object2.isValid())
                     continue;
@@ -266,7 +273,7 @@ export class CollisionSystem {
         }
     }
 
-    collisionStatic(object, dest, movement, pressure, constraints) {
+    collisionStatic(object, dest, movement, constraints) {
         constraints = this.collisionTileMap(movement, dest, object);
         
         // Collision with other (static) objects.
@@ -276,7 +283,7 @@ export class CollisionSystem {
             if ((staticObject.getGroup() == CollisionGroup.COLGROUP_STATIC || staticObject.getGroup() == CollisionGroup.COLGROUP_MOVING_STATIC) &&
                 staticObject.isValid() && !staticObject.equals(object)) {
 
-                var newConstraints = this.checkCollisions(movement, dest, sprite, staticObject.dest, object, staticObject);
+                var newConstraints = this.checkCollisions(movement, dest, staticObject.dest, object, staticObject);
 
                 if (newConstraints.hit.bottom) {
                     staticObject.collisionMovingObjectBottom(object);
@@ -287,8 +294,6 @@ export class CollisionSystem {
                 constraints.mergeConstraints(newConstraints);
             }
         }
-
-        
 
         return constraints;
     }
@@ -443,8 +448,6 @@ export class CollisionSystem {
             }
         }
 
-        
-
         if (hitsBottom) {
             //todo!
         }
@@ -490,16 +493,34 @@ export class CollisionSystem {
         if (object1.collisionGroup == CollisionGroup.COLGROUP_MOVING_STATIC &&
             object2.collisionGroup == CollisionGroup.COLGROUP_MOVING_STATIC)
             return;
-        
+
+        if ((object1.parent.isPlayer !== undefined && object1.parent.isPlayer) ||
+            (object2.parent.isPlayer !== undefined && object2.parent.isPlayer)) {
+            console.log("rest");
+        }
+
         var rect1 = new Rect(object1.dest);
         var rect2 = new Rect(object2.dest);
 
         var hit = new CollisionHit();
 
+        if ((object1.parent.isPlayer !== undefined && object1.parent.isPlayer) &&
+            (object2.parent.isBlock !== undefined && object2.parent.isBlock) ||
+            ((object1.parent.isBlock !== undefined && object1.parent.isBlock) &&
+            (object2.parent.isPlayer !== undefined && object2.parent.isPlayer))
+        ) {
+            console.log(rect1, object1.parent, rect2, object2.parent);
+        }
+
         if (rect1.overlaps(rect2)) {
             var normal = new Phaser.Math.Vector2(0, 0);
 
             ({ hit, normal } = this.hitNormal(object1, object2, hit, normal));
+
+            if ((object1.parent.isPlayer !== undefined && object1.parent.isPlayer) ||
+                (object2.parent.isPlayer !== undefined && object2.parent.isPlayer)) {
+                console.log("overlaps");
+            }
 
             if (!object1.collides(object2, hit))
                 return;
@@ -515,11 +536,19 @@ export class CollisionSystem {
 
             var response1 = object1.collision(object2, hit);
 
+            if (object1.parent.isPlayer !== undefined && object1.parent.isPlayer) {
+                console.log("o1", "o2", "hit:", hit);
+            }
+
             [hit.left, hit.right] = [hit.right, hit.left];
             [hit.top, hit.bottom] = [hit.bottom, hit.top];
 
             var response2 = object2.collision(object1, hit);
-  
+
+            if (object2.parent.isPlayer !== undefined && object2.parent.isPlayer) {
+                console.log("o2", "o1", "hit:", hit);
+            }
+
             if (response1 == HitResponse.CONTINUE && response2 == HitResponse.CONTINUE) {
                 normal.scale(0.5 + EPSILON_COLLISION);
                 
@@ -534,6 +563,8 @@ export class CollisionSystem {
                 
                 object2.dest.move(normal);
             }
+
+
         }
     }
 
@@ -545,7 +576,6 @@ export class CollisionSystem {
         const ibottom = rect2.getBottom() - rect1.top;
         const ileft = rect1.getRight() - rect2.left;
         const iright = rect2.getRight() - rect1.left;
-
         const verticalPenetration = Math.min(itop, ibottom);
         const horizontalPenetration = Math.min(ileft, iright);
 
@@ -554,7 +584,7 @@ export class CollisionSystem {
         if (object2.isUniSolid() && rect1.getBottom() - object1.getVelocityY() > rect2.top)
             return;
 
-        if (verticalPenetration < horizontalPenetration) {
+        if (verticalPenetration <= horizontalPenetration) {
             if (itop < ibottom) {
                 hit.bottom = true;
                 normal.y = verticalPenetration;
@@ -675,7 +705,7 @@ export class CollisionSystem {
                     if (!(tile.attributes & tiletype))
                         continue;
                     if (tile.isUnisolid() && ignoreUnisolid)
-                        continue;
+                        continue;;
                     if (tile.isSlope()) {
                         var triangle = {};
                         var tbbox = solids.getTileBbox(x, y);
