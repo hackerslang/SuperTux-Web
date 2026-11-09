@@ -142,6 +142,21 @@
                 }
             ]
         },
+        "bullets": {
+            "path": "./assets/images/objects/bullets/", 
+            "sprites": [
+                {
+                    "name": "firebullet",
+                    "value": "fire_bullet"
+                },
+                {
+                    "name": "fire-tail-",
+                    "value": "fire_tail-",
+                    "start": 1,
+                    "end": 4
+                }
+            ]
+        },
         "invisible-wall": {
             "sprites": [
                 {
@@ -650,6 +665,12 @@
                     "value": "plus-",
                     "start": 1,
                     "end": 2
+                },
+                {
+                    "name": "fire-flower-",
+                    "value": "fire_flower-",
+                    "start": 0,
+                    "end": 3
                 }
             ]
         },

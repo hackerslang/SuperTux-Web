@@ -31,27 +31,14 @@ export class Brick extends BounceableBlock {
         }
         this.isEmpty = false;
         this.coinsWorth = this.coinCounter;
+
+        this.body.setSize(32, 32);
+        this.body.setOffset(0, 0);
     }
 
     update(time, delta) {
         super.update(time, delta);
-
-        if (this.brickPiecesDestroyAt <= 0) {
-            for (var i = 0; i < this.brickPieces.length; i++) {
-                var brickPiece = this.brickPieces[i];
-
-                brickPiece.destroy();
-            }
-        } else {
-            this.brickPiecesDestroyAt -= delta;
-
-            for (var i = 0; i < this.brickPieces.length; i++) {
-                var brickPiece = this.brickPieces[i];
-
-                brickPiece.alpha -= 0.05;
-            }
-        }
-    }
+    }   
 
     collision(other, hit) {
         if (hit.hasDirection()) {
@@ -94,23 +81,6 @@ export class Brick extends BounceableBlock {
             return false;
         }
         return true;
-    }
-
-    bounceComplete() {
-        if (this.done) { return; }
-        var brickX = brick.x;
-        var brickY = brick.y;
-        brick.done = true;
-
-        ['brick-piece1', 'brick-piece2', 'brick-piece3', 'brick-piece4', 'brick-piece5', 'brick-piece6'].forEach(texture => {
-            var velocityX = Math.floor((Math.random() * 201) - 100);
-            var velocityY = Math.floor((Math.random() * 701) - 300);
-
-            var particle = this.scene.addParticle(this.x, this.y, texture);
-        });
-
-        this.level.removeBlock(brick);
-        this.destroy();
     }
 
     hit(player) {

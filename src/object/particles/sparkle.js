@@ -24,13 +24,10 @@
         this.setVelocity(this.velocity.x, this.velocity.y);
 
         this.removed = false;
+        this.EXISTING_TIME = 300;
+        this.timer = this.EXISTING_TIME;
 
-        if (this.key != null) {
-            this.anims.play(this.texture).once('animationcomplete', () => {
-                this.removed = true;
-                this.destroy();
-            });
-        } else if (this.texture != null) {
+        if (this.texture != null) {
             this.setTexture(this.texture);
         }
     }
@@ -38,7 +35,9 @@
     update(time, delta) {
         if (this.removed) return;
 
-        if (this.y > this.scene.cameras.main.scrollY + this.scene.sys.game.canvas.height + 32) {
+        this.timer -= delta;
+
+        if (this.timer <= 0 || this.y > this.scene.cameras.main.scrollY + this.scene.sys.game.canvas.height + 32) {
             this.removed = true;
             this.destroy();
         }
@@ -92,6 +91,5 @@ export class Sparkle extends Phaser.GameObjects.Sprite {
 
         this.body.x = this.player.body.left + this.relativeX;
         this.body.y = this.player.body.top + this.relativeY;
-        
     }
 }

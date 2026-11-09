@@ -20,7 +20,7 @@ export class PowerUp extends MovingSprite {
         this.initialDirection = this.direction;
 
         this.isScheduledForRemoval = false;
-        this.group = CollisionGroup.COLGROUP_MOVING;
+        this.group = collisionGroup !== undefined ? collisionGroup : CollisionGroup.COLGROUP_MOVING;
     }
 
     update(time, delta) {

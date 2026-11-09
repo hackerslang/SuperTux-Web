@@ -171,6 +171,18 @@
                 }
             ]
         },
+        "bullets": {
+            "animations": [
+                {
+                    key: "firebullet-tail",
+                    caption: "fire-tail-",
+                    start: 1,
+                    end: 4,
+                    frameRate: 12,
+                    repeat: -1
+                }
+            ]
+        },
         "bouncing-snowball": {
             "animations": [
                 {
@@ -554,6 +566,18 @@
                         { key: "plus-1" },
                         { key: "plus-2" }
                     ]
+                }
+            ]
+        },
+        "fire-flower": {
+            "animations": [
+                {
+                    key: "fire-flower",
+                    caption: "fire-flower-",
+                    start: 0,
+                    end: 3,
+                    frameRate: 12,
+                    repeat: -1
                 }
             ]
         }

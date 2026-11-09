@@ -1,5 +1,6 @@
 ﻿import { BounceableBlock } from "./bounceableblock.js";
 import { Brick } from "./brick.js";
+import { FlowerType } from "../powerup/flower.js";
 
 export const PowerUpContent = {
     COIN: 0,
@@ -66,6 +67,9 @@ export class BonusBlock extends BounceableBlock {
 
         this.setDepth(9000);
         this.init();
+
+        this.body.setSize(32, 32);
+        this.body.setOffset(0, 0);
     }
 
     init() {
@@ -222,7 +226,7 @@ export class BonusBlock extends BounceableBlock {
 
             case PowerUpContent.FIREGROW:
                 {
-                    this.raiseGrowupBonus(player, BONUS_FIRE, direction);
+                    this.addFlowerPowerUp();
                     break;
                 }
 
@@ -354,6 +358,10 @@ export class BonusBlock extends BounceableBlock {
 
     addEggPowerUp() {
         this.scene.addEgg(this.x, this.y - 32, this.getDirectionOnHit(), 0);
+    }
+
+    addFlowerPowerUp() {
+        this.scene.addFlower(this.x, this.y, FlowerType.BONUS_FIRE, this);
     }
 
     setEmpty() {

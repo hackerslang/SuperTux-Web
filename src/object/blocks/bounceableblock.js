@@ -48,10 +48,10 @@ export class BounceableBlock extends MovingSprite {
         }
 
         this.collisionObject.bbox = new Rect({
-            left: this.x,
-            top: this.y,
-            width: this.displayWidth,
-            height: this.displayHeight      
+            left: this.body.x,
+            top: this.body.y,
+            width: this.body.width,
+            height: this.body.height
         });
 
         if (!this.bouncing && !this.breaking)
@@ -77,7 +77,6 @@ export class BounceableBlock extends MovingSprite {
             this.bounceDirection = 0;
             this.bouncing = false;
             this.body.angle = 0;
-            //alert("pazkdazjd");
         } else {
             this.setVelocity(0, this.bounceDirection * delta);
         }
@@ -193,7 +192,7 @@ export class BounceableBlock extends MovingSprite {
         const gravity = GAME_GRAVITY * 100;
         let pos = new Phaser.Math.Vector2(this.body.x, this.body.y).add(new Phaser.Math.Vector2(16.0, 16.0));
 
-        for (const texture of [ "brick_piece1", "brick_piece2", "brick_piece3", "brick_piece4", "brick_piece5", "brick_piece6" ])
+        for (const texture of [ "brick-piece1", "brick-piece2", "brick-piece3", "brick-piece4", "brick-piece5", "brick-piece6" ])
         {
             let velocity = new Phaser.Math.Vector2((Math.random() * 200) - 100, (Math.random() * 700) - 300);
             this.scene.addParticle(this.body.x, this.body.y, texture, velocity, new Phaser.Math.Vector2(0, gravity));

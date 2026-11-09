@@ -12,6 +12,11 @@
                     "name": "tux-killed",
                     "value": "kill",
                     "ext": "wav"
+                },
+                {
+                    "name": "shoot",
+                    "value": "shoot",
+                    "ext": "wav"
                 }
             ]
         },
@@ -31,6 +36,11 @@
                 {
                     "name": "fall",
                     "value": "fall",
+                    "ext": "wav"
+                },
+                {
+                    "name": "fire-flower", 
+                    "value": "fire-flower", 
                     "ext": "wav"
                 },
                 {

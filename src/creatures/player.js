@@ -8,6 +8,14 @@ import { MovingSprite } from '../object/moving_object.js';
 import { Rect } from '../math/rect.js';
 import { EPSILON_COLLISION, SHIFT_DELTA } from '../common/constants.js';
 
+export var PlayerBonus = {
+    BONUS_NONE: 0,
+    BONUS_FIRE: 1,
+    BONUS_ICE: 2,
+    BONUS_AIR: 3,
+    BONUS_EARTH: 4
+};
+
 export class LeanTux extends Phaser.GameObjects.Sprite {
     constructor(config) {
         super(config.scene, config.x, config.y, config.key);
@@ -137,6 +145,8 @@ export class Tux extends MovingSprite {
         this.postDamageSafetyTimer = 0;
         this.tempSafetyTimer = 0;
 
+        this.ghostMode = false;
+
         this.falling = false;
         this.jumping = false;
 
@@ -207,6 +217,12 @@ export class Tux extends MovingSprite {
         this.previouslySavedGravity = false;
         this.previouslyHitFromBelow = false;
 
+        this.canSwim = true;
+
+        this.activeBullets = 0;
+
+        this.bonus = PlayerBonus.BONUS_NONE;
+
         this.setCustomGravityIfNeeded();
     }
 
@@ -224,6 +240,34 @@ export class Tux extends MovingSprite {
 
     isWaterJumping() {
         return false;
+    }
+
+    addBonus(type, animate) {
+        // always ignore NO_BONUS
+        if (type == PlayerBonus.BONUS_NONE) {
+            return true;
+        }
+        
+        // ignore GROWUP_BONUS if we're already big
+        if (type == PlayerBonus.BONUS_GROWUP) {
+            if (this.getBonus() != PlayerBonus.BONUS_NONE)
+                return true;
+        }
+
+        return this.setBonus(type, animate);
+    }
+
+    setBonus(type, animate, pocket) {
+        if (this.dying) {
+            return false;
+        }
+
+        this.bonus = type;
+        return true;
+    }
+
+    getBonus() {
+        return this.bonus;
     }
 
     setCustomGravityIfNeeded() {
@@ -464,8 +508,8 @@ export class Tux extends MovingSprite {
         if (other.getGroup() == CollisionGroup.COLGROUP_TOUCHABLE) {
             var trigger = other.parent.isTrigger ? other.parent : null;
 
-            if (trigger !== undefined && !this.deActivated()) {
-                if (this.keyController.pressed("UP")) {
+            if (trigger !== undefined && !this.isDeactivated) {
+                if (this.getKeyController().pressed("UP")) {
                     trigger.event(this, TriggerBase.EVENT_ACTIVATE);
                 }
             }
@@ -532,6 +576,7 @@ export class Tux extends MovingSprite {
 
         if (this.killed) {
             if (this.killAt <= 0) {
+                this.setBonus(PlayerBonus.BONUS_NONE, true);
                 this.scene.startDestroying();
                 GameSession.playerDied(this.level);
                 this.hasDiedBefore = true;
@@ -553,34 +598,8 @@ export class Tux extends MovingSprite {
             this.previouslySavedGravity = false;
         }
 
-        var dest = new Rect(this.getCollisionObject().bbox);
-        var grownDest = dest.grown(EPSILON_COLLISION);
-
-        var levelStart = 0 + EPSILON_COLLISION;
-        var levelEnd = (Sector.getCurrentSectorWidth() * 32) - EPSILON_COLLISION;
-
-        if (grownDest.left <= levelStart && this.getVelocityX() < 0) {
-            var shiftLeft = EPSILON_COLLISION - grownDest.left;
-            this.body.x = shiftLeft;
-            
-            this.setVelocityX(0);
-            this.setAccelerationX(0);
-
-            return;
-        } else if (grownDest.right >= levelEnd && this.getVelocityX() > 0) {
-            var shiftRight = grownDest.right - ((levelEnd * 32) - EPSILON_COLLISION);
-
-            this.body.x = shiftRight;
-
-            this.setVelocityX(0);
-            this.setAccelerationX(0);
-
-            return;
-        }
-
-        if (this.body.y >= Math.floor(Level.getMaxLevelHeightY() * 32 - this.body.height) && !this.killed) {
-            this.die();
-
+        this.checkBounds();
+        if (this.killed) {
             return;
         }
 
@@ -627,6 +646,13 @@ export class Tux extends MovingSprite {
         }
 
         this.setCollisionBoxesForAnimations();
+
+        this.collisionObject.bbox = new Rect({
+            left: this.body.x,
+            top: this.body.y,
+            width: this.body.width,
+            height: this.body.height
+        });
 
         if (this.invincible) {
             this.forceUpdateSprites(this.particleSprites, time, delta);
@@ -721,10 +747,6 @@ export class Tux extends MovingSprite {
                 this.fallMode = this.JUMPING;
             }
         }
-
-
-
-
 
         this.handleInput(delta);
     }
@@ -864,6 +886,31 @@ export class Tux extends MovingSprite {
                     sprite.update(time, delta);
                 }
             }
+        }
+    }
+
+    checkBounds() {
+        /* Keep tux in sector bounds: */
+        if (this.body.x < 0) {
+            // Lock Tux to the size of the level, so that he doesn't fall off
+            // the left side
+            this.body.x = 0; // half of 32
+        }
+
+        if (this.body.right > Sector.getCurrentSectorWidth()) {
+            // Lock Tux to the size of the level, so that he doesn't fall off
+            // the right side
+            this.body.x = Sector.getCurrentSectorWidth() - this.body.width / 2;
+        }
+            
+        // If Tux is swimming, don't allow him to go below the sector
+        if (this.swimming && !this.ghostMode && this.isAlive() && this.body.y > Sector.getCurrentSectorHeight()) {
+            this.body.y = Sector.getCurrentSectorHeight() - this.body.height;
+        }
+
+        /* fallen out of the level? */
+        if ((this.body.y > Sector.getCurrentSectorHeight()) && !this.ghostMode && !this.tempSafetyTimer > 0) {
+            this.die();
         }
     }
 
@@ -1057,6 +1104,26 @@ export class Tux extends MovingSprite {
         }
 
         this.handleVerticalInput(delta); 
+
+        var justGrabbed = this.tryGrab();
+        if (this.getKeyController().pressed("fire") && (this.getBonus() == PlayerBonus.BONUS_FIRE || this.getBonus() == PlayerBonus.BONUS_ICE) && !justGrabbed) {
+            if ((this.getBonus() == PlayerBonus.BONUS_FIRE && this.activeBullets < this.MAX_FIRE_BULLETS) ||
+                (this.getBonus() == PlayerBonus.BONUS_ICE && this.activeBullets < this.MAX_ICE_BULLETS)) {
+                var x = this.x + this.body.width / 2, y = this.y + this.body.height / 4;
+
+                var swimDirection = ((Math.abs(this.swimmingAngle) <= Math.PI_2)
+                    || (this.waterJump && Math.abs(this.getVelocityX()) < 10)) ? this.DIRECTION_RIGHT : this.DIRECTION_LEFT;
+                if (this.swimming || this.waterJump) {
+                    this.direction = swimDirection;
+                }
+                this.scene.addBullet(x, y,
+                    (this.swimming || this.waterJump) ?
+                        ((new Phaser.Math.Vector2(Math.cos(this.swimmingAngle), Math.sin(this.swimmingAngle)) * 600).add(this.getVelocity())) :
+                (new Phaser.Math.Vector2(((this.dir == this.DIRECTION_RIGHT ? 600 : -600) + this.getVelocityX()), 0)),
+                this.direction, this.getBonus(), this, !this.swimming);
+                this.scene.sound.play("shoot");
+            }
+        }
     }
 
     handleInputClimbing(delta) {
@@ -1484,6 +1551,26 @@ export class Tux extends MovingSprite {
             } else {
                 this.drawWalking();
             }
+        }
+
+        switch (this.getBonus()) {
+            case PlayerBonus.BONUS_FIRE:
+                this.setTint(0xffb380);
+                break;
+
+            case PlayerBonus.BONUS_ICE:
+                this.setTint(0xb3ffff);
+                break;
+            case PlayerBonus.BONUS_AIR:
+                this.setTint(0xb3ff80);
+                break;
+            case PlayerBonus.BONUS_EARTH:
+                this.setTint(0xffe699);
+                break;
+            default:
+                this.setTint(0xffffff);
+
+                break;
         }
     }
 

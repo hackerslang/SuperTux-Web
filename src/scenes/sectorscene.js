@@ -28,6 +28,7 @@ import { SpriteKeyConstants } from '../object/level/tile_creator.js';
 import { TilemapParser } from '../object/level/tilemap_parser.js';
 import { EggPowerUp } from '../object/powerup/egg.js';
 import { PlusPowerUp } from '../object/powerup/plus.js';
+import { Flower, FlowerType } from '../object/powerup/flower.js';
 import { Spike } from '../object/spike.js';
 import { CoinsDisplay } from '../object/ui/coinsdisplay.js';
 import { Cursor } from '../object/ui/cursor.js';
@@ -1356,7 +1357,7 @@ export class SectorScene extends Phaser.Scene {
             ["arrow", "invisible-wall", "UI", "debug-camera", "tux", "backgrounds", "coin", "hell-coin", "powerup",
                 "sparkle", "smoke",
 
-                "coin", "blocks", "blocks2", "industrial", "snow", "lava", "home-exit", "acid-rain", "spike",
+                "coin", "bullets", "blocks", "blocks2", "industrial", "snow", "lava", "home-exit", "acid-rain", "spike",
 
                 "snow-rocks",
 
@@ -1445,9 +1446,9 @@ export class SectorScene extends Phaser.Scene {
 
     makeAnimations() {
         var animationKeys = [
-            "mr-bomb", "sparkle", "smoke", "tux", "ghoul", "lava", "brick",
+            "mr-bomb", "sparkle", "smoke", "tux", "ghoul", "lava", "brick", "bullets",
             "bouncing-snowball", "flying-snowball", "snowball", "mr-iceblock", "spiky",
-            "fish", "lava-fish", "antarctic-water", "star-moving", "plus-flickering", "coin", "hell-coin"
+            "fish", "lava-fish", "antarctic-water", "star-moving", "plus-flickering", "fire-flower", "coin", "hell-coin"
         ];
 
         this.makeAnimationsForKeys(animationKeys);
@@ -1963,6 +1964,21 @@ export class SectorScene extends Phaser.Scene {
         this.addPowerUp(egg);
     }
 
+    addFlower(x, y, type, bonusBlock) {
+        let flower = new Flower({
+            scene: this,
+            key: "flower",
+            x: x,
+            y: y,
+            player: this.player,
+            sector: this.sector,
+            type: type,
+            block: bonusBlock
+        });
+
+        this.addPowerUp(flower);
+    }
+
     addPlus(x, y, direction, timer) {
         let plus = new PlusPowerUp({
             scene: this,
@@ -1976,6 +1992,10 @@ export class SectorScene extends Phaser.Scene {
         });
 
         this.addPowerUp(plus);
+    }
+
+    addBullet() {
+
     }
 
     addSnowyTree(x, y, type) {
@@ -2009,21 +2029,28 @@ export class SectorScene extends Phaser.Scene {
         var powerupType = "";
         key = key.replace("bb-", "");
 
-        switch (key[0]) {
+        var powerupType = key.replace(/-or|-bl|-ppl|-rtr/g, "");
+        
+        switch (powerupType) {
             case "e":
                 powerupType = PowerUpContent.EGG;
                 break;
             case "c":
                 powerupType = PowerUpContent.COIN;
                 break;
+            case "ff":
+                powerupType = PowerUpContent.FIREGROW;
+                break;
         }
 
         var color = "blue";
+        var powerupLength = powerupType === undefined ? 0 : powerupType.length;
+        var clr = key.substring(powerupLength).trim('-');
 
-        if (key.length > 1) {
-            key = key.substring(1).trim('-');
+        if (clr !== "") {
+            var color = "blue";
 
-            switch (key) {
+            switch (clr) {
                 case "bl":
                     color = "blue";
                     break;
@@ -2032,12 +2059,12 @@ export class SectorScene extends Phaser.Scene {
                     break;
                 case "rtr":
                     color = "retro";
-                    break;  
+                    break;
                 default:
                     color = "blue";
                     break;
             }
-        } 
+        }
 
         let bonusBlock = new BonusBlock({
             scene: this,
@@ -2082,8 +2109,8 @@ export class SectorScene extends Phaser.Scene {
         let particle = new Particle({
             scene: this,
             key: "brick-particle",
-            x: x * 32,
-            y: y * 32,
+            x: x,
+            y: y,
             velocity: velocity,
             texture: texture,
             id: this.getObjectId()

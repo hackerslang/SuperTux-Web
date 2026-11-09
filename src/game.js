@@ -14,7 +14,7 @@ export const CANVAS_HEIGHT = 768;
 export const GAME_GRAVITY = 900;
 
 export const GlobalGameConfig = {
-    type: Phaser.CANVAS,
+    type: Phaser.AUTO,
     width: CANVAS_WIDTH,
     height: CANVAS_HEIGHT,
     plugins: {

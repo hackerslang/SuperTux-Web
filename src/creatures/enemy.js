@@ -112,6 +112,10 @@ export class Enemy extends MovingSprite {
     }
 
     initWithGameSession(enemyFromGameSession) {
+        if (!enemyFromGameSession) {
+            return;
+        }
+
         this.x = enemyFromGameSession.x;
         this.y = enemyFromGameSession.y;
         this.body.velocity.x = enemyFromGameSession.velocityX;

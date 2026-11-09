@@ -35,10 +35,6 @@ export class CollisionSystem {
         for (var object of this.sectorScene.collisionObjects) {
             if (object.isScheduledForRemoval || object.parent.isScheduledForRemoval) { continue; }
 
-            if (object.parent.isBlock !== undefined && object.parent.isBlock) {
-                var a = 0;
-            }
-
             object.dest = new Rect(object.bbox);
             object.pressure = new Phaser.Math.Vector2(0, 0);
             object.dest.move(object.getMovement(delta));
@@ -100,7 +96,7 @@ export class CollisionSystem {
                 if (object2.getGroup() === undefined || object2.getGroup() != CollisionGroup.COLGROUP_TOUCHABLE
                     || !object2.isValid())
                     continue;
-
+                
                 var rect1 = new Rect(object.dest);
                 var rect2 = new Rect(object2.dest);
 
@@ -154,7 +150,7 @@ export class CollisionSystem {
         for (var object of this.sectorScene.collisionObjects) {
             object.bbox = new Rect(object.dest);
         }
-    }
+    }   
 
     draw() {
         if (GlobalGameConfig.physics.arcade.debug) {
@@ -494,33 +490,16 @@ export class CollisionSystem {
             object2.collisionGroup == CollisionGroup.COLGROUP_MOVING_STATIC)
             return;
 
-        if ((object1.parent.isPlayer !== undefined && object1.parent.isPlayer) ||
-            (object2.parent.isPlayer !== undefined && object2.parent.isPlayer)) {
-            console.log("rest");
-        }
-
         var rect1 = new Rect(object1.dest);
         var rect2 = new Rect(object2.dest);
 
         var hit = new CollisionHit();
-
-        if ((object1.parent.isPlayer !== undefined && object1.parent.isPlayer) &&
-            (object2.parent.isBlock !== undefined && object2.parent.isBlock) ||
-            ((object1.parent.isBlock !== undefined && object1.parent.isBlock) &&
-            (object2.parent.isPlayer !== undefined && object2.parent.isPlayer))
-        ) {
-            console.log(rect1, object1.parent, rect2, object2.parent);
-        }
 
         if (rect1.overlaps(rect2)) {
             var normal = new Phaser.Math.Vector2(0, 0);
 
             ({ hit, normal } = this.hitNormal(object1, object2, hit, normal));
 
-            if ((object1.parent.isPlayer !== undefined && object1.parent.isPlayer) ||
-                (object2.parent.isPlayer !== undefined && object2.parent.isPlayer)) {
-                console.log("overlaps");
-            }
 
             if (!object1.collides(object2, hit))
                 return;
@@ -536,18 +515,10 @@ export class CollisionSystem {
 
             var response1 = object1.collision(object2, hit);
 
-            if (object1.parent.isPlayer !== undefined && object1.parent.isPlayer) {
-                console.log("o1", "o2", "hit:", hit);
-            }
-
             [hit.left, hit.right] = [hit.right, hit.left];
             [hit.top, hit.bottom] = [hit.bottom, hit.top];
 
             var response2 = object2.collision(object1, hit);
-
-            if (object2.parent.isPlayer !== undefined && object2.parent.isPlayer) {
-                console.log("o2", "o1", "hit:", hit);
-            }
 
             if (response1 == HitResponse.CONTINUE && response2 == HitResponse.CONTINUE) {
                 normal.scale(0.5 + EPSILON_COLLISION);
@@ -563,8 +534,6 @@ export class CollisionSystem {
                 
                 object2.dest.move(normal);
             }
-
-
         }
     }
 
