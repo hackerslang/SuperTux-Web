@@ -32,6 +32,9 @@ export class MrIceBlock extends WalkingEnemy {
         this.squishCount = 0;
 
         this.objectName = "MrIceBlock";
+
+        this.canMelt = true;
+
         this.initialize();
     }
 

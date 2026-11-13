@@ -12,6 +12,8 @@
         this.body.setSize(32, 32, true);
         this.setOrigin(0.5, 0.5);
         this.body.setOffset(7, 6);
+
+        this.canMelt = true;
     }
 
     collisionSquished() {

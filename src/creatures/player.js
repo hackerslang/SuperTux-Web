@@ -223,6 +223,8 @@ export class Tux extends MovingSprite {
 
         this.bonus = PlayerBonus.BONUS_NONE;
 
+        this.MAX_FIRE_BULLETS = 2;
+
         this.setCustomGravityIfNeeded();
     }
 
@@ -485,11 +487,11 @@ export class Tux extends MovingSprite {
     }
 
     collision(other, hit) {
-        var bullet = other;
+        var bullet = other.parent.isBullet ? other.parent : undefined;
 
-        // if (bullet) {
-        //     return FORCE_MOVE;
-        // }
+        if (bullet && bullet.owner != "player") {
+            return HitResponse.FORCE_MOVE;
+        }
 
         var player = other.parent.isPlayer ? other.parent : undefined;
 
@@ -926,7 +928,7 @@ export class Tux extends MovingSprite {
     }
 
     bounce(enemy) {
-        if (!(get_bonus() == BONUS_AIR))
+        if (!(this.getBonus() == PlayerBonus.BONUS_AIR))
             this.setVelocityY(this.keyController.hold(Control.JUMP) ? -520.0 : -300.0);
         else {
             this.setVelocityY(this.keyController.hold(Control.JUMP) ? -580.0 : -340.0);
@@ -1109,8 +1111,8 @@ export class Tux extends MovingSprite {
         if (this.getKeyController().pressed("fire") && (this.getBonus() == PlayerBonus.BONUS_FIRE || this.getBonus() == PlayerBonus.BONUS_ICE) && !justGrabbed) {
             if ((this.getBonus() == PlayerBonus.BONUS_FIRE && this.activeBullets < this.MAX_FIRE_BULLETS) ||
                 (this.getBonus() == PlayerBonus.BONUS_ICE && this.activeBullets < this.MAX_ICE_BULLETS)) {
-                var x = this.x + this.body.width / 2, y = this.y + this.body.height / 4;
-
+                var x = this.x + this.body.width / 2, y = this.y + this.body.height / 2;
+                
                 var swimDirection = ((Math.abs(this.swimmingAngle) <= Math.PI_2)
                     || (this.waterJump && Math.abs(this.getVelocityX()) < 10)) ? this.DIRECTION_RIGHT : this.DIRECTION_LEFT;
                 if (this.swimming || this.waterJump) {
@@ -1119,7 +1121,7 @@ export class Tux extends MovingSprite {
                 this.scene.addBullet(x, y,
                     (this.swimming || this.waterJump) ?
                         ((new Phaser.Math.Vector2(Math.cos(this.swimmingAngle), Math.sin(this.swimmingAngle)) * 600).add(this.getVelocity())) :
-                (new Phaser.Math.Vector2(((this.dir == this.DIRECTION_RIGHT ? 600 : -600) + this.getVelocityX()), 0)),
+                (new Phaser.Math.Vector2(((this.direction == this.DIRECTION_RIGHT ? 600 : -600) + this.getVelocityX()), 0)),
                 this.direction, this.getBonus(), this, !this.swimming);
                 this.scene.sound.play("shoot");
             }

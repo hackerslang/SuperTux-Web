@@ -143,11 +143,15 @@
             ]
         },
         "bullets": {
-            "path": "./assets/images/objects/bullets/", 
+            "path": "./assets/images/objects/bullets/",
             "sprites": [
                 {
-                    "name": "firebullet",
+                    "name": "firebullet-0",
                     "value": "fire_bullet"
+                },
+                {
+                    "name": "icebullet-0",
+                    "value": "ice_bullet"
                 },
                 {
                     "name": "fire-tail-",
@@ -400,7 +404,7 @@
         "goal": {
             "path": "./assets/image/Level/goal/",
             "sprites": [
-                {  
+                {
                     "name": "goal1-1",
                     "value": "goal1-1"
                 },
@@ -637,7 +641,7 @@
                 {
                     "name": "industrial-platform-large",
                     "value": "industrial-platform-large"
-                }, 
+                },
                 {
                     "name": "industrial-platform-small",
                     "value": "industrial-platform-small"
@@ -710,6 +714,59 @@
                 {
                     "name": "ind-ladder",
                     "value": "ind-ladder"
+                }
+            ]
+        },
+        "freeze": {
+            "path": "./assets/images/creatures/freeze/",
+            "sprites": [
+                {
+                    "name": "ice-piece1",
+                    "value": "ice_piece1"
+                },
+                {
+                    "name": "ice-piece2", 
+                    "value": "ice_piece2"
+                }
+            ]
+        },
+        "melting": {
+            "path": "./assets/images/creatures/melting/",
+            "sprites": [
+                {
+                    "name": "water-drop-0",
+                    "value": "water-drop"
+                },
+                {
+                    "name": "water-splash-",
+                    "value": "water-splash-",
+                    "start": 0,
+                    "end": 5
+                },
+                {
+                    "name": "water-piece-1-",
+                    "value": "water-piece-1-",
+                    "start": 1,
+                    "end": 3
+                },
+                {
+                    "name": "water-piece-2-",
+                    "value": "water-piece-2-",
+                    "start": 1,
+                    "end": 2
+                },
+                {
+                    "name": "spiky-inside-melting-",
+                    "value": "spiky_gear-",
+                    "start": 0,
+                    "end": 4,
+                    "repeat": 1
+                },
+                {
+                    "name": "water-particle-",
+                    "value": "water-particle-",
+                    "start": 0,
+                    "end": 3
                 }
             ]
         },

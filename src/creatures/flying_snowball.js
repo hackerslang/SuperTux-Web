@@ -28,6 +28,8 @@ export class FlyingSnowBall extends Enemy {
 
         this.squishable = true;
         this.squishedAnim = "flying-snowball-squished";
+
+        this.canMelt = true;
     }
 
     activate() {

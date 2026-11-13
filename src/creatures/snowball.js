@@ -27,6 +27,9 @@ export class SnowBall extends WalkingEnemy {
         this.squishedAnim = "snowball-squished";
 
         this.objectName = "SnowBall";
+
+        this.canMelt = true;
+
         this.initialize();
     }
 

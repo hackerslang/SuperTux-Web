@@ -49,7 +49,7 @@ export class WalkingEnemy extends Enemy { //everything implemented except collis
     }
 
     walk() {
-        this.anims.play(this.walkAnimation);
+        this.anims.play(this.walkAnimation, true);
 
         if (this.direction == this.DIRECTION_RIGHT) {
             this.setVelocityX(this.walkSpeed);

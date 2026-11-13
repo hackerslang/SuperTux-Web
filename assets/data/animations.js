@@ -174,6 +174,18 @@
         "bullets": {
             "animations": [
                 {
+                    key: "firebullet",
+                    frames: [{ key: 'firebullet-0' }],
+                    frameRate: 24,
+                    repeat: -1
+                },
+                {
+                    key: "icebullet",
+                    frames: [{ key: 'icebullet-0' }],
+                    frameRate: 24,
+                    repeat: -1
+                },
+                {
                     key: "firebullet-tail",
                     caption: "fire-tail-",
                     start: 1,
@@ -381,6 +393,67 @@
                     ],
                     frameRate: 10,
                     repeat: - 1
+                }
+            ]
+        },
+        "freeze": {
+            "animations": [
+                {
+                    key: "ice-piece-1",
+                    value: "ice_piece1"
+                },
+                {
+                    key: "ice-piece-2",
+                    value: "ice_piece2"
+                }
+            ]
+        },
+        "melting": {
+            "animations": [
+                {
+                    key: "water-drop",
+                    frames: [
+                        { key: "water-drop-0" }
+                    ],
+                    frameRate: 10,
+                    repeat: 1
+                },
+                {
+                    key: "water-splash",
+                    caption: "water-splash-",
+                    start: 0,
+                    end: 5,
+                    frameRate: 10,
+                    repeat: 1
+                },
+                {
+                    key: "water-piece-1",
+                    caption: "water-piece-1-",
+                    start: 1,
+                    end: 3,
+                    frameRate: 10
+                },
+                {
+                    key: "water-piece-2",
+                    caption: "water-piece-2-",
+                    start: 1,
+                    end: 2,
+                    frameRate: 10
+                },
+                {
+                    key: "spiky-inside-melting",
+                    caption: "spiky-inside-melting-",
+                    start: 0,
+                    end: 4,
+                    frameRate: 10,
+                    repeat: 0
+                },
+                {
+                    key: "spiky-gear",
+                    frames: [
+                        { key: "spiky-inside-melting-4" }
+                    ],
+                    frameRate: 10
                 }
             ]
         },

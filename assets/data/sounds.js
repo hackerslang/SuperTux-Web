@@ -39,6 +39,11 @@
                     "ext": "wav"
                 },
                 {
+                    "name": "fire",
+                    "value": "fire",
+                    "ext": "ogg"
+                },
+                {
                     "name": "fire-flower", 
                     "value": "fire-flower", 
                     "ext": "wav"
@@ -46,6 +51,16 @@
                 {
                     "name": "metalHit",
                     "value": "metal_hit",
+                    "ext": "ogg"
+                },
+                {
+                    "name": "sizzle",
+                    "value": "sizzle",
+                    "ext": "ogg"
+                },
+                {
+                    "name": "splash",
+                    "value": "splash",
                     "ext": "ogg"
                 },
                 {

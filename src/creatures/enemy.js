@@ -7,6 +7,8 @@ import { MovingSprite } from '../object/moving_object.js';
 import { RaycastResult } from '../collision/collision_system.js';
 import { Collision } from '../collision/collision.js';
 import { HitResponse } from '../collision/collision_hit.js';
+import { Bullet, BonusType } from '../object/bullet.js';
+import { GAME_GRAVITY } from '../game.js';
 
 export var EnemyState = {
     STATE_INIT: 0,
@@ -46,6 +48,11 @@ export class Enemy extends MovingSprite {
         this.setDepth(900);
 
         this.frozen = false;
+        this.ignited = false;
+
+        this.canMelt = false;
+        this.canBurn = false;
+        this.insideMelting = false;
 
         this.BADGUY_ICE_FRICTION_MULTIPLIER = 0.1;      // Same as player
         this.BADGUY_ICE_ACCELERATION_MULTIPLIER = 0.25; // Same as player
@@ -242,7 +249,7 @@ export class Enemy extends MovingSprite {
 
         var inWaterBigger = !this.scene.isFreeOfTiles(this.getBbox().grown(-4), true, TileType.WATER);
 
-        if (this.gravityEnabled) {
+        if (this.body.allowGravity) {
             this.gravityModifier = middleHasWater ? this.frozen ? 1 : 0.3 : 1;
         }
 
@@ -313,6 +320,42 @@ export class Enemy extends MovingSprite {
                 this.isActiveFlag = false;
 
                 break;
+
+            case EnemyState.STATE_MELTING:
+                this.isActiveFlag = false;
+                var self = this;
+                this.once('animationcomplete', (animation) => {
+                    self.scene.addWaterDrop(this.x, this.y, this.getVelocity());
+                    self.remove();
+                });
+
+                break;
+
+            case EnemyState.STATE_GROUND_MELTING:
+                this.isActiveFlag = false;
+                var self = this;
+                this.once('animationcomplete', (animation) => {
+                    self.remove();
+                });
+
+                break;
+
+            case EnemyState.STATE_INSIDE_MELTING: {
+                this.isActiveFlag = false;
+                var self = this;
+                this.once('animationcomplete', (animation) => {
+                    if (self.onGround()) {
+                        self.anims.play(self.gearAnimation, true);
+                        self.setState(EnemyState.STATE_GEAR);
+                    }
+                });
+
+                var pa = Math.floor(Math.random() * 4);
+                var px = Math.random() * (this.getBbox().getRight() - this.getBbox().left) + this.getBbox().left;
+                var py = Math.random() * (this.getBbox().getBottom() - this.getBbox().top) + this.getBbox().top;
+
+                this.scene.addParticle(px, py, "water-particle-" + pa, new Phaser.Math.Vector2(0, 0), new Phaser.Math.Vector2(0, 100 * GAME_GRAVITY));
+            } break;
         }
 
         this.setWaitTurnTimer -= delta;
@@ -322,6 +365,102 @@ export class Enemy extends MovingSprite {
         if (hit.bottom) {
             this.onGroundFlag = true;
             this.floorNormal = hit.slopeNormal;
+        }
+    }
+
+    extinguish() {
+
+    }
+
+    unfreeze(melt) {
+        if (!this.ignited) {
+            this.setGroup(CollisionGroup.COLGROUP_MOVING);
+        }
+        
+        this.frozen = false;
+        this.unfreezeTimer = 0;
+        //m_col.set_size(m_sprite -> get_current_hitbox_width(), m_sprite -> get_current_hitbox_height());
+        
+        this.scene.sound.play(melt ? "splash" : "brick");
+        var pos = new Phaser.Math.Vector2(0.0, 0.0);
+        var cx = this.getBbox().getWidth() / 2.0;
+
+        var particleSpriteName = melt ? "water-piece" : "ice-piece";
+        for (pos.x = 0; pos.x < this.getBbox().getWidth(); pos.x += 16.0) {
+            for (pos.y = 0; pos.y < this.getBbox().getHeight(); pos.y += 16.0) {
+                var speed = new Phaser.Math.Vector2((pos.x - cx) * 2.0, 0.0);
+                this.scene.addParticle(
+                    this.getBbox().p1().x + pos.x, this.getBbox().p1().y + pos.y, null,
+                    //SPEED: add current enemy speed but do not add downwards velocity because it looks bad.
+                    Vector(m_physic.getVelocityX(), this.getVelocityY() > 0 ? 0 : this.getVelocityY())
+                    //SPEED: add specified speed and randomization.
+                    + speed + Vector(Math.random() * (30 - (-30)) + (-30), 0),
+                    Vector(0, Sector.get().get_gravity() * (Math.random() * (120 - 100) + 100)),
+                    particleSpriteName + Math.floor(Math.random() * 3 + 1));
+            }
+        }
+    }
+
+    isFlammable() {
+        return true;
+    }
+
+    isIgnited() {
+        return this.ignited;
+    }
+
+    ignite() {
+        if (!this.isFlammable() || this.isIgnited()) {
+            return;
+        }
+        
+        if (this.isFrozen())
+            this.unfreeze();
+
+        this.body.allowGravity = true;
+
+        if (this.onGround())
+            this.body.setVelocity(0, 0);
+        else
+            this.body.setVelocityY(0);
+
+        this.setGroup(CollisionGroup.COLGROUP_MOVING_ONLY_STATIC);
+        //this.sprite.stopAnimation();
+        this.ignited = true;
+
+        this.flipX = (this.direction === this.DIRECTION_RIGHT ? false : true);
+
+        if (this.canMelt) {
+            // Melt it!
+            if (this.onGround()) {
+                this.anims.play("water-splash");
+                this.scene.sound.play("splash");
+                this.setState(EnemyState.STATE_GROUND_MELTING);
+            } else {
+                this.anims.play("water-drop");
+                this.scene.sound.play("sizzle");
+                this.setState(EnemyState.STATE_MELTING);
+            }
+        } else if (this.canBurn) {
+            // Burn it!
+            this.glowing = true;
+            this.scene.sound.play("fire");
+            this.anims.play("burning");
+            this.lightsprite.setAlpha(0.05);
+            this.setState(EnemyState.STATE_BURNING);
+            this.firesprite.setAction(this.getOverlaySize(), 1);
+            this.firesprite.setFrame(0);
+            this.firesprite.setFrameProgress(0.0);
+            this.runDeadScript();
+        } else if (this.insideMelting) {
+            // melt it inside!
+            this.scene.sound.play("splash");
+            this.anims.play(this.insideMeltingAnimationKey, true);
+            this.setState(EnemyState.STATE_INSIDE_MELTING);
+            //remove
+        } else {
+            // Let it fall off the screen then.
+            this.killFall();
         }
     }
 
@@ -344,7 +483,8 @@ export class Enemy extends MovingSprite {
         if (otherCreature !== undefined && otherCreature.isEnemy && otherCreature.isActive() && otherCreature.getCollisionObject().getGroup() == CollisionGroup.COLGROUP_MOVING) {
             return this.collisionEnemy(otherCreature, hit);
         }
-        var player = (!otherCreature.isEnemy && otherCreature.getCollisionObject().getGroup() == CollisionGroup.COLGROUP_MOVING ? otherCreature : undefined);
+
+        var player = (otherCreature.isPlayer && otherCreature.getCollisionObject().getGroup() == CollisionGroup.COLGROUP_MOVING ? otherCreature : undefined);
 
         if (player !== undefined) {
             if (player.getBbox().getBottom() < (this.getCollisionObject().getBbox().top + 16)) {
@@ -363,6 +503,14 @@ export class Enemy extends MovingSprite {
 
             return this.collisionPlayer(this.player, hit);
         }
+
+        var bullet = other !== undefined && other.parent.isBullet ? other.parent : undefined;
+
+        if (bullet !== undefined) {
+            return this.collisionBullet(bullet, hit);
+        }
+
+        return HitResponse.FORCE_MOVE;
     }
 
     collisionEnemy(enemy, hit) {
@@ -405,6 +553,46 @@ export class Enemy extends MovingSprite {
         }
 
         return HitResponse.FORCE_MOVE;
+    }
+
+    collisionBullet(bullet, hit) {
+        if (this.isFrozen()) {
+            if (bullet.bonus == BonusType.BONUS_FIRE) {
+                // Fire bullet thaws frozen badguys.
+                this.unfreeze();
+                bullet.removeMe();
+                return HitResponse.ABORT_MOVE;
+            } else {
+                // Other bullets ricochet.
+                bullet.ricochet(hit);
+                return HitResponse.FORCE_MOVE;
+            }
+        } else if (this.isIgnited()) {
+            if (bullet.bonus == BonusType.BONUS_ICE) {
+                // Ice bullets extinguish ignited badguys.
+                this.extinguish();
+                bullet.removeMe();
+                return HitResponse.ABORT_MOVE;
+            } else {
+                // Other bullets are absorbed by ignited badguys.
+                bullet.removeMe();
+                return HitResponse.FORCE_MOVE;
+            }
+        } else if (bullet.bonus == BonusType.BONUS_FIRE && this.isFlammable()) {
+            // Fire bullets ignite flammable badguys.
+            this.ignite();
+            bullet.removeMe();
+            return HitResponse.ABORT_MOVE;
+        } else if (bullet.bonus == BonusType.BONUS_ICE && this.isFreezable()) {
+            // Ice bullets freeze freezable badguys.
+            this.freeze();
+            bullet.removeMe();
+            return HitResponse.ABORT_MOVE;
+        } else {
+            // In all other cases, bullets ricochet.
+            bullet.ricochet(hit);
+            return HitResponse.FORCE_MOVE;
+        }
     }
 
     collisionSolid(hit) {
@@ -1038,7 +1226,73 @@ export class Enemy extends MovingSprite {
     }
 
     killFall() {
-        this.killNoFlat();
+        if (!this.isActive()) return;
+
+        if (this.frozen) {
+            this.scene.sound.play("brick");
+            let prPos = new Phaser.Math.Vector2(0.0, 0.0);
+            let cx = this.getBbox().getWidth() / 2;
+            let cy = this.getBbox().getHeight() / 2;
+
+            for (prPos.x = 0; prPos.x < this.getBbox().getWidth(); prPos.x += 18) {
+                for (prPos.y = 0; prPos.y < this.getBbox().getHeight(); prPos.y += 18) {
+                    let speed = new Phaser.Math.Vector2((prPos.x - cx) * 3, (prPos.y - cy) * 2);
+                        this.scene.addParticle(
+                            this.getBbox().x + prPos.x, this.getBbox().y + prPos.y, null,
+                            //SPEED: Add current enemy speed, but do not add downwards velocity because it looks bad.
+                            new Phaser.Math.Vector2(this.getVelocityX(), this.getVelocityY() > 0 ? 0 : this.getVelocityY())
+                            //SPEED: Add specified speed and randomization.
+                        + speed + new Phaser.Math.Vector2(Math.random() * (30 - (-30)) + (-30), Math.random() * (30 - (-30)) + (-30)),
+                            new Phaser.Math.Vector2(0, GAME_GRAVITY * Math.random() * (120 - 100) + 100),
+                            "ice-piece-" + Math.floor(Math.random() * 3 + 1));
+                }
+            }
+            // Start the dead-script.
+            this.runDeadScript();
+            this.removeMe();
+        } else {
+            this.scene.sound.play("fall");
+            this.setVelocityY(0);
+            this.setAccelerationY(0);
+            this.body.allowGravity = true;
+            this.setState(EnemyState.STATE_FALLING);
+
+            // Set the badguy layer to be the foremost, so that
+            // this does not reveal secret tilemaps:
+            this.setDepth(10000);
+            // Start the dead-script.
+            this.runDeadScript();
+        }
+    } 
+
+    runDeadScript() {
+        if (this.isActive()) return;
+
+        this.isActiveFlag = false;
+
+        if (this.isGlinting && this.canGlint && !this.holdsCoins) {
+            const sector = Sector.get();
+            const numberOfCoins = this.getCoinsWorth();
+
+            let coinX = this.getBbox().getMiddle().x - 16;
+            let coinY = this.getBbox().top - 32;
+
+            if (!this.scene.isFreeOfSolidTiles(new Rect({ left: coinX, top: coinY, right: coinX + 32, bottom: coinY + 32 }), false)) {
+                coinX = this.getBbox().left;
+                coinY = this.getBbox().top;
+            }
+
+            for (let i = 0; i < numberOfCoins; ++i) {
+                let velocity = new Phaser.Math.Vector2(Math.random() * (96 - (-96)) + (-96), 0);
+                this.scene.addHeavyCoin(new Phaser.Math.Vector2(coinX, coinY), velocity);
+            }
+        }
+
+        if (this.parentDispenser != null) {
+            this.parentDispenser.notifyDead();
+        }
+
+        this.isGlinting = false;
     }
 
     killNoFlat() {

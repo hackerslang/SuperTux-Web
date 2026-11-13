@@ -19,6 +19,7 @@
         this.level = config.level;
         this.body.setBounce(0);
         this.setDepth(config.depth);
+        this.animation = config.animation;
         this.texture = config.texture;
         this.velocity = config.velocity || new Phaser.Math.Vector2(0, 0);
         this.setVelocity(this.velocity.x, this.velocity.y);
@@ -27,7 +28,9 @@
         this.EXISTING_TIME = 300;
         this.timer = this.EXISTING_TIME;
 
-        if (this.texture != null) {
+        if (this.animation != null) {
+            this.anims.play(this.animation);
+        } else if (this.texture != null) {
             this.setTexture(this.texture);
         }
     }

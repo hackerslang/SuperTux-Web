@@ -41,6 +41,7 @@ import { Brick } from '../object/blocks/brick.js';
 import { BouncyCoin } from '../object/powerup/bouncy_coin.js';
 import { PowerUpContent } from '../object/blocks/bonusblock.js';
 import { Particle } from '../object/particles/sparkle.js';
+import { Bullet, BonusType } from '../object/bullet.js';
 
 export var currentSceneKey = "";
 
@@ -736,7 +737,7 @@ export class SectorScene extends Phaser.Scene {
             this.enemyId++;
         }
 
-        return this.enemyId;
+        return "enemy-" +this.enemyId;
     }
 
     getPowerUpId() {
@@ -764,7 +765,7 @@ export class SectorScene extends Phaser.Scene {
             this.movableObjectId++;
         }
 
-        return this.movableObjectId;
+        return "movobj-" + this.movableObjectId;
     }
 
     getObjectId() {
@@ -774,7 +775,7 @@ export class SectorScene extends Phaser.Scene {
             this.objectId++;
         }
 
-        return "obj" +this.objectId;
+        return "obj-" + this.objectId;
     }
 
     getCoinId() {
@@ -784,7 +785,7 @@ export class SectorScene extends Phaser.Scene {
             this.coinId++;
         }
 
-        return this.coinId;
+        return "coin-" + this.coinId;
     }
 
     createLevelObjects() {
@@ -1357,9 +1358,9 @@ export class SectorScene extends Phaser.Scene {
             ["arrow", "invisible-wall", "UI", "debug-camera", "tux", "backgrounds", "coin", "hell-coin", "powerup",
                 "sparkle", "smoke",
 
-                "coin", "bullets", "blocks", "blocks2", "industrial", "snow", "lava", "home-exit", "acid-rain", "spike",
+                "bullets", "blocks", "blocks2", "industrial", "snow", "lava", "home-exit", "acid-rain", "spike",
 
-                "snow-rocks",
+                "snow-rocks", "freeze", "melting",
 
                 "snowball", "bouncing-snowball", "flying-snowball", "plasma-gun", "platforms",
                 "mr-iceblock", "mr-bomb", "hell-crusher", "krosh", "fish", "ghoul", "jumpy", "spiky", "creature-thinking",
@@ -1367,6 +1368,14 @@ export class SectorScene extends Phaser.Scene {
                 "level-misc"];
 
         this.loadImagesForKeys(keys);
+        //this.loadBulletTexturesFallback();
+    }
+
+    loadBulletTexturesFallback() {
+        this.load.image("firebullet", "./assets/images/objects/bullets/fire_bullet.png");
+        this.load.image("fire_bullet", "./assets/images/objects/bullets/fire_bullet.png");
+        this.load.image("icebullet", "./assets/images/objects/bullets/ice_bullet.png");
+        this.load.image("ice_bullet", "./assets/images/objects/bullets/ice_bullet.png");
     }
 
     loadNecessaryAtlas() {
@@ -1447,7 +1456,7 @@ export class SectorScene extends Phaser.Scene {
     makeAnimations() {
         var animationKeys = [
             "mr-bomb", "sparkle", "smoke", "tux", "ghoul", "lava", "brick", "bullets",
-            "bouncing-snowball", "flying-snowball", "snowball", "mr-iceblock", "spiky",
+            "bouncing-snowball", "flying-snowball", "snowball", "mr-iceblock", "spiky", "freeze","melting",
             "fish", "lava-fish", "antarctic-water", "star-moving", "plus-flickering", "fire-flower", "coin", "hell-coin"
         ];
 
@@ -1456,6 +1465,10 @@ export class SectorScene extends Phaser.Scene {
 
     isFreeOfTiles(rect, ignoreUnisolid, tiletype) {
         return this.collisionSystem.isFreeOfTiles(rect, ignoreUnisolid, tiletype);
+    }
+
+    isFreeOfSolidTiles(rect, ignoreUnisolid) {
+        return this.isFreeOfTiles(rect, ignoreUnisolid, Tile.SOLID);
     }
 
     static loadedAnimations = [];
@@ -1717,7 +1730,7 @@ export class SectorScene extends Phaser.Scene {
             this.updateReadyToPlay(time, delta);
             return;
         }
-        console.log("ready to play ...");
+        
         if (this.destroyingScene) { return; }   
         if (this.sector == null) { return; }
 
@@ -1746,6 +1759,7 @@ export class SectorScene extends Phaser.Scene {
         this.forceUpdateSprites(this.movablePlatformsSprites, time, delta);
         this.forceUpdateSprites(this.blocks, time, delta);
         this.forceUpdateSprites(this.powerUps, time, delta);
+        this.forceUpdateSprites(this.bullets, time, delta);
 
         this.collisionSystem.update(time, delta);
 
@@ -1953,6 +1967,7 @@ export class SectorScene extends Phaser.Scene {
         let egg = new EggPowerUp({
             scene: this,
             key: "egg",
+            id: this.getObjectId(),
             x: x,
             y: y,
             player: this.player,
@@ -1968,6 +1983,7 @@ export class SectorScene extends Phaser.Scene {
         let flower = new Flower({
             scene: this,
             key: "flower",
+            id: this.getObjectId(),
             x: x,
             y: y,
             player: this.player,
@@ -1983,6 +1999,7 @@ export class SectorScene extends Phaser.Scene {
         let plus = new PlusPowerUp({
             scene: this,
             key: "plus",
+            id: this.getObjectId(),
             x: x,
             y: y,
             player: this.player,
@@ -1994,8 +2011,24 @@ export class SectorScene extends Phaser.Scene {
         this.addPowerUp(plus);
     }
 
-    addBullet() {
+    addBullet(x, y, velocity, direction, bonus, player, isWaterLogged) {
+        const bulletKey = bonus === BonusType.BONUS_ICE ? "icebullet" : "firebullet";
 
+        let bullet = new Bullet({
+            scene: this,
+            key: bulletKey,
+            id: this.getObjectId(),
+            x: x,
+            y: y,
+            velocity: velocity,
+            direction: direction,
+            player: player,
+            sector: this.sector,
+            bonus: BonusType.BONUS_FIRE,
+            isWaterLogged: isWaterLogged
+        });
+
+        this.addBulletToGroup(bullet);
     }
 
     addSnowyTree(x, y, type) {
@@ -2014,6 +2047,7 @@ export class SectorScene extends Phaser.Scene {
         let bouncyCoin = new BouncyCoin({
             scene: this,
             key: "bouncy-coin",
+            id: this.getObjectId(),
             x: x,
             y: y,
             player: this.player,
@@ -2105,14 +2139,15 @@ export class SectorScene extends Phaser.Scene {
         this.blocks.push(bounceableBlock);
     }
 
-    addParticle(x, y, texture, velocity, acceleration) {
+    addParticle(x, y, texture, velocity, acceleration, animation) {
         let particle = new Particle({
             scene: this,
-            key: "brick-particle",
+            key: "particle",
             x: x,
             y: y,
             velocity: velocity,
             texture: texture,
+            animation: animation,
             id: this.getObjectId()
         });
 
@@ -2139,14 +2174,20 @@ export class SectorScene extends Phaser.Scene {
         }
     }   
 
-    removeEnemy(enemy) {
-        var collisionObject = this.collisionObjects.find(obj => obj.getId() == enemy.id);
-
-        if (collisionObject !== undefined || (collisionObject.parent !== undefined && collisionObject.parent.isScheduledForRemoval)) {
-            collisionObject.isScheduledForRemoval = true;
-
-            this.collisionObjects = this.collisionObjects.filter(collisionObject => collisionObject.getId() != enemy.id);
+    addBulletToGroup(bullet) {
+        if (this.bullets === undefined) {
+            this.bullets = [];
         }
+
+        this.bullets.push(bullet);
+
+        if (bullet.getCollisionObject !== undefined) {
+            this.collisionObjects.push(bullet.getCollisionObject());
+        }
+    }
+
+    removeEnemy(enemy) {
+        this.removeCollisionObject(enemy);
 
         if (enemy !== undefined || enemy.isScheduledForRemoval) {
             enemy.isScheduledForRemoval = true;
@@ -2155,14 +2196,18 @@ export class SectorScene extends Phaser.Scene {
         }
     }
 
-    removeBlock(block) {
-        var collisionObject = this.collisionObjects.find(obj => obj.getId() == block.id);
+    removeBullet(bullet) {
+        this.removeCollisionObject(bullet);
 
-        if (collisionObject !== undefined || (collisionObject.parent !== undefined && collisionObject.parent.isScheduledForRemoval)) {
-            collisionObject.isScheduledForRemoval = true;
+        if (bullet !== undefined || bullet.isScheduledForRemoval) {
+            bullet.isScheduledForRemoval = true;
 
-            this.collisionObjects = this.collisionObjects.filter(collisionObject => collisionObject.getId() != block.id);
+            this.bullets = this.bullets.filter(b => b.id != bullet.id);
         }
+    }
+
+    removeBlock(block) {
+        this.removeCollisionObject(block);
 
         if (block !== undefined || block.isScheduledForRemoval) {
             block.isScheduledForRemoval = true;
@@ -2172,13 +2217,7 @@ export class SectorScene extends Phaser.Scene {
     }
 
     removeCoin(coin) {
-        var collisionObject = this.collisionObjects.find(obj => obj.id == coin.id);
-
-        if (collisionObject !== undefined) {
-            collisionObject.isScheduledForRemoval = true;
-
-            this.collisionObjects = this.collisionObjects.filter(collisionObject => collisionObject.getId() != coin.id);
-        }
+        this.removeCollisionObject(coin);
 
         coin.isScheduledForRemoval = true;
 
@@ -2186,13 +2225,7 @@ export class SectorScene extends Phaser.Scene {
     }
 
     removePowerUp(powerup) {
-        var collisionObject = this.collisionObjects.find(obj => obj.id == powerup.id);
-
-        if (collisionObject !== undefined) {
-            collisionObject.isScheduledForRemoval = true;
-
-            this.collisionObjects = this.collisionObjects.filter(collisionObject => collisionObject.getId() != powerup.id);
-        }
+        this.removeCollisionObject(powerup);
 
         powerup.isScheduledForRemoval = true;
 
@@ -2201,6 +2234,16 @@ export class SectorScene extends Phaser.Scene {
 
     removeBouncyCoin(bouncyCoin) {
         this.powerUps = this.powerUps.filter(powerUp => powerUp.id != bouncyCoin.id);
+    }
+
+    removeCollisionObject(object) {
+        var collisionObject = this.collisionObjects.find(obj => obj.getId() == object.id);
+
+        if (collisionObject !== undefined && !collisionObject.isScheduledForRemoval) {
+            collisionObject.isScheduledForRemoval = true;
+
+            this.collisionObjects = this.collisionObjects.filter(collisionObject => collisionObject.getId() != object.id);
+        }
     }
 }
 

@@ -135,7 +135,7 @@ export class HeavyBrick extends Brick {
 
     collision(other, hit) {
         let player = other.parent.isPlayer ? other.parent : null;
-        if (player && player.doesButtjump) ricochet(other);
+        if (player && player.doesButtjump) this.ricochet(other);
 
         // let crusher = other.parent.isCrusher ? other.parent : null;
         // if (crusher && crusher.getState() == Crusher.CRUSHING)
@@ -148,12 +148,12 @@ export class HeavyBrick extends Brick {
 
         let badguy = other.parent.isBadGuy ? other.parent : null;
         if (badguy && badguy.canBreak() && (badguy.getBBox().getBottom() > this.getBBox().getTop() + SHIFT_DELTA))
-            ricochet(other);
+            this.ricochet(other);
 
         let portable = other.parent.isPortable ? other.parent : null;
         if (portable) {
             if (other.getBBox().top > this.getBBox().getBottom() - SHIFT_DELTA)
-                ricochet(other);
+                this.ricochet(other);
         }
 
         // Skip Brick::collision

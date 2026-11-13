@@ -39,6 +39,11 @@ export class Spiky extends WalkingEnemy {
         this.objectName = "Spiky";
 
         this.squishable = false;
+
+        this.insideMelting = true;
+        this.insideMeltingAnimationKey = "spiky-inside-melting";
+        this.gearAnimation = "spiky-gear";
+
         this.initialize();
     }
 
@@ -48,15 +53,14 @@ export class Spiky extends WalkingEnemy {
 
     update(time, delta) {
         super.update(time, delta);
-        if (this.sleeping) {
-            this.state = SpikyState.STATE_SLEEPING;
-            this.setVelocityX(0);
-            this.anims.play("spiky-sleep");
-        } else {
-            this.state = SpikyState.STATE_WALKING;
-            this.anims.play("spiky-walk");
-            super.walk();
-        }
+        // if (this.sleeping) {
+        //     this.state = SpikyState.STATE_SLEEPING;
+        //     this.setVelocityX(0);
+        //     this.anims.play("spiky-sleep");
+        // } else {
+        //     this.state = SpikyState.STATE_WALKING;
+        //     super.walk();
+        // }
     }
 
     isFreezable() {

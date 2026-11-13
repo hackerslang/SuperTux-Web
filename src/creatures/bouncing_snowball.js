@@ -18,6 +18,8 @@ export class BouncingSnowBall extends Enemy {
         this.animationUp = false;
         this.squishable = true;
         this.squishedAnim = "snowball-squished";
+
+        this.canMelt = true;
        
         //this.on('animationcomplete', this.animCompleted, this);
     }

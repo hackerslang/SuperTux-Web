@@ -21,6 +21,8 @@ export class Jumpy extends Enemy {
         this.jumping = false;
         this.lastGroundY = this.y;
         this.changeAt = 0;
+
+        this.insideMelting = true;
     }
 
     activeUpdate(time, delta) {         //FULLY IMPLEMENTED!!

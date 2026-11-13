@@ -27,6 +27,9 @@ export class SmartBall extends WalkingEnemy {
         this.squishedAnim = "smartball-squished";
 
         this.objectName = "SmartBall";
+
+        this.canMelt = true;
+
         this.initialize();
     }
 
