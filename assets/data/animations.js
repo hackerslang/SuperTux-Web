@@ -424,7 +424,7 @@
                     start: 0,
                     end: 5,
                     frameRate: 10,
-                    repeat: 1
+                    repeat: 0
                 },
                 {
                     key: "water-piece-1",

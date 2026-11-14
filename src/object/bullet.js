@@ -35,7 +35,6 @@ export class Bullet extends MovingSprite {
     }
 
     collisionSolid(hit) {
-        console.log("hit", hit);
         if (hit.slopeNormal.x != 0 && hit.slopeNormal.y <= 0) {
             let bounceInitY = -300,
                 bounceInitX = 450;

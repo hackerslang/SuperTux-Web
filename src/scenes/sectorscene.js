@@ -1070,7 +1070,6 @@ export class SectorScene extends Phaser.Scene {
            } else if (collisionTile.type == "wood-end") {
                tile = self.add.sprite(collisionTile.x, collisionTile.y, "wood", 4);
            } else if (collisionTile.type == "ind-ladder") {
-               alert("ladder");
                tile = self.add.sprite(collisionTile.x, collisionTile.y, "ind-ladder");
            } else if (collisionTile.type.startsWith(SpriteKeyConstants.INDUSTRIAL)) {
                tile = self.add.sprite(collisionTile.x, collisionTile.y, "industrial", collisionTile.type.replace(SpriteKeyConstants.INDUSTRIAL, ""));
@@ -1469,6 +1468,13 @@ export class SectorScene extends Phaser.Scene {
 
     isFreeOfSolidTiles(rect, ignoreUnisolid) {
         return this.isFreeOfTiles(rect, ignoreUnisolid, Tile.SOLID);
+    }
+
+    isFreeOfStatics(rect, ignoreObject, ignoreUnisolid, tiletype) {
+        return this.collisionSystem.isFreeOfStatics(rect,
+            ignoreObject ? ignoreObject.getCollisionObject() : null,
+            ignoreUnisolid,
+            tiletype);
     }
 
     static loadedAnimations = [];

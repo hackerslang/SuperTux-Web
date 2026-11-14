@@ -54,6 +54,9 @@ export class Enemy extends MovingSprite {
         this.canBurn = false;
         this.insideMelting = false;
 
+        this.canGlint = true;
+        this.isGlinting = false;
+
         this.BADGUY_ICE_FRICTION_MULTIPLIER = 0.1;      // Same as player
         this.BADGUY_ICE_ACCELERATION_MULTIPLIER = 0.25; // Same as player
 
@@ -116,6 +119,8 @@ export class Enemy extends MovingSprite {
         this.collisionGroupActive = CollisionGroup.COLGROUP_MOVING;
 
         this.isScheduledForRemoval = false;
+
+        this.isValidFlag = true;
     }
 
     initWithGameSession(enemyFromGameSession) {
@@ -485,7 +490,7 @@ export class Enemy extends MovingSprite {
         }
 
         var player = (otherCreature.isPlayer && otherCreature.getCollisionObject().getGroup() == CollisionGroup.COLGROUP_MOVING ? otherCreature : undefined);
-
+        console.log(player);
         if (player !== undefined) {
             if (player.getBbox().getBottom() < (this.getCollisionObject().getBbox().top + 16)) {
                 // if (player.isStone()) {
@@ -1062,7 +1067,7 @@ export class Enemy extends MovingSprite {
 
             var result = Sector.getCurrentSector().getFirstLineIntersection(eye, end, false, this.collisionObject);
 
-            if (!result.isValid) {
+            if (!result.isValid()) {
                 return true;
             }
 
@@ -1102,7 +1107,7 @@ export class Enemy extends MovingSprite {
 
             var result = Sector.getCurrentSector().getFirstLineIntersection(eye, end, false, this.collisionObject);
 
-            if (!result.isValid) {
+            if (!result.isValid()) {
                 // Turn around and climb the slope.
                 this.detectedSlope = 0;
 
@@ -1262,16 +1267,28 @@ export class Enemy extends MovingSprite {
             this.setDepth(10000);
             // Start the dead-script.
             this.runDeadScript();
+            this.isValidFlag = false;
         }
     } 
 
+    isValid() {
+        return this.isValidFlag;
+    }
+
+    removeMe() {
+        this.destroy();
+    }
+
+    getCoinsWorth() {
+        return (this.canGlint && this.isGlinting) ? 1 : 0;
+    }
+
     runDeadScript() {
-        if (this.isActive()) return;
+        if (!this.isActive()) return;
 
         this.isActiveFlag = false;
 
         if (this.isGlinting && this.canGlint && !this.holdsCoins) {
-            const sector = Sector.get();
             const numberOfCoins = this.getCoinsWorth();
 
             let coinX = this.getBbox().getMiddle().x - 16;

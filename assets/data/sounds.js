@@ -44,8 +44,13 @@
                     "ext": "ogg"
                 },
                 {
-                    "name": "fire-flower", 
-                    "value": "fire-flower", 
+                    "name": "fire-flower",
+                    "value": "fire-flower",
+                    "ext": "wav"
+                },
+                {
+                    "name": "kick",
+                    "value": "kick",
                     "ext": "wav"
                 },
                 {

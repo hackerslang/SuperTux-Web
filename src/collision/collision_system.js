@@ -12,9 +12,13 @@ import { Constraints } from './constraints.js';
 
 export class RaycastResult {
     constructor() {
-        this.isValid = false;
+        this.isValidFlag = false;
         this.hit = {}; // Tile or CollisionObject
         this.box = new Rect();
+    }
+
+    isValid() {
+        return this.isValidFlag;
     }
 }
 
@@ -37,7 +41,10 @@ export class CollisionSystem {
 
             object.dest = new Rect(object.bbox);
             object.pressure = new Phaser.Math.Vector2(0, 0);
-            object.dest.move(object.getMovement(delta));
+            // Phaser has already advanced the player's body before the scene update.
+            if (!object.parent.isPlayer) {
+                object.dest.move(object.getMovement(delta));
+            }
         }
 
         var i = 0;
@@ -194,6 +201,12 @@ export class CollisionSystem {
                 break;
         }
 
+        var standing = constraints.hit.bottom && movement.y >= 0;
+        if (object.parent.isPlayer && !standing && object.parent.isOnGroundFlag) {
+            object.parent.isOnGroundFlag = false;
+            object.parent.restoreGravityY();
+        }
+
         if (constraints.positionBottom < infinity) {
             var height = constraints.height;
 
@@ -203,7 +216,20 @@ export class CollisionSystem {
             } else {
                 dest.bottom = constraints.positionBottom - EPSILON_COLLISION;
                 dest.top = dest.bottom - object.bbox.height;
+                if (object.parent.isPlayer && standing) {
+                    // The constraint came from a rectangle grown by EPSILON_COLLISION.
+                    // Place the Phaser body on the actual surface, not the grown edge.
+                    dest.top = constraints.positionBottom + EPSILON_COLLISION - object.bbox.height;
+                    object.parent.body.y = dest.top;
+                    object.dest.top = dest.top;
+                }
             }
+        }
+
+        if (object.parent.isPlayer && constraints.hit.top && movement.y < 0) {
+            dest.top = constraints.positionTop - EPSILON_COLLISION;
+            object.parent.body.y = dest.top;
+            object.dest.top = dest.top;
         }
 
         if (constraints.hasConstraints()) {
@@ -302,6 +328,10 @@ export class CollisionSystem {
         if (!movingObjectRect.overlaps(grownOtherObjectRect))
             return constraints;
 
+        // A body jumping away from a surface is not standing on it.
+        if (objectMovement.y < 0 && movingObjectRect.getBottom() <= otherObjectRect.top)
+            return constraints;
+
         const dummy = new CollisionHit();
 
         if (otherObject != null && movingObject != null && !otherObject.collides(movingObject, dummy))
@@ -321,17 +351,21 @@ export class CollisionSystem {
             if (Math.abs(objectMovement.y) > Math.abs(objectMovement.x)) {
                 if (ileft < SHIFT_DELTA) {
                     constraints.constrainRight(grownOtherObjectRect.left);
+                    constraints.hit.right = true;
                     shiftout = true;
                 } else if (iright < SHIFT_DELTA) {
                     constraints.constrainLeft(grownOtherObjectRect.getRight());
+                    constraints.hit.left = true;
                     shiftout = true;
                 }
             } else {
                 if (itop < SHIFT_DELTA) {
                     constraints.constrainBottom(grownOtherObjectRect.top);
+                    constraints.hit.bottom = true;
                     shiftout = true;
                 } else if (ibottom < SHIFT_DELTA) {
                     constraints.constrainTop(grownOtherObjectRect.getBottom());
+                    constraints.hit.top = true;
                     shiftout = true;
                 }
             }
@@ -388,8 +422,12 @@ export class CollisionSystem {
 
             var response = otherObject.collision(movingObject, hit);
 
+            // Restore the moving object's perspective before merging the hit.
+            [hit.left, hit.right] = [hit.right, hit.left];
+            [hit.top, hit.bottom] = [hit.bottom, hit.top];
+
             if (response === HitResponse.ABORT_MOVE)
-                return new constraints();
+                return new Constraints();
         }
 
         return constraints;
@@ -403,7 +441,7 @@ export class CollisionSystem {
         var constraints = new Constraints();
         // Later on, we will add multiple tile layers, so we will need to check collisions with all of them. 
         // For now, we only have one tile layer, so we will just check collisions with that one.
-        var overlappingTilesRect = new Rect(Tile.getTilesOverlapping(dest));
+        var overlappingTilesRect = new Rect(Tile.getTilesOverlapping(dest.grown(EPSILON_COLLISION)));
         var hitsBottom = false;
 
         for (let x = overlappingTilesRect.left; x < overlappingTilesRect.getRight(); ++x) {
@@ -605,7 +643,7 @@ export class CollisionSystem {
                         // FIXME: check collision with slope tiles
                         if (tile.attributes & TileType.SOLID)
                         {
-                            tileResult.isValid = true;
+                            tileResult.isValidFlag = true;
                             tileResult.hit = tile;
                             tileResult.box = Tile.getTileBbox(parseInt(testVector.x / 32), parseInt(testVector.y / 32));
 
@@ -630,7 +668,7 @@ export class CollisionSystem {
                     || (object.getGroup() == CollisionGroup.COLGROUP_MOVING_STATIC)
                     || (object.getGroup() == CollisionGroup.COLGROUP_STATIC)) {
                     if (Collision.intersectsLine(object.bbox, lineStart, lineEnd)) {
-                        objectResult.isValid = true;
+                        objectResult.isValidFlag = true;
                         objectResult.hit = object;
                         objectResult.box = object.bbox;
 
@@ -642,15 +680,15 @@ export class CollisionSystem {
             if (ignore == RaycastIgnore.IGNORE_TILES)
                 return objectResult;
 
-            if (tileResult.isValid && objectResult.isValid) {
+            if (tileResult.isValid() && objectResult.isValid()) {
                 var tiledist = Phaser.Math.Distance.BetweenPoints(new Rect(tileResult.box).getMiddle(), lineStart);
                 var objdist = Phaser.Math.Distance.BetweenPoints(new Rect(objectResult.box).getMiddle(), lineStart);
 
                 return tiledist < objdist ? tileResult : objectResult;
             }
-            else if (tileResult.isValid)
+            else if (tileResult.isValid())
                 return tileResult;
-            else if (objectResult.isValid)
+            else if (objectResult.isValid())
                 return objectResult;
             else {
                 return new RaycastResult();
@@ -687,5 +725,24 @@ export class CollisionSystem {
                 }
             }
         }
+    }
+
+    isFreeOfStatics(rect, ignoreObject, ignoreUnisolid, tiletype) {
+        if (!this.isFreeOfTiles(rect, ignoreUnisolid, tiletype)) return false;
+
+        return this.isFreeOf(rect, (1 << COLGROUP_STATIC), ignoreObject, ignoreUnisolid);
+    }
+
+    isFreeOf(rect, colgroups, ignoreObject, ignoreUnisolid) {
+        for (const object of this.objects) {
+            if (object === ignoreObject) continue;
+            if (!object.isValid()) continue;
+            if (object.isUnisolid() && ignoreUnisolid) continue;
+            if ((1 << object.getGroup()) & colgroups) {
+                if (rect.overlaps(object.getBBox())) return false;
+            }
+        }
+
+        return true;
     }
 }

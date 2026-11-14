@@ -1,5 +1,6 @@
-﻿import { WalkingEnemy } from './walking_enemy.js';
+﻿import { LedgeBehavior, WalkingEnemy } from './walking_enemy.js';
 import { EnemyState } from './enemy.js';
+import { HitResponse } from '../collision/collision_hit.js';
 
 export var EnemyIceState = {
     ICESTATE_NORMAL: 0,
@@ -8,6 +9,11 @@ export var EnemyIceState = {
     ICESTATE_KICKED: 3,
     ICESTATE_WAKING: 4
 };
+
+export var MrIceBlockType = {
+    TYPE_NORMAL: "normal",
+    TYPE_LAPTOP: "laptop"
+}
 
 export class MrIceBlock extends WalkingEnemy {
     constructor(config) {
@@ -23,6 +29,8 @@ export class MrIceBlock extends WalkingEnemy {
         this.body.setOffset(7, 6);
         this.setOrigin(0.5, 0.5);
         this.width = 100;
+
+        this.type = config.type || MrIceBlockType.TYPE_NORMAL;
 
         this.direction = 0;
         this.firstActivated = false;
@@ -44,10 +52,225 @@ export class MrIceBlock extends WalkingEnemy {
 
     initialize() {
         super.initialize();
+        this.setIceState(EnemyIceState.ICESTATE_NORMAL);
     }
 
     update(time, delta) {
         super.update(time, delta);
+    }
+
+    isFreezable() {
+        return this.type == MrIceBlockType.TYPE_LAPTOP;
+    }
+
+    freeze() {
+        super.freeze();
+
+        if (this.iceState == EnemyIceState.ICESTATE_KICKED) {
+            this.setIceState(EnemyIceState.ICESTATE_FLAT);
+        }
+    }
+
+    unfreeze(melt) {
+        super.unfreeze(melt);
+
+        if (this.iceState == EnemyIceState.ICESTATE_FLAT) {
+            this.setIceState(EnemyIceState.ICESTATE_WAKING);
+        }
+    }
+
+    activeUpdate(time, delta) {
+        if (this.frozen) {
+            if (this.iceState == EnemyIceState.ICESTATE_FLAT) {
+                const velocityX = this.getVelocityX();
+
+                // Gradually slow down, when frozen in FLAT state, if any horizontal velocity is present.
+                if ((this.direction == this.DIRECTION_LEFT && velocityX < 0) || (this.direction == this.DIRECTION_RIGHT && velocityX > 0))
+                this.setVelocityX(velocityX * 0.95);
+            } else {
+                this.setVelocityX(0);
+            }
+
+            super.activeUpdate(time, delta);
+
+            return;
+        }
+
+        if(this.iceState == EnemyIceState.ICESTATE_GRABBED || this.isGrabbed()) {
+            return;
+        }
+
+        if (this.iceState == EnemyIceState.ICESTATE_FLAT && this.flatTimer <= 0) {
+            this.setIceState(EnemyIceState.ICESTATE_WAKING);
+        }
+
+        if (this.iceState == EnemyIceState.ICESTATE_WAKING && this.anims.isAnimationDone()) {
+            this.setIceState(EnemyIceState.ICESTATE_NORMAL);
+        }
+
+        if (this.iceState == EnemyIceState.ICESTATE_NORMAL) {
+            super.activeUpdate(time, delta);
+            return;
+        }
+
+        super.EnemyActiveUpdate(time, delta);
+    }
+
+    canBreak() {
+        return this.iceState == EnemyIceState.ICESTATE_KICKED || this.iceState == EnemyIceState.ICESTATE_FLAT;
+    }
+
+    collisionSolid(hit) {
+        this.updateOnGroundFlag(hit);
+
+        if (hit.top || hit.bottom) { // Floor or roof.
+            this.setVelocityY(0);
+        }
+
+        // Hit left or right.
+        switch (this.iceState) {
+            case EnemyIceState.ICESTATE_NORMAL:
+                super.collisionSolid(hit);
+                break;
+            case EnemyIceState.ICESTATE_KICKED: {
+                if (hit.left || hit.right) {
+                    if ((hit.right && this.direction == this.DIRECTION_RIGHT) || (hit.left && this.direction == this.DIRECTION_LEFT)) {
+                        this.direction = (this.direction == this.DIRECTION_LEFT) ? this.DIRECTION_RIGHT : this.DIRECTION_LEFT;
+                    }
+                    this.scene.sound.play("iceblock-bump");
+                    this.setVelocityX(-this.getVelocityX() * 0.975);
+                }
+                //flipx
+                this.anims.play("mriceblock-stomped");
+                if (Math.abs(this.getVelocityX()) < this.WALK_SPEED * 1.5) {
+                    this.setIceState(EnemyIceState.ICESTATE_NORMAL);
+                }
+                break;
+            }
+            case EnemyIceState.ICESTATE_FLAT:
+                if (this.frozen) {
+                    if ((hit.right && this.direction == this.DIRECTION_RIGHT) || (hit.left && this.direction == this.DIRECTION_LEFT))
+                    {
+                        this.direction = (this.direction == this.DIRECTION_LEFT) ? this.DIRECTION_RIGHT : this.DIRECTION_LEFT;
+                        this.inverseVelocityX();
+                    }
+                    break;
+                }
+            case EnemyIceState.ICESTATE_WAKING:
+                this.setVelocityX(0);
+                break;
+            case EnemyIceState.ICESTATE_GRABBED:
+                break;
+        }
+    }
+
+    collision(other, hit) {
+        if (this.frozen) {
+            var bullet = other.parent.isBullet ? other.parent : undefined;
+            if (bullet !== undefined) {
+                return super.collisionBullet(other, hit);
+            }
+
+            return HitResponse.FORCE_MOVE;
+        }
+
+        if (this.iceState == EnemyIceState.ICESTATE_GRABBED) {
+            return HitResponse.FORCE_MOVE;
+        }
+
+        return super.collision(other, hit);
+    }
+
+    collisionPlayer(player, hit) {
+        // Handle kicks from left or right side.
+        if ((this.iceState == EnemyIceState.ICESTATE_WAKING || this.iceState == EnemyIceState.ICESTATE_FLAT) && this.getState() == EnemyState.STATE_ACTIVE) {
+            if (hit.left) {
+                this.direction = this.DIRECTION_RIGHT;
+                player.kick();
+                this.setIceState(EnemyIceState.ICESTATE_KICKED);
+                return HitResponse.FORCE_MOVE;
+            }
+            else if (hit.right) {
+                this.direction = this.DIRECTION_LEFT;
+                player.kick();
+                this.setIceState(EnemyIceState.ICESTATE_KICKED);
+                return HitResponse.FORCE_MOVE;
+            }
+        }
+
+        return super.collisionPlayer(player, hit);
+    }
+
+    collisionEnemy(enemy, hit) {
+        switch (this.iceState) {
+            case EnemyIceState.ICESTATE_NORMAL:
+                return super.collisionEnemy(enemy, hit);
+            case EnemyIceState.ICESTATE_FLAT:
+            case EnemyIceState.ICESTATE_WAKING:
+                return HitResponse.FORCE_MOVE;
+            case EnemyIceState.ICESTATE_KICKED:
+                enemy.killFall();
+                return HitResponse.FORCE_MOVE;
+            default:
+                break;
+        }
+
+        return HitResponse.ABORT_MOVE;
+    }
+
+    collisionSquished(object) {
+        var player = object.isPlayer ? object : undefined;
+        if (player && (player.doesButtjump || player.isInvincible())) {
+            player.bounce(this);
+            this.killFall();
+            return true;
+        }
+
+        switch (this.iceState) {
+            case EnemyIceState.ICESTATE_KICKED:
+                {
+                    var enemy = object.isEnemy ? object : undefined;
+                    if (enemy) {
+                        enemy.killFall();
+                        break;
+                    }
+                }
+            case EnemyIceState.ICESTATE_NORMAL:
+                {
+                    squishcount++;
+                    if (squishcount >= MAXSQUISHES) {
+                        this.killFall();
+                        return true;
+                    }
+                }
+
+                this.scene.sound.play("stomp");
+                this.setVelocity(0, 0);
+                this.setIceState(EnemyIceState.ICESTATE_FLAT);
+                this.nokickTimer = this.NOKICK_TIME;
+                break;
+
+            case EnemyIceState.ICESTATE_FLAT:
+            case EnemyIceState.ICESTATE_WAKING:
+                {
+                    if (object.body.x < this.body.x) {
+                        this.direction = this.DIRECTION_RIGHT;
+                    }
+                    else {
+                        this.direction = this.DIRECTION_LEFT;
+                    }
+                }
+                if (this.nokickTimer <= 0) this.setIceState(EnemyIceState.ICESTATE_KICKED);
+                break;
+
+            case EnemyIceState.ICESTATE_GRABBED:
+                assert(false);
+                break;
+        }
+
+        if (player) player.bounce(this);
+
+        return true;
     }
 
 
@@ -68,9 +291,13 @@ export class MrIceBlock extends WalkingEnemy {
 
                 break;
             case EnemyIceState.ICESTATE_KICKED:
+                this.scene.sound.play("kick");
                 this.setVelocityX(this.direction == this.DIRECTION_RIGHT ? this.KICK_SPEED : -this.KICK_SPEED);
                 this.flipX = (this.direction == this.DIRECTION_RIGHT);
-                //set coll size
+                this.anims.play("mriceblock-stomped");
+
+                //bbox
+
                 break;
 
             case EnemyIceState.ICESTATE_GRABBED:
@@ -90,8 +317,72 @@ export class MrIceBlock extends WalkingEnemy {
         this.iceState = iceState;
     }
 
+    grab(object, pos, direction) {
+        if (this.frozen) {
+            super.grab(object, pos, direction);
+            return;
+        }
+
+        //portable.grab(object, pos, direction);
+        //m_col.set_movement(pos - get_pos());
+        this.setVelocity(this.body.getVelocityX() * LOGICAL_FPS, this.body.getVelocityY() * LOGICAL_FPS);
+        this.direction = direction;
+        this.anims.play("mriceblock-stomped");
+        this.setIceState(EnemyIceState.ICESTATE_GRABBED);
+        this.setColGroupActive(COLGROUP_DISABLED);
+    }
+
+    ungrab(object, direction) {
+        if (this.frozen) {
+            super.ungrab(object, direction);
+            return;
+        }
+
+        var player = object.isPlayer ? object : undefined;
+        if (player && (player.isSwimming() || player.isWaterJumping())) {
+            // Move the ice cube slightly away to avoid instantly killing Tux.
+            var swimangle = player.getSwimmingAngle();
+            this.col.bbox.move(new Vector(Math.cos(swimangle) * 48, Math.sin(swimangle) * 48));
+        }
+
+        if (this.direction == this.DIRECTION_UP) {
+            this.setVelocityY(-KICKSPEED);
+            if (Math.abs(player.getPhysic().getVelocityX()) < 1.0) {
+                this.setIceState(EnemyIceState.ICESTATE_FLAT);
+            } else {
+                this.direction = (this.getVelocityX() > 0) ? this.DIRECTION_RIGHT : this.DIRECTION_LEFT;
+                this.setIceState(EnemyIceState.ICESTATE_KICKED);
+            }
+        } else if (this.direction == this.DIRECTION_DOWN) {
+            var mov = new Vector(0, 32);
+            if (this.scene.isFreeOfStatics(this.getBBox().moved(mov), this)) {
+                // There is free space, so throw it down.
+                this.scene.sound.play("kick");
+                this.setVelocityY(KICKSPEED);
+            }
+
+            this.setIceState(EnemyIceState.ICESTATE_FLAT);
+        } else {
+            this.direction = direction;
+            this.setIceState(EnemyIceState.ICESTATE_KICKED);
+        }
+
+        this.setColGroupActive(COLGROUP_MOVING);
+        portable.ungrab(object, direction);
+    }
+
+    isPortable() {
+        return (this.frozen || this.iceState == EnemyIceState.ICESTATE_FLAT);
+    }
+
+    ignite() {
+        this.setIceState(EnemyIceState.ICESTATE_NORMAL);
+        super.ignite();
+    }
+
     initialize() {
         super.initialize(); //WalkingEnemy.initialize();
+        this.setLedgeBehavior(LedgeBehavior.NORMAL);
         this.setIceState(EnemyIceState.ICESTATE_NORMAL);
     }
 
@@ -127,10 +418,6 @@ export class MrIceBlock extends WalkingEnemy {
         return super.EnemyActiveUpdate(time, delta);
     }
 
-    grab(player, direction) {
-
-    }
-
     isPortable() {
         return this.frozen || this.iceState == EnemyIceState.ICESTATE_FLAT;
     }
@@ -157,10 +444,6 @@ export class MrIceBlock extends WalkingEnemy {
         }
 
         return super.EnemyPlayerHit(enemy, player);
-    }
-
-    collisionSolid(hit) {
-
     }
 
     enemyHit(thisEnemy, enemy) {
@@ -236,7 +519,7 @@ export class MrIceBlock extends WalkingEnemy {
                 }
 
                 if (this.noKickTimer <= 0) {
-                    this.setState(EnemyIceState.ICESTATE_KICKED);
+                    this.setIceState(EnemyIceState.ICESTATE_KICKED);
                 }
 
                 break;
@@ -250,103 +533,5 @@ export class MrIceBlock extends WalkingEnemy {
         }
 
         return true;
-    }
-
-    //update(time, delta) {
-    //    super.update(time, delta);
-    //}
-
-    //update(time, delta) {
-    //    super.update(time, delta);
-    //    if (this.sliding) {
-    //        this.enemyCollideSliding();
-    //        this.playerCollideSliding();
-    //    } else {
-    //        super.enemyCollideTurn();
-    //        super.playerCollideTurn();
-    //    }
-
-    //    //if (!this.player.isDead()) {
-    //    //    this.scene.physics.world.collide(this, this.player, this.playerHit);
-    //    //}
-
-    //    //this.scene.physics.world.collide(this, this.level.groundLayer);
-
-    //    //if (!this.activated()) {
-    //    //    return;
-    //    //}
-
-    //    //if (!this.firstActivated) {
-    //    //    this.activateStartMoving();
-    //    //}
-
-
-
-    //    if (!this.sliding) {
-    //        super.walkAndTurnOnEdge();
-    //    } else {
-    //        if (this.body.blocked.left) {
-    //            this.body.velocity.x = 300;
-    //        } else if (this.body.blocked.right) {
-    //            this.body.velocity.x = -300;
-    //        }
-    //    }
-    //}
-
-    enemyCollideSliding() {
-        Array.from(this.level.enemyGroup.children.entries).forEach(
-            (currentEnemy) => {
-                if (this.body.x != currentEnemy.body.x || this.body.y != currentEnemy.body.y) {
-                    if (this.horizontalCollision(currentEnemy, this)) {
-                        currentEnemy.slideKill();
-                        this.slideChangeDirection();
-                    } else if (this.horizontalCollision(this, currentEnemy)) {
-                        currentEnemy.slideKill();
-                        this.slideChangeDirection();
-                    }
-                }
-            }
-        );
-    }
-
-    playerCollideSliding() {
-
-    }
-
-    slideChangeDirection() {
-        if (this.direction == this.DIRECTION_LEFT) {
-            this.slideRight();
-        } else {
-            this.slideLeft();
-        }
-    }
-
-    slideRight() {
-        this.turnAroundSpeed(300, this.DIRECTION_RIGHT);
-
-    }
-
-    slideLeft() {
-        this.turnAroundSpeed(300, this.DIRECTION_LEFT);
-    }
-
-    activateStartMoving() {
-        this.firstActivated = true;
-
-        this.direction = this.DIRECTION_LEFT;
-        this.body.velocity.x = this.direction * 100;
-    }
-
-    playAnimation(key) {
-        this.anims.play(key, true);
-    }
-
-    enemyHit(thisEnemy, enemy) {
-        if (thisEnemy.sliding) {
-            enemy.slideKill();
-        } else {
-            enemy.walkAndTurnCollideEnemy(thisEnemy);
-            thisEnemy.walkAndTurnCollideEnemy(enemy);
-        }
     }
 }

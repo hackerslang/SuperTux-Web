@@ -162,6 +162,18 @@ export class WalkingEnemy extends Enemy { //everything implemented except collis
         }
     }
 
+    collisionBullet(other, hit) {
+        super.collisionBullet(other, hit);
+    }
+
+    collisionPlayer(player, hit) {
+        super.collisionPlayer(player, hit);
+    }
+
+    collision(other, hit) {
+        super.collision(other, hit);
+    }
+
     collisionSolid(hit) {
         super.updateOnGroundFlag(hit);
 
