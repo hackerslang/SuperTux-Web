@@ -1,5 +1,6 @@
 ﻿import { Sector } from './sector.js';
 import { SpriteKeyConstants } from './tile_creator.js';
+import { Water } from '../../object/water.js';
 
 export var TilemapConstants = {
     COIN: 'c',
@@ -39,7 +40,7 @@ export class TilemapParser {
         this.sectorScene = config.sectorScene;
         this.sectorData = config.sectorData;
         this.level = config.sector.level;
-        this.tileData = this.sectorData.tilemaps[0].data;
+        this.tileData = config.sectorData;
         this.spriteFactory = new SpriteFactory(this.sectorScene);
     }
 
@@ -165,10 +166,12 @@ export class TilemapParser {
     }
 
     createPreloadedWater(i, j) {
+        if (this.water === undefined) { this.water = []; }
         this.createPreloadedLiquid(i, j, TilemapConstants.TOP_WATER_TILE, SpriteKeyConstants.WATER_TOP, this.water);
     }
 
     createPreloadedLava(i, j) {
+        if (this.lava === undefined) { this.lava = []; }
         this.createPreloadedLiquid(i, j, TilemapConstants.TOP_LAVA_TILE, SpriteKeyConstants.LAVA_TOP, this.lava);
     }
 
@@ -196,28 +199,36 @@ export class TilemapParser {
     }
 
     createPreloadedplainWater(i, j, nextTile) {
+        if (this.water === undefined) { this.water = []; }
         this.createPlainLiquid(i, j, TilemapConstants.PLAIN_WATER_TILE, this.water, nextTile, "antarctic-water");
     }
 
     createPreloadedPlainLava(i, j, nextTile) {
+        if (this.lava === undefined) { this.lava = []; }
         this.createPlainLiquid(i, j, TilemapConstants.PLAIN_LAVA_TILE, this.lava, nextTile, "lava");
     }
 
     createPlainLiquid(i, j, tile, layer, nextTile, spriteKey) {
         if (!this.waterStart) {
-            let firstWater = this.spriteFactory.createPreloadedObject(i - 1, j, spriteKey);
+            let firstWater = this.spriteFactory.addSprite(i - 1, j, spriteKey);
+
+            firstWater.setOrigin(0, 0);
 
             this.waterStart = true;
 
             layer.push(firstWater);
         }
 
-        let midWater = this.spriteFactory.createPreloadedObject(i, j, spriteKey);
+        let midWater = this.spriteFactory.addSprite(i, j, spriteKey);
+
+        midWater.setOrigin(0, 0);
 
         layer.push(midWater);
 
         if (nextTile != tile) {
-            let lastWater = this.spriteFactory.createPreloadedObject(i + 1, j, spriteKey);
+            let lastWater = this.spriteFactory.addSprite(i + 1, j, spriteKey);
+
+            lastWater.setOrigin(0, 0);
 
             this.waterStart = false;
 
@@ -244,7 +255,7 @@ class SpriteFactory {
     }
 
     addSprite(i, j, key) {
-        this.sectorScene.addSprite(i, j, key);
+        return this.sectorScene.addSprite(i, j, key);
     }
 
     addBonusBlock(i, j, type) {
@@ -293,15 +304,15 @@ class SpriteFactory {
     }
 
     createAntarcticWaterTop(i, j, index) {
-        new Water({
+        var water = new Water({ 
             id: index,
             key: 'water-' + index,
-            scene: this.scene,
-            x: i,
-            y: j,
+            scene: this.sectorScene,
+            x: i * 32,
+            y: j * 32,
             player: this.player,
             level: this
-        });
+        });    
     }
 
     createBackgroundObject(x, y, key, offsetX = 0, offsetY = 0) {

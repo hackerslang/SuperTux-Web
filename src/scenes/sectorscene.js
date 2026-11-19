@@ -42,6 +42,7 @@ import { BouncyCoin } from '../object/powerup/bouncy_coin.js';
 import { PowerUpContent } from '../object/blocks/bonusblock.js';
 import { Particle } from '../object/particles/sparkle.js';
 import { Bullet, BonusType } from '../object/bullet.js';
+import { Util } from '../common/util.js';
 
 export var currentSceneKey = "";
 
@@ -394,6 +395,7 @@ export class SectorScene extends Phaser.Scene {
 
             this.fillTilesForeground();
             this.preloadTilesets();
+            this.preloadTileAttributes();
             this.loadCoinTiles();
             this.loadBackgroundImage(this.sector.getBackgroundImage());
             this.generateKeyController();
@@ -417,13 +419,67 @@ export class SectorScene extends Phaser.Scene {
     }
 
     preloadTilesets() {
-        var sectorTilesets = this.sector.getTilesets();
+        const sectorTilesets = this.sector.getTilesets() || [];
+        const tilemapTilesets = this.sector.getTileMaps().flatMap(tileMap => tileMap.tilesets || []);
+        const queuedNames = new Set();
 
-        sectorTilesets.forEach(ts => {
-            if (!this.textures.exists(ts.name)) {
+        for (const ts of [...sectorTilesets, ...tilemapTilesets]) {
+            if (queuedNames.has(ts.name) || this.textures.exists(ts.name)) {
+                continue;
+            }
+            queuedNames.add(ts.name);
+
+            // loadImages() may already have queued this texture before it enters the cache.
+            const alreadyQueued = [this.load.list, this.load.inflight, this.load.queue].some(files =>
+                Array.isArray(files?.entries) && files.entries.some(file => file.key === ts.name)
+            );
+            if (!alreadyQueued) {
                 this.load.image(ts.name, ts.value);
             }
-        });
+        }
+    }
+
+    getCollisionTilesets() {
+        const sectorTilesets = this.sector.getTilesets() || [];
+        const entries = sectorTilesets.map(tileset => ({ tileset, sectorLevel: true }));
+        for (const tileMap of this.sector.getTileMaps()) {
+            for (const tileset of tileMap.tilesets || []) {
+                entries.push({ tileset, sectorLevel: false });
+            }
+        }
+        return entries;
+    }
+
+    getTileAttributesUrl(tileset, sectorLevel) {
+        if (tileset.jsonUrl !== undefined) {
+            return tileset.jsonUrl;
+        }
+        return sectorLevel && tileset.value ? tileset.value.replace(/\.[^/.]+$/, '.json') : null;
+    }
+
+    preloadTileAttributes() {
+        const queuedUrls = new Set();
+        for (const { tileset, sectorLevel } of this.getCollisionTilesets()) {
+            const url = this.getTileAttributesUrl(tileset, sectorLevel);
+            if (!url || queuedUrls.has(url) || this.cache.json.exists('tile-attributes:' + url)) {
+                continue;
+            }
+            queuedUrls.add(url);
+            this.load.json('tile-attributes:' + url, url);
+        }
+    }
+
+    applyTileAttributes() {
+        for (const { tileset, sectorLevel } of this.getCollisionTilesets()) {
+            const url = this.getTileAttributesUrl(tileset, sectorLevel);
+            const metadata = url && this.cache.json.get('tile-attributes:' + url);
+            if (metadata) {
+                tileset.attributes = metadata.attributes;
+                tileset.datas = metadata.datas;
+            } else if (url) {
+                console.warn('Tile collision metadata not loaded:', url);
+            }
+        }
     }
 
     create() {
@@ -436,6 +492,7 @@ export class SectorScene extends Phaser.Scene {
 
         this.createDarkOverlay();
         if (this.sector != null) {
+            this.applyTileAttributes();
             this.staticObjects = [];
             this.textsToUpdate = [];
 
@@ -458,6 +515,12 @@ export class SectorScene extends Phaser.Scene {
 
             this.parseAntarcticWater();
 
+            // In create(), after the image is loaded:
+            this.textures.get('lava').setFilter(Phaser.Textures.FilterMode.NEAREST);
+            if (this.textures.exists('lava-extruded')) {
+                this.textures.get('lava-extruded').setFilter(Phaser.Textures.FilterMode.NEAREST);
+            }
+
             this.addSounds();
             this.createMap();
 
@@ -468,8 +531,10 @@ export class SectorScene extends Phaser.Scene {
 
             this.createCoinGroup();
 
-            this.tilemapParser = new TilemapParser({ sectorScene: this, sector: this.sector, sectorData: this.sector.sectorData });
-            this.tilemapParser.parse();
+            for (var tileMap of this.sector.getTileMaps()) {
+                this.tilemapParser = new TilemapParser({ sectorScene: this, sector: this.sector, sectorData: tileMap.data });
+                this.tilemapParser.parse();
+            }
 
             this.setProgressBarValue(0.65);
 
@@ -493,6 +558,7 @@ export class SectorScene extends Phaser.Scene {
 
             this.createPowerupGroup();
 
+            this.groundLayer = this.tileLayers[0];
             this.groundLayer.setDepth(3);
 
             this.physics.world.enable(this.player);
@@ -514,6 +580,8 @@ export class SectorScene extends Phaser.Scene {
         this.setProgressBarValue(1);
 
         this.startLevelIntro();
+
+        //this.cameras.main.setRoundPixels(true);
 
         this.createHasEnded = true;
         this.setProgressBarValue(1);
@@ -559,25 +627,111 @@ export class SectorScene extends Phaser.Scene {
     }
 
     createMap() {
-        var tileData = this.sector.getTileData();
-        var map = this.make.tilemap({ key: 'map', data: tileData, width: tileData[0].length, height: 21, tileWidth: 32, tileHeight: 32 });
-        var sectorTilesets = this.sector.getTilesets();
-        var tilesetNames = sectorTilesets.map(tileset => tileset.name);
+        this.tileLayers = [];
+        const tileMaps = this.sector.getTileMaps();
+        const sectorTilesets = this.sector.getTilesets() || [];
+        var index = 0;
 
-        for (var i = 0; i < sectorTilesets.length; i++) {
-            var tilesetObject = sectorTilesets[i];
-            var tileset = map.addTilesetImage(tilesetObject.name);
+        for (const tileMap of tileMaps) {
+            const tileDataElement = tileMap.data;
 
-            tileset.firstgid = tilesetObject.firstgid;
+            // 1. Do NOT pass key: 'map' when passing raw 2D array data
+            const map = this.make.tilemap({
+                data: tileDataElement,
+                tileWidth: 32,
+                tileHeight: 32
+            });
+
+            const addedTilesets = [];
+            let isGPU = false;
+
+            if (tileMap.tilesets !== undefined) {
+                if (tileMap.isGPU !== undefined) {
+                    isGPU = tileMap.isGPU;
+                }
+                console.log("tilesets", tileMap.tilesets); 
+                for (const tilesetObject of tileMap.tilesets) {
+                    console.log(tilesetObject);
+                    
+                    const tileset = map.addTilesetImage(
+                        tilesetObject.name,
+                        tilesetObject.name,
+                        32,
+                        32,
+                        tilesetObject.margin ?? 1,
+                        tilesetObject.spacing ?? 2,
+                        tilesetObject.firstgid
+                    );
+
+                    if (tileset) {
+                        addedTilesets.push(tileset);
+                    } else {
+                        console.warn('Failed to add tileset:', tilesetObject.name);
+                    }
+                }
+            } else {
+                for (let i = 0; i < sectorTilesets.length; i++) {
+                    const tilesetObject = sectorTilesets[i];
+                    const isLava = tilesetObject.name === 'lava';
+                    console.log(tilesetObject);
+                    // Force NEAREST filtering directly on the texture
+                    const tex = this.textures.get(tilesetObject.name);
+                    if (tex) {
+                        tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
+                    }
+
+                    const tileset = map.addTilesetImage(
+                        tilesetObject.name,
+                        tilesetObject.name,
+                        32,
+                        32,
+                        tilesetObject.margin ?? 1,
+                        tilesetObject.spacing ?? 2,
+                        tilesetObject.firstgid
+                    );
+
+                    console.log('LAVA UV CHECK:', {
+                        margin: tileset.tileMargin,
+                        spacing: tileset.tileSpacing,
+                        uv0: tileset.texCoordinates[0]
+                    });
+
+                    if (tileset) {
+                        addedTilesets.push(tileset);
+                    }
+                }
+            }
+
+            let layer = map.createLayer(0, addedTilesets, 0, 0);
+            if (layer && tileMap.depth != null) {
+                layer.setDepth(tileMap.depth);
+            }
+            
+            this.tileLayers.push(layer);
+
+            if (layer && tileMap.stillLavaRectangle) {
+                const rectangle = tileMap.stillLavaRectangle;
+                for (let y = rectangle.startY; y < map.height; y++) {
+                    for (let x = 0; x < map.width; x++) {
+                        const tile = map.getTileAt(x, y, false, 0);
+                        if (tile && tile.index === rectangle.tileIndex) {
+                            tile.alpha = 0.96;
+                        }
+                    }
+                }
+
+                this.add.rectangle(
+                    0,
+                    rectangle.startY * map.tileHeight,
+                    map.width * map.tileWidth,
+                    (map.height - rectangle.startY) * map.tileHeight,
+                    rectangle.color
+                ).setOrigin(0, 0).setDepth(3);
+            }
         }
 
-        //['tilesetKey1', 'tilesetKey2', ...].forEach(key => {
-        //    if (this.textures.exists(key)) {
-        //        this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
-        //    }
-        //});
-
-        this.groundLayer = map.createLayer(0, tilesetNames, 0, 0);
+        // 2. Ensure camera rounds pixels on every frame
+        //this.cameras.main.setRoundPixels(true);
     }
 
     addPlayer() {
@@ -618,7 +772,6 @@ export class SectorScene extends Phaser.Scene {
     }
 
     createHurtableTilesGroup() {
-        this.hurtableTilesGroup = this.add.group();
         this.hurtableTiles = [];
     }
 
@@ -1030,7 +1183,7 @@ export class SectorScene extends Phaser.Scene {
                 hurtableTileSprite = new Spike({ scene: this, x: hurtableTile.x, y: hurtableTile.y, type: hurtableTile.type, player: this.player });
             }
 
-            this.hurtableTiles.push(hurtableTileSprite);
+            this.addHurtableTileToList(hurtableTileSprite);
         }
     }
 
@@ -1041,7 +1194,15 @@ export class SectorScene extends Phaser.Scene {
             hurtableTileSprite = new Spike({ scene: this, x: i * 32, y: j * 32, type: type, player: this.player });
         }
 
-        this.hurtableTiles.push(hurtableTileSprite);
+        this.addHurtableTileToList(hurtableTileSprite);
+    }
+
+    addHurtableTileToList(tile) {
+        if (this.hurtableTiles === undefined) {
+            this.hurtableTiles = [];
+        }
+
+        this.hurtableTiles.push(tile);
     }
 
     parseCollisionTilesLayer() {
@@ -1099,6 +1260,8 @@ export class SectorScene extends Phaser.Scene {
         } else {
             sprite = this.add.sprite(i * 32, j * 32, type);
         }
+
+        sprite.setDepth(1000);
 
         return sprite;
     }
@@ -1185,7 +1348,6 @@ export class SectorScene extends Phaser.Scene {
             type: movablePlatformType,
         });
 
-        this.movablePlatformsGroup.add(platform);
         this.movablePlatformsSprites.push(platform);
         this.staticObjects.push(platform);
     }
@@ -1287,7 +1449,7 @@ export class SectorScene extends Phaser.Scene {
     }
 
     parseAntarcticWater() {
-        //for (var i = 0; i < this.sector.additionalTiles.water.length; i++) {
+        // for (var i = 0; i < this.sector.additionalTiles.water.length; i++) {
         //    var preloadedAntarcticWater = this.additionalTiles.water[i];
 
         //    let water = {};
@@ -1306,7 +1468,7 @@ export class SectorScene extends Phaser.Scene {
         //            level: this
         //        });
         //    }
-        //}
+        // }
     }
 
     parseInvisibleWallBlocks() {
@@ -1541,6 +1703,10 @@ export class SectorScene extends Phaser.Scene {
                     }
                 }
             } else if (foreground.tile == "la2") {
+                if (foreground.continuous) {
+                    this.createContinuousLavaSurface(foreground);
+                    continue;
+                }
                 for (var x = foreground.startX; x < foreground.endX; x += 4) {
                     for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
                         if (self.sector.getTileDataValue(x, y) != -1) {
@@ -1564,9 +1730,37 @@ export class SectorScene extends Phaser.Scene {
         }
     }
 
+    createContinuousLavaSurface(foreground) {
+        if (!this.textures.exists('lava-1')) {
+            console.warn('Cannot create lava surface: lava-1 texture is missing');
+            return;
+        }
+
+        const frame = this.textures.get('lava-1').get();
+        const startX = foreground.startX * 32;
+        const endX = foreground.endX * 32;
+
+        for (let x = startX; x < endX; x += frame.width) {
+            const lava = new Lava({
+                id: this.lavaSprites.length,
+                key: 'lava-1',
+                player: this.player,
+                scene: this,
+                x: x,
+                y: foreground.y * 32,
+                hitWidth: Math.min(frame.width, endX - x),
+                alpha: Level.currentLevel.LAVA_ALPHA
+            });
+
+            if (x + frame.width > endX) {
+                lava.setCrop(0, 0, endX - x, frame.height);
+            }
+            this.lavaSprites.push(lava);
+        }
+    }
+
     createDynamicForeGroundStillTile(level, x, y, key, alpha, depth, otherTileSize) {
         var tileSize = otherTileSize !== undefined ? otherTileSize : 32;
-
         var foregroundImage = this.add.sprite(x * 32, y * 32, key);
 
         if (key == "lava") {
@@ -1583,30 +1777,32 @@ export class SectorScene extends Phaser.Scene {
 
 
     fillTilesForeground() {
-        var sectorStaticForegrounds = this.sector.getFillTilesForegrounds();
-
-        if (sectorStaticForegrounds == null) { return; }
-
         var i = 0;
         var level = this;
         var self = this;
 
-        sectorStaticForegrounds.forEach(function (foreground, ids) {
-            var foregroundImage = {};
-            if (typeof foreground.tile == 'number') {
-                foreground.endX = foreground.startX + foreground.width;
+        for (var i = 0; i < this.sector.getTileMaps().length; i++) {
+            var sectorStaticForegrounds = this.sector.getFillTilesForegrounds(i);
 
-                for (var x = foreground.startX; x < foreground.endX; x++) {
-                    for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
-                        if (self.sector.getTileDataValue(x, y) == 0) {
-                            self.sector.setTileDataValue(x, y, foreground.tile);
-                        } else if (self.sector.getTileDataValue(x, y) == -1) {
-                            self.sector.setTileDataValue(x, y, 0);
+            if (sectorStaticForegrounds == null) { return; }
+
+            sectorStaticForegrounds.forEach(function (foreground, ids) {
+                var foregroundImage = {};
+                if (typeof foreground.tile == 'number') {
+                    foreground.endX = foreground.startX + foreground.width;
+
+                    for (var x = foreground.startX; x < foreground.endX; x++) {
+                        for (var y = foreground.y; y < foreground.y + foreground.height; y++) {
+                            if (self.sector.getTileDataValue(x, y, i) == 0) {
+                                self.sector.setTileDataValue(x, y, foreground.tile, i);
+                            } else if (self.sector.getTileDataValue(x, y, i) == -1) {
+                                self.sector.setTileDataValue(x, y, 0, i);
+                            }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
     }
 
     createFallingPlatforms() {
@@ -2047,7 +2243,7 @@ export class SectorScene extends Phaser.Scene {
         snowyTree.setOrigin(0, 0);
     }
 
-    addBouncyCoin(x, y, emerge) {
+    addBouncyCoin(x, y, emerge, type) {
         emerge = emerge === undefined ? true : emerge;
 
         let bouncyCoin = new BouncyCoin({
@@ -2056,6 +2252,7 @@ export class SectorScene extends Phaser.Scene {
             id: this.getObjectId(),
             x: x,
             y: y,
+            type: type,
             player: this.player,
             sector: this,
             emerge: emerge,

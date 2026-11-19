@@ -11,8 +11,9 @@
         this.emergeDistance = config.emerge ? 32 : 0;
         this.alpha = 1;
         this.isScheduledForRemoval = false;
+        this.animation = config.type === "hell-coin" ? "hell-coin-moving" : "coin-moving";
 
-        this.anims.play('coin-moving');
+        this.anims.play(this.animation);
         this.setOrigin(0, 0);
     }
 

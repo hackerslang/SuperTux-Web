@@ -137,7 +137,7 @@ export class Coin extends StillSprite {
         this.soundTimer = 1000;
 
         this.scene.sound.play("collect-coin", { detune: pitch * 100 });
-        this.scene.addBouncyCoin(this.x, this.y, false);
+        this.scene.addBouncyCoin(this.x, this.y, false, this.coinType);
         this.scene.addCollectedCoin(this.coinValue);
 
         this.destroyCoin();

@@ -68,42 +68,36 @@ export class Tile {
         return Tile.getTileAt(tileX, tileY);
     }
 
-    static getTileAt(x, y) {
-        var tilesetsWithAttributes = Tile.getTileDataAndAttributes();
-        var sectorData = Sector.getCurrentSector().sectorData;
-        var data = sectorData.tilemaps[0].data;
-        var tilesets = sectorData.tilesets;
+    static getTileAt(x, y, i) {
+        if (i === undefined) { i = 0; }
 
-        var sectorWidth = Sector.getCurrentSectorWidth() / 32;
-        var sectorHeight = Sector.getCurrentSectorHeight() / 32;
+        const sectorData = Sector.getCurrentSector().sectorData;
+        const tileMap = sectorData.tilemaps[i];
+        const row = tileMap?.data?.[y];
+        if (!row || x < 0 || x >= row.length) return null;
 
-        if (x < 0 || x > sectorWidth - 1) { return null; }
-        if (y < 0 || y > sectorHeight - 1) { return null; }
+        const tileIndex = row[x];
+        if (typeof tileIndex !== 'number' || tileIndex < 0) return null;
 
-        var tileIndex = data[y][x];
+        const tilesets = tileMap.tilesets ?? sectorData.tilesets ?? [];
+        let selected = null;
 
-        for (var i = 0; i < tilesetsWithAttributes.length; i++) {
-            var tileset = tilesetsWithAttributes[i];
-
-            if (tileset.lastgid === undefined) {
-                if (i + 1 < tilesets.length) {
-                    tileset.lastgid = tilesets[i + 1].firstgid - 1;
-                } else {
-                    tileset.lastgid = 1000000;
-                }
-            }
-
-            if (tileIndex >= tileset.firstgid && tileIndex < tileset.lastgid) {
-                var tile = new Tile({
-                    attributes: tileset.attributes[tileIndex - tileset.firstgid],
-                    data: tileset.datas[tileIndex - tileset.firstgid]
-                });
-
-                return tile;  
+        for (const tileset of tilesets) {
+            if (tileset.firstgid <= tileIndex &&
+                (tileset.lastgid == null || tileIndex <= tileset.lastgid) &&
+                (!selected || tileset.firstgid > selected.firstgid)) {
+                selected = tileset;
             }
         }
 
-        return null;
+        const localIndex = selected && tileIndex - selected.firstgid;
+        if (!selected || selected.attributes?.[localIndex] === undefined) return null;
+
+        return new Tile({
+            index: tileIndex,
+            attributes: selected.attributes[localIndex],
+            data: selected.datas?.[localIndex]
+        });
     }
 
     isSolid() {

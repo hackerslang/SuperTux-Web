@@ -575,6 +575,10 @@
                     "value": "lava"
                 },
                 {
+                    "name": "lava-extruded",
+                    "value": "lava-extruded"
+                },
+                {
                     "name": "lava-",
                     "value": "lava-",
                     "start": 1,

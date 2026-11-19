@@ -559,7 +559,7 @@ class CastleLevel  extends Level {
 
         this.parseLava();
 
-        let groundLayer = map.createStaticLayer(0, snowTiles, 0, 0);
+        let groundLayer = map.createStaticLayer(0, snowTiles, 0, 0, true);
         this.groundLayer = groundLayer;
 
         this.coinGroup = this.scene.add.group();

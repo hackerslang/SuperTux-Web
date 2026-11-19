@@ -42,16 +42,30 @@ export class Sector {
         return this.originalTileData[y][x];
     }
 
-    getTileData() {
-        return this.sectorData.tilemaps[0].data;
+    getTileMaps() {
+        return this.sectorData.tilemaps;
     }
 
-    getTileDataValue(x, y) {
-        return this.sectorData.tilemaps[0].data[y][x];
+    getTileMapsLength() {
+        return this.sectorData.tilemaps.length;
     }
 
-    setTileDataValue(x, y, val) {
-        this.sectorData.tilemaps[0].data[y][x] = val;
+    getTileData(i) {
+        if (i === undefined) { i = 0; }
+
+        return this.sectorData.tilemaps[i].data;
+    }
+
+    getTileDataValue(x, y, i) {
+        if (i === undefined) { i = 0; }
+
+        return this.sectorData.tilemaps[i].data[y][x];
+    }
+
+    setTileDataValue(x, y, val, i) {
+        if (i === undefined) { i = 0; }
+
+        this.sectorData.tilemaps[i].data[y][x] = val;
     }
 
     getSolidTilemaps() {
@@ -150,8 +164,10 @@ export class Sector {
         return this.sectorData.dynamicForegrounds;
     }
 
-    getFillTilesForegrounds() {
-        return this.sectorData.fillTilesForegrounds;
+    getFillTilesForegrounds(i) {
+        if (i === undefined) { i = 0; }
+
+        return this.sectorData.tilemaps[i].fillTilesForegrounds;
     }
 
     getTilesets() {

@@ -17,6 +17,7 @@ export const GlobalGameConfig = {
     type: Phaser.AUTO,
     width: CANVAS_WIDTH,
     height: CANVAS_HEIGHT,
+    // mipmapFilter: "LINEAR",
     plugins: {
         global: [
             { key: 'rexLineProgressPlugin', plugin: LineProgressPlugin, start: true }

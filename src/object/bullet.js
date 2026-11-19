@@ -60,14 +60,12 @@ export class Bullet extends MovingSprite {
         }
 
         if (hit.top || hit.bottom) {
-            console.log("top, bottom", hit);
             this.setVelocityY(-this.body.velocity.y);
             this.lifeCount--;
             return;
         }
 
         if (hit.left || hit.right) {
-            console.log("right, left", hit);
             if (this.bonus == BonusType.BONUS_ICE) {
                 this.setVelocityX(-this.body.velocity.x);
                 this.lifeCount--;

@@ -1,6 +1,7 @@
 ﻿import { BounceableBlock } from "./bounceableblock.js";
 import { Brick } from "./brick.js";
 import { FlowerType } from "../powerup/flower.js";
+import { Rect } from '../../math/rect.js';
 
 export const PowerUpContent = {
     COIN: 0,

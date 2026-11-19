@@ -79,7 +79,7 @@ export class CollisionSystem {
                 continue;
 
             var tileAttributes = this.collisionTileAttributes(object.dest, object.getMovement(delta));
-            if (tileAttributes >= Tile.FIRST_INTERESTING_FLAG) {
+            if (tileAttributes >= TileType.FIRST_INTERESTING_FLAG) {
                 object.collisionTile(tileAttributes);
             }
         }
@@ -438,84 +438,63 @@ export class CollisionSystem {
     }
 
     collisionTileMap(movement, dest, object) {
-        var constraints = new Constraints();
-        // Later on, we will add multiple tile layers, so we will need to check collisions with all of them. 
-        // For now, we only have one tile layer, so we will just check collisions with that one.
-        var overlappingTilesRect = new Rect(Tile.getTilesOverlapping(dest.grown(EPSILON_COLLISION)));
-        var hitsBottom = false;
+        const constraints = new Constraints();
+        const tileMaps = Sector.getCurrentSector().getTileMaps();
+        const overlapping = Tile.getTilesOverlapping(dest.grown(EPSILON_COLLISION));
 
-        for (let x = overlappingTilesRect.left; x < overlappingTilesRect.getRight(); ++x) {
-            for (let y = overlappingTilesRect.top; y < overlappingTilesRect.getBottom(); ++y) {
-                const tile = Tile.getTileAt(x, y);
-                if (!tile) continue;
+        for (let i = 0; i < tileMaps.length; i++) {
+            if (tileMaps[i].solid === false) continue;
 
-                if (tile.isSolid()) {
+            for (let x = overlapping.left; x < overlapping.getRight(); x++) {
+                for (let y = overlapping.top; y < overlapping.getBottom(); y++) {
+                    const tile = Tile.getTileAt(x, y, i);
+                    if (!tile || (!tile.isSolid() && !tile.isUniSolid())) continue;
+
                     const tileBbox = new Rect({
                         left: x * TILE_SIZE,
                         top: y * TILE_SIZE,
                         right: (x + 1) * TILE_SIZE,
-                        bottom: (y + 1) * TILE_SIZE,
+                        bottom: (y + 1) * TILE_SIZE
                     });
 
-                    var isRelativelySolid = true;
-
                     if (tile.isUniSolid()) {
-                        if (!tile.isSolid(tileBbox, object.bbox, object.getVelocity())) {
-                            isRelativelySolid = false;
+                        const previousBottom = dest.getBottom() - movement.y;
+                        if (movement.y >= 0 && previousBottom <= tileBbox.top + EPSILON_COLLISION &&
+                            dest.overlaps(tileBbox.grown(EPSILON_COLLISION))) {
+                            constraints.constrainBottom(tileBbox.top - EPSILON_COLLISION);
+                            constraints.hit.bottom = true;
                         }
-                    }
-                    
-                    if (isRelativelySolid) {
-                        if (tile.isSlope()) {
-                            const triangle = new AATriangle({ bbox: tileBbox, direction: tile.data });
-                            const result = Collision.rectangleCollidesWithAATriangle(constraints, dest, triangle, object);
-                            if (result && result.hits) {
-                                hitsBottom |= result.hitsRectangleBottom;
-                            }
-                        } else {
-                            var newConstraints = this.checkCollisions(movement, dest, tileBbox);
-                            hitsBottom |= newConstraints.hit.bottom;
-                            constraints.mergeConstraints(newConstraints);
-                        }
+                    } else if (tile.isSlope()) {
+                        const triangle = new AATriangle({ bbox: tileBbox, direction: tile.data });
+                        Collision.rectangleCollidesWithAATriangle(constraints, dest, triangle, object);
+                    } else {
+                        constraints.mergeConstraints(this.checkCollisions(movement, dest, tileBbox));
                     }
                 }
             }
-        }
-
-        if (hitsBottom) {
-            //todo!
         }
 
         return constraints;
     }
 
     collisionTileAttributes(dest, velocity) {
-        const x1 = dest.left;
-        const y1 = dest.top;
-        const x2 = dest.right;
-        const y2 = dest.bottom;
+        let result = 0;
+        const overlapping = Tile.getTilesOverlapping(dest);
+        const iceArea = Tile.getTilesOverlapping(new Rect({
+            left: dest.left, top: dest.top, right: dest.getRight(), bottom: dest.getBottom() + SHIFT_DELTA
+        }));
 
-        var result = 0;
-
-        const overlappingTilesRect = Tile.getTilesOverlapping(new Rect({ left: x1, top: y1, right: x2, bottom: y2 }));
-        const overlappingTilesIce = Tile.getTilesOverlapping(new Rect({ left: x1, top: y1, right: x2, bottom: y2 + SHIFT_DELTA }));
-
-        for (var x = overlappingTilesRect.left; x < overlappingTilesRect.right; ++x) {
-            var y;
-
-            for (y = overlappingTilesRect.top; y < overlappingTilesRect.bottom; ++y) {
-                const tile = Tile.getTileAt(x, y);
-
-                if (tile.isCollisionFul(tile.getTileBbox(), dest, velocity)) {
-                    result |= tile.getAttributes();
-                }
-            }
-
-            for (y = overlappingTilesIce.top; y < overlappingTilesIce.bottom; ++y) {
-                const tile = Tile.getTileAt(x, y);
-
-                if (tile.isCollisionFul(tile.getTileBbox(), dest, velocity)) {
-                    result |= (tile.attributes & TileType.ICE);
+        for (let i = 0; i < Sector.getCurrentSector().getTileMapsLength(); i++) {
+            for (let x = iceArea.left; x < iceArea.getRight(); x++) {
+                for (let y = iceArea.top; y < iceArea.getBottom(); y++) {
+                    const tile = Tile.getTileAt(x, y, i);
+                    if (!tile) continue;
+                    if (x >= overlapping.left && x < overlapping.getRight() &&
+                        y >= overlapping.top && y < overlapping.getBottom()) {
+                        result |= tile.attributes;
+                    } else {
+                        result |= tile.attributes & TileType.ICE;
+                    }
                 }
             }
         }

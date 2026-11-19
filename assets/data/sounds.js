@@ -49,6 +49,11 @@
                     "ext": "wav"
                 },
                 {
+                    "name": "iceblock-bump",
+                    "value": "iceblock_bump",
+                    "ext": "wav"
+                },
+                {
                     "name": "kick",
                     "value": "kick",
                     "ext": "wav"
